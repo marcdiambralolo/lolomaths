@@ -1,0 +1,400 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   VARIABLES CSS NATIVES
+   ============================================================ */
+:root {
+  /* Couleurs de base */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border-subtle: rgb(15 23 42 / 0.08);
+
+  /* ----------------------------------------------------------
+     COULEUR PRIMAIRE — Indigo Nuit
+  ---------------------------------------------------------- */
+  --primary: #1E154A;
+  --primary-light: #2E2366;
+  --primary-dark: #130D32;
+
+  /* ----------------------------------------------------------
+     COULEUR SECONDAIRE — Améthyste
+  ---------------------------------------------------------- */
+  --secondary: #5C3D8F;
+  --secondary-light: #7350A8;
+  --secondary-dark: #452E6E;
+
+  /* ----------------------------------------------------------
+     ACCENT 1 — Or Stellaire
+  ---------------------------------------------------------- */
+  --accent-gold: #C2913B;
+  --accent-gold-light: #D4A85A;
+  --accent-gold-dark: #9E7428;
+
+  /* ----------------------------------------------------------
+     ACCENT 2 — Azur Céleste
+  ---------------------------------------------------------- */
+  --accent-violet: #7098C4;
+  --accent-violet-light: #92B4D8;
+  --accent-violet-dark: #4E7AAE;
+
+  /* ----------------------------------------------------------
+     PASTELS SOPHISTIQUÉS
+  ---------------------------------------------------------- */
+  --pastel-rose: #C9A0AC;
+  --pastel-emerald: #6B9E94;
+  --pastel-sky: #8AAEC6;
+
+  /* ----------------------------------------------------------
+     FONDS — MODE CLAIR
+  ---------------------------------------------------------- */
+  --bg-light: #F4F1EC;
+  --bg-light-alt: #EAE5DB;
+  --gradient-light: #E2DDD4;
+
+  /* ----------------------------------------------------------
+     FONDS — MODE SOMBRE
+  ---------------------------------------------------------- */
+  --bg-dark: #0C0B1D;
+  --bg-dark-alt: #141228;
+  --gradient-dark: #1C1938;
+
+  /* ----------------------------------------------------------
+     TEXTES — MODE CLAIR
+  ---------------------------------------------------------- */
+  --text-light: #1C1830;
+  --text-muted-light: #5C587A;
+
+  /* ----------------------------------------------------------
+     TEXTES — MODE SOMBRE
+  ---------------------------------------------------------- */
+  --text-dark: #EDE7D9;
+  --text-muted-dark: #9E97B8;
+
+  /* ----------------------------------------------------------
+     COULEURS THÈME (alias fonctionnels)
+  ---------------------------------------------------------- */
+  --theme-border: rgba(194, 145, 59, 0.18);
+  --theme-surface: rgba(30, 21, 74, 0.06);
+}
+
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 400% 400%;
+  animation: gradientMove 10s ease infinite;
+}
+
+.hover\:shadow-neon:hover {
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.5);
+}
+
+/* ============================================================
+   MODE SOMBRE
+   ============================================================ */
+.dark {
+  --background: #030712;
+  --foreground: #f1f5f9;
+  --surface: #0f172a;
+  --surface-muted: #1e293b;
+  --border-subtle: rgb(248 250 252 / 0.08);
+  
+  --bg-light: var(--bg-dark);
+  --bg-light-alt: var(--bg-dark-alt);
+  --gradient-light: var(--gradient-dark);
+  --text-light: var(--text-dark);
+  --text-muted-light: var(--text-muted-dark);
+  --theme-border: rgba(194, 145, 59, 0.22);
+  --theme-surface: rgba(112, 152, 196, 0.08);
+}
+
+/* ============================================================
+   STYLES DE BASE
+   ============================================================ */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    font-family: var(--font-inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  /* Focus visible pour l'accessibilité */
+  :focus-visible {
+    outline: 2px solid var(--accent-gold);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Sélection de texte */
+  ::selection {
+    background-color: var(--primary);
+    color: white;
+  }
+}
+
+/* ============================================================
+   PLACEHOLDERS
+   ============================================================ */
+@layer components {
+  input::placeholder,
+  textarea::placeholder,
+  select::placeholder {
+    color: var(--text-muted-light);
+    opacity: 0.7;
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder,
+  .dark select::placeholder {
+    color: var(--text-muted-dark);
+    opacity: 0.5;
+  }
+}
+
+/* ============================================================
+   SCROLLBAR PERSONNALISÉE
+   ============================================================ */
+@layer utilities {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-light-alt);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-gold));
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--pastel-rose), var(--accent-violet));
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-violet) var(--bg-light-alt);
+  }
+}
+
+/* ============================================================
+   TEXTURE DE FOND
+   ============================================================ */
+@layer base {
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.015;
+    background-image: 
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+      );
+  }
+
+  .dark body::after {
+    opacity: 0.025;
+  }
+}
+
+/* ============================================================
+   ANIMATIONS GLOBALES
+   ============================================================ */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  50% {
+    transform: translateY(-20px) translateX(0px);
+  }
+  75% {
+    transform: translateY(-10px) translateX(-5px);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 0.5;
+    filter: blur(2px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes border-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(1px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(0.5px);
+  }
+}
+
+/* ============================================================
+   CLASSES D'ANIMATION
+   ============================================================ */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-border-pulse {
+  animation: border-pulse 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   UTILITAIRES CUSTOM
+   ============================================================ */
+@layer utilities {
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+  }
+
+  .bg-gradient-gold {
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+  }
+
+  .bg-gradient-cosmic {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--primary-light) 100%);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .text-gradient-gold {
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .dark .glass-effect {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ============================================================
+   OPTIMISATIONS POUR LE CLIENT
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   IMPRESSION
+   ============================================================ */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .no-print {
+    display: none;
+  }
+}
