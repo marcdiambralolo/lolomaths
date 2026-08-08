@@ -1,6 +1,10 @@
 'use client';
 import React, { memo, useCallback, useState } from 'react';
-import { Brain, Grid, Info, Sparkles, TrophyIcon, Zap, } from 'lucide-react';
+import { 
+  Brain, Grid, Info, Sparkles, TrophyIcon, Zap, 
+  Target, Gamepad2, Calculator, BookOpen, Award, 
+  Star, Crown, AlertCircle, MousePointerClick, BarChart
+} from 'lucide-react';
 
 type PillItem = {
   id: string;
@@ -19,55 +23,138 @@ type StatItem = {
   glow: string;
 };
 
+type BonusItem = {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  value: string;
+  color: string;
+};
+
+// Règles élémentaires du jeu
 const RULES: PillItem[] = [
   {
-    id: 'cases',
-    icon: <Grid className="h-5 w-5" />,
-    title: '3 cases à remplir',
-    desc: 'Chaque partie comporte 3 cases vides à compléter.',
-    tooltip: 'Les cases sont numérotées de 1 à 3.',
+    id: 'alternance_nombres',
+    icon: <div className="text-sm font-bold">1,3,5</div>,
+    title: 'Alternance des nombres',
+    desc: 'Pas de juxtaposition de deux pions de nombre.',
+    tooltip: 'Les nombres doivent être séparés par des opérateurs.',
   },
   {
-    id: 'digits',
-    icon: <Brain className="h-5 w-5" />,
-    title: 'Chiffres 0 à 9',
-    desc: '10 chiffres sont proposés, mais seulement 3 sont utilisés.',
-    tooltip: 'Il faut choisir les  3 chiffres.',
+    id: 'alternance_operateurs',
+    icon: <div className="text-sm font-bold">+ − × ÷</div>,
+    title: 'Alternance des opérateurs',
+    desc: 'Pas de juxtaposition de deux pions d\'opérateur.',
+    tooltip: 'Les opérateurs doivent être séparés par des nombres.',
   },
   {
-    id: 'unique',
-    icon: <TrophyIcon className="h-5 w-5" />,
-    title: 'Pas de répétition',
-    desc: 'Un chiffre ne peut être utilisé qu’une seule fois.',
-    tooltip: 'Chaque chiffre de la combinaison doit être unique.',
+    id: 'fermeture_propre',
+    icon: <div className="text-sm">🚫</div>,
+    title: 'Fermeture propre',
+    desc: 'Pas de mise d\'un pion d\'opérateur en bout de combinaison.',
+    tooltip: 'Une combinaison doit commencer et finir par un nombre.',
+  },
+  {
+    id: 'emplacement_unique',
+    icon: <div className="text-sm">📍</div>,
+    title: 'Emplacement unique',
+    desc: 'Pas de superposition de pions sur la même case.',
+    tooltip: 'Chaque case ne peut contenir qu\'un seul pion.',
   },
 ];
 
+// Éléments du lexique
+const LEXIQUE: PillItem[] = [
+  {
+    id: 'operateurs',
+    icon: <div className="text-sm font-bold">+ − × ÷</div>,
+    title: 'Opérateurs',
+    desc: 'Signes d\'Addition (+), Soustraction (−), Multiplication (×) et Division (÷).',
+  },
+  {
+    id: 'plateau',
+    icon: <div className="text-sm">🎯</div>,
+    title: 'Plateau',
+    desc: 'Cases comportant des nombres et une case "Départ".',
+  },
+  {
+    id: 'pions_nombre',
+    icon: <div className="text-sm">🔢</div>,
+    title: 'Pions de nombre',
+    desc: 'Pions marqués de nombres (6 pions par jeu).',
+  },
+  {
+    id: 'pions_operateur',
+    icon: <div className="text-sm">➗</div>,
+    title: 'Pions d\'opérateur',
+    desc: 'Pions marqués d\'opérateurs (4 pions par jeu).',
+  },
+  {
+    id: 'nombres_plateau',
+    icon: <div className="text-sm">📊</div>,
+    title: 'Nombres du plateau',
+    desc: 'Nombres inscrits dans les cases du plateau.',
+  },
+  {
+    id: 'combinaison',
+    icon: <div className="text-sm">🧩</div>,
+    title: 'Combinaison de pions',
+    desc: 'Agencement (en ligne ou colonne) de pion(s) de nombre et d\'opérateur. Débute et finit par un pion de nombre.',
+  },
+  {
+    id: 'jeu',
+    icon: <div className="text-sm">🎮</div>,
+    title: 'Jeu',
+    desc: 'Combinaison de pions validée.',
+  },
+  {
+    id: 'match',
+    icon: <div className="text-sm">🏆</div>,
+    title: 'Match',
+    desc: 'Ensemble de jeux.',
+  },
+];
+
+// Statistiques
 const STATS: StatItem[] = [
   {
-    id: 'digits',
-    value: '10',
-    label: 'chiffres disponibles',
+    id: 'pions_nombre',
+    value: '6',
+    label: 'pions de nombre',
     gradient: 'from-purple-500/15 via-fuchsia-500/10 to-indigo-500/15',
     textColor: 'text-purple-700 dark:text-purple-300',
     glow: 'shadow-purple-500/10',
   },
   {
-    id: 'slots',
-    value: '3',
-    label: 'cases à remplir',
+    id: 'pions_operateur',
+    value: '4',
+    label: 'pions d\'opérateur',
     gradient: 'from-indigo-500/15 via-blue-500/10 to-cyan-500/15',
     textColor: 'text-indigo-700 dark:text-indigo-300',
     glow: 'shadow-indigo-500/10',
   },
   {
-    id: 'combinations',
-    value: '720',
-    label: 'combinaisons possibles',
+    id: 'total_pions',
+    value: '10',
+    label: 'pions au total',
     gradient: 'from-fuchsia-500/15 via-violet-500/10 to-purple-500/15',
     textColor: 'text-fuchsia-700 dark:text-fuchsia-300',
     glow: 'shadow-fuchsia-500/10',
   },
+];
+
+// Grille des Bonus
+const BONUS: BonusItem[] = [
+  { id: 'egalite', icon: <Star className="w-3.5 h-3.5" />, title: 'Égalité parfaite', value: '+5', color: 'green' },
+  { id: '7pions', icon: <span className="text-sm font-bold">7</span>, title: '7 pions', value: '+1', color: 'purple' },
+  { id: '8pions', icon: <span className="text-sm font-bold">8</span>, title: '8 pions', value: '+2', color: 'indigo' },
+  { id: '9pions', icon: <span className="text-sm font-bold">9</span>, title: '9 pions', value: '+3', color: 'pink' },
+  { id: '10pions', icon: <span className="text-sm font-bold">10</span>, title: '10 pions', value: '+4', color: 'orange' },
+  { id: 'niveau1', icon: <span className="text-sm font-bold">≥30</span>, title: 'Niveau 1', value: '+1', color: 'purple' },
+  { id: 'niveau2', icon: <span className="text-sm font-bold">≥100</span>, title: 'Niveau 2', value: '+1', color: 'indigo' },
+  { id: 'niveau3', icon: <span className="text-sm font-bold">≥200</span>, title: 'Niveau 3', value: '+1', color: 'pink' },
+  { id: 'niveau4', icon: <span className="text-sm font-bold">≥300</span>, title: 'Niveau 4', value: '+1', color: 'orange' },
+  { id: 'premiere_x_ou_div', icon: <span className="text-sm font-bold">×÷</span>, title: '1ère × ou ÷', value: '+1', color: 'green' },
 ];
 
 const sectionTitleClass =
@@ -200,12 +287,12 @@ const HowToPlayCard = memo(function HowToPlayCard() {
 
       <div className="relative">
         <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-purple-700 dark:bg-purple-500/10 dark:text-purple-300">
-          <Zap className="h-3.5 w-3.5" />
-          Simple et intuitif
+          <MousePointerClick className="h-3.5 w-3.5" />
+          Mode Clic
         </div>
 
         <p className="text-sm leading-7 text-slate-700 sm:text-[15px] dark:text-slate-200">
-          Sélectionnez un chiffre, puis touchez une case vide pour le placer.
+          Sélectionnez un chiffre, puis cliquez sur une case vide pour le placer.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -214,7 +301,7 @@ const HowToPlayCard = memo(function HowToPlayCard() {
               Étape 1
             </div>
             <div className="mt-1 text-sm font-semibold text-slate-800 dark:text-white">
-              Choisir
+              Choisir un chiffre
             </div>
           </div>
 
@@ -223,7 +310,7 @@ const HowToPlayCard = memo(function HowToPlayCard() {
               Étape 2
             </div>
             <div className="mt-1 text-sm font-semibold text-slate-800 dark:text-white">
-              Placer
+              Placer sur le plateau
             </div>
           </div>
 
@@ -232,7 +319,7 @@ const HowToPlayCard = memo(function HowToPlayCard() {
               Étape 3
             </div>
             <div className="mt-1 text-sm font-semibold text-slate-800 dark:text-white">
-              Valider
+              Valider la combinaison
             </div>
           </div>
         </div>
@@ -259,8 +346,30 @@ const StatCard = memo(function StatCard({ item }: { item: StatItem }) {
   );
 });
 
-export default function WelcomePageClient() {
+const BonusCard = memo(function BonusCard({ item }: { item: BonusItem }) {
+  const colorClasses = {
+    purple: "from-purple-50 to-purple-100 text-purple-700 dark:from-purple-500/20 dark:to-purple-500/10 dark:text-purple-300",
+    indigo: "from-indigo-50 to-indigo-100 text-indigo-700 dark:from-indigo-500/20 dark:to-indigo-500/10 dark:text-indigo-300",
+    pink: "from-pink-50 to-pink-100 text-pink-700 dark:from-pink-500/20 dark:to-pink-500/10 dark:text-pink-300",
+    green: "from-green-50 to-green-100 text-green-700 dark:from-green-500/20 dark:to-green-500/10 dark:text-green-300",
+    orange: "from-orange-50 to-orange-100 text-orange-700 dark:from-orange-500/20 dark:to-orange-500/10 dark:text-orange-300",
+    yellow: "from-yellow-50 to-amber-100 text-amber-700 dark:from-amber-500/20 dark:to-amber-500/10 dark:text-amber-300",
+  };
+  
+  const bgClass = colorClasses[item.color as keyof typeof colorClasses] || colorClasses.purple;
 
+  return (
+    <div className={`text-center p-3 rounded-xl bg-gradient-to-br ${bgClass} hover:scale-105 transition-transform`}>
+      <div className="flex items-center justify-center gap-1.5 mb-0.5">
+        {item.icon}
+        <div className="font-semibold text-xs">{item.title}</div>
+      </div>
+      <div className="text-xl font-black">{item.value}</div>
+    </div>
+  );
+});
+
+export default function WelcomePageClient() {
   return (
     <div className="relative mx-auto w-full max-w-6xl px-4 pb-8 pt-4 sm:px-6">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -270,14 +379,29 @@ export default function WelcomePageClient() {
       </div>
 
       <div className="relative z-10 space-y-6 sm:space-y-8">
+        
+        {/* But du Jeu */}
+        <section id="but">
+          <SectionHeader
+            badge="But du jeu"
+            title="🎯 Objectif"
+          />
+          <div className={`${cardBaseClass} p-5 sm:p-6 text-center`}>
+            <p className="text-sm leading-relaxed text-slate-700 sm:text-[15px] dark:text-slate-200">
+              Effectuez à chaque tour une combinaison de pions dont le résultat calculé est le <span className="font-bold text-purple-600 dark:text-purple-400">plus approchant</span> ou <span className="font-bold text-purple-600 dark:text-purple-400">strictement égal</span> au nombre du plateau visé.
+            </p>
+          </div>
+        </section>
+
+        {/* Règles élémentaires */}
         <section id="regles">
           <SectionHeader
-            badge="Règles du jeu"
-            title="📜 Comprendre Diambra"
-            subtitle="3 cases, 10 chiffres, 1 seule bonne combinaison.  "
+            badge="Règles élémentaires"
+            title="🎮 Comment jouer ?"
+            subtitle="Placez votre première combinaison depuis la case 'Départ' en respectant ces 4 règles"
           />
 
-          <div className="grid gap-3 sm:gap-4 md:grid-cols-1 lg:grid-cols-1">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
             {RULES.map((item, index) => (
               <Pill
                 key={item.id}
@@ -291,15 +415,136 @@ export default function WelcomePageClient() {
           </div>
         </section>
 
-        <section id="jeu">
+        {/* Déroulement du jeu */}
+        <section id="deroulement">
           <SectionHeader
-            badge="Comment jouer"
-            title="🎯 Une belle expérience"
+            badge="Déroulement"
+            title="⚡ Validation & Calcul"
           />
 
-          <HowToPlayCard />
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+            <div className={`${cardBaseClass} p-5 sm:p-6`}>
+              <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-green-500/10 blur-3xl dark:bg-green-400/10" />
+              <div className="relative">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-green-700 dark:bg-green-500/10 dark:text-green-300">
+                  <Calculator className="h-3.5 w-3.5" />
+                  Validation
+                </div>
+                <p className="text-sm leading-relaxed text-slate-700 sm:text-[15px] dark:text-slate-200">
+                  Une combinaison valide affiche un carré jaune indiquant le nombre à atteindre et une icône pour choisir le sens de calcul.
+                </p>
+              </div>
+            </div>
+
+            <div className={`${cardBaseClass} p-5 sm:p-6`}>
+              <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-400/10" />
+              <div className="relative">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                  <Brain className="h-3.5 w-3.5" />
+                  Calcul
+                </div>
+                <p className="text-sm leading-relaxed text-slate-700 sm:text-[15px] dark:text-slate-200">
+                  Le calcul s&apos;effectue opération par opération de l&apos;autre extrémité vers le nombre visé. Une boîte de dialogue valide le jeu.
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
 
+        {/* Lexique */}
+        <section id="lexique">
+          <SectionHeader
+            badge="Lexique"
+            title="📚 Le vocabulaire essentiel"
+            subtitle="Pour bien comprendre le plateau et vos pièces"
+          />
+
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {LEXIQUE.map((item, index) => (
+              <Pill
+                key={item.id}
+                icon={item.icon}
+                title={item.title}
+                desc={item.desc}
+                tooltip={item.tooltip}
+                delay={index * 40}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Système de notation */}
+        <section id="notation">
+          <SectionHeader
+            badge="Système de notation"
+            title="📊 Note & Bonus"
+          />
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* Note de base */}
+            <div className={`${cardBaseClass} p-5 sm:p-6`}>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                <span className="text-purple-500">a)</span> Note de base
+              </h4>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                La note de base correspond à l&apos;écart négatif entre votre résultat calculé et le nombre à atteindre.
+              </p>
+              <div className="mt-3 rounded-xl bg-purple-50/80 px-3 py-2 text-xs text-purple-700 dark:bg-purple-500/10 dark:text-purple-200 flex items-start gap-2">
+                <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <span>La note de base est toujours négative ou égale à 0 (en cas d&apos;égalité parfaite).</span>
+              </div>
+            </div>
+
+            {/* Grille des Bonus */}
+            <div className={`${cardBaseClass} p-5 sm:p-6`}>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                <span className="text-purple-500">b)</span> Grille des Bonus
+              </h4>
+              <div className="grid grid-cols-2 gap-1.5">
+                {BONUS.map((item) => (
+                  <BonusCard key={item.id} item={item} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Scores */}
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
+            <div className={`${cardBaseClass} p-4 text-center`}>
+              <div className="text-3xl mb-1">🎯</div>
+              <div className="font-bold text-slate-900 dark:text-white text-sm">Note à un jeu</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Note de base + Bonus</div>
+            </div>
+            <div className={`${cardBaseClass} p-4 text-center`}>
+              <div className="text-3xl mb-1">🏆</div>
+              <div className="font-bold text-slate-900 dark:text-white text-sm">Score d&apos;un match</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Cumul des notes</div>
+            </div>
+            <div className={`${cardBaseClass} p-4 text-center`}>
+              <div className="text-3xl mb-1">👑</div>
+              <div className="font-bold text-slate-900 dark:text-white text-sm">Score Compétition</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Cumul des matchs</div>
+            </div>
+          </div>
+        </section>
+
+        {/* Règle d'enchaînement */}
+        <section id="enchainement">
+          <div className={`relative overflow-hidden rounded-2xl border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-5 dark:border-orange-400/30 dark:from-orange-500/10 dark:to-amber-500/10`}>
+            <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-orange-500/10 blur-3xl dark:bg-orange-400/10" />
+            <div className="relative flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5 dark:text-orange-400" />
+              <div>
+                <h4 className="font-bold text-orange-800 dark:text-orange-300">⚠️ Règle importante d&apos;enchaînement</h4>
+                <p className="text-sm text-orange-700 dark:text-orange-200/80 mt-1">
+                  Après le premier jeu, <span className="font-bold">tous les coups suivants doivent impérativement comporter</span> au moins un pion déjà placé lors d&apos;un jeu antérieur.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Statistiques */}
         <section id="stats">
           <SectionHeader
             badge="Le jeu en chiffres"
@@ -312,6 +557,17 @@ export default function WelcomePageClient() {
             ))}
           </div>
         </section>
+
+        {/* Mode de jeu */}
+        <section id="jeu">
+          <SectionHeader
+            badge="Comment jouer"
+            title="🎯 Mode Clic"
+          />
+
+          <HowToPlayCard />
+        </section>
+
       </div>
     </div>
   );

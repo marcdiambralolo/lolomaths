@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 function getCityApiBaseUrl() {
   const baseUrl = process.env.CITY_API_URL || process.env.NEXT_PUBLIC_CITY_API_URL || '';
+
   return baseUrl.replace(/\/+$/, '');
 }
 

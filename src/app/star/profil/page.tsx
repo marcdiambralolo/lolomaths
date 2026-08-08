@@ -1,6 +1,6 @@
-import ProfilPageClient from "@/components/profil/ProfilPageClient";
+import HomePage from '@/components/lolomaths/accueil/HomePage';
 
-export default function ProfilPage() {
+export default function Home() {
 
-  return (<ProfilPageClient />);
+  return <HomePage />;
 }

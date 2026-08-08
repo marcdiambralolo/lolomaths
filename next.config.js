@@ -38,7 +38,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'diambra.net',
+        hostname: 'lolomaths.com',
         port: '',
         pathname: '/uploads/**',
       },

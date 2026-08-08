@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.diambra.net';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.lolomaths.com';
 
   const lastModified = new Date().toISOString();
 

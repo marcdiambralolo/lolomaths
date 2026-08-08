@@ -8,7 +8,7 @@ export function getRootMetadata() {
     },
     description:
       "✨ Jouez DIAMBRA dès maintenant!",
-    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://www.diambra.net"),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://www.lolomaths.com"),
     openGraph: {
       type: "website",
       locale: "fr_FR",

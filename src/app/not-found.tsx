@@ -127,7 +127,7 @@ export default function NotFoundPage() {
         <motion.div variants={itemVariants} className="mb-6">
           <Star className="w-4 h-4 text-[#FFD600] animate-pulse" />
           <span className="text-xs font-semibold uppercase tracking-[0.35em] text-[#9BC2FF]">
-            DIAMBRA
+            Lolomaths
           </span>
         </motion.div>
 

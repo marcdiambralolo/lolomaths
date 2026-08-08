@@ -7,12 +7,12 @@ import "./globals.css";
 import { Providers, RootPortals, RootSkipLink } from "./providers";
 
 const SITE_CONFIG = {
-  name: "Diambra",
-  url: "https://www.diambra.net",
-  description: "🎯 Diambra ",
-  twitterHandle: "@DiambraCorporation",
+  name: "Lolomaths",
+  url: "https://www.lolomaths.com",
+  description: "🎯 Lolomaths ",
+  twitterHandle: "@Lolomaths",
   ogImage: "/logo.png",
-  ogImageAlt: "Diambra Win",
+  ogImageAlt: "Lolomaths",
   ogImageWidth: 512,
   ogImageHeight: 512,
 } as const;
@@ -159,8 +159,8 @@ const SchemaScript = memo(function SchemaScript() {
           height: 512,
         },
         sameAs: [
-          "https://twitter.com/DiambraNet",
-          "https://github.com/marcdiambralolo/diambrafrontend",
+          "https://twitter.com/Lolomaths",
+          "https://github.com/marcdiambralolo/lolomaths",
         ],
       },
       {

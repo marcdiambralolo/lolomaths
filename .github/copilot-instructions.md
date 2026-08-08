@@ -1,6 +1,6 @@
-# Copilot Instructions for Diambra
+# Copilot Instructions for Lolomaths
 
-Diambra is built with Next.js 14 App Router, TypeScript, and a separate backend API. These instructions help AI agents be immediately productive in this codebase.
+Lolomaths is built with Next.js 14 App Router, TypeScript, and a separate backend API. These instructions help AI agents be immediately productive in this codebase.
 
 ## Project Overview
 - **Framework**: Next.js 14 (App Router) with TypeScript strict mode
@@ -86,7 +86,6 @@ Diambra is built with Next.js 14 App Router, TypeScript, and a separate backend 
 - **Icons**: Import from `lucide-react` individually; standard sizing `w-6 h-6`
 
 ## External Integrations
-- **Payment**: MoneyFusion service (`lib/api/services/moneyfusion.service.ts`); uses `/api/payments/moneyfusion/verify` for server-side verification
 - **PDF generation**: `@react-pdf/renderer` for reports
 - **Charts**: `recharts` for analytics/stats visualizations
 - **Markdown**: `react-markdown` + `remark-gfm` for content rendering
@@ -99,7 +98,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # Frontend URLs
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_BASE_URL=https://www.diambra.net
+NEXT_PUBLIC_BASE_URL=https://www.lolomaths.com
 
 # Optional: City API (for location autocomplete)
 NEXT_PUBLIC_CITY_API_URL=

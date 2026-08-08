@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import AboutPage from "@/components/about/AboutPage";
 
 export const metadata: Metadata = {
-    title: "À propos — Diambra",
+    title: "À propos — Lolomaths",
     description:
-        "Diambra est un jeu.",
+        "Lolomaths est un jeu.",
     alternates: { canonical: "/a-propos" },
     openGraph: {
-        title: "À propos — Diambra",
+        title: "À propos — Lolomaths",
         description:
-            "Diambra est un jeu en ligne.",
+            "Lolomaths est un jeu en ligne.",
         url: "/a-propos",
         type: "website",
         images: [
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
                 url: "/logo.png",
                 width: 512,
                 height: 512,
-                alt: "Logo Diambra",
+                alt: "Logo Lolomaths",
             },
         ],
     },

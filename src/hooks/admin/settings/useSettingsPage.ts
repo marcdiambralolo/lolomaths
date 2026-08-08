@@ -6,7 +6,7 @@ export default function useSettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [siteName, setSiteName] = useState('Diambra');
-  const [siteEmail, setSiteEmail] = useState('contact@diambra.net');
+  const [siteEmail, setSiteEmail] = useState('contact@lolomaths.com');
   const [sitePhone, setSitePhone] = useState('+225 07 58 38 53 87 ');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);

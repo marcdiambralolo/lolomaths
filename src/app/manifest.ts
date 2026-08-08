@@ -3,10 +3,10 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Diambra Win",
-    short_name: "Diambra",
+    name: "Lolomaths",
+    short_name: "Lolomaths",
     description:
-      "Jeu Diambra",
+      "Jeu Lolomaths",
     start_url: "/",
     scope: "/",
     display: "standalone",

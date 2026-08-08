@@ -15,7 +15,7 @@ export const config = {
 
   frontend: {
     baseURL: process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.NODE_ENV === 'production' ? 'https://diambra.net' : 'http://localhost:3000'),
+      (process.env.NODE_ENV === 'production' ? 'https://lolomaths.com' : 'http://localhost:3000'),
   },
 
   routes: {
