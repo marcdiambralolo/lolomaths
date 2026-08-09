@@ -236,7 +236,7 @@ export function HeaderLogo() {
         <div className="relative h-9 w-36 sm:h-12 sm:w-48 flex items-center justify-center">
           <Image
             src="/logo.png"
-            alt="Diambra"
+            alt="Lolomaths"
             width={986}
             height={241}
             className="w-full h-full object-contain"

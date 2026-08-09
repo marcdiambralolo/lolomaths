@@ -1,11 +1,11 @@
-// Service Worker avancé pour Diambra
+// Service Worker avancé pour lolomaths.com
 // - Cache-First pour assets statiques/images, Network-Only pour pages/API/auth
 // - Fallback offline, gestion fine de l'expiration, éviction LRU, sécurité headers
 // - Incrémentez CACHE_VERSION pour forcer la mise à jour
 
-const CACHE_VERSION = 'v216';
-const CACHE_STATIC = `diambra-${CACHE_VERSION}-static`;
-const CACHE_IMAGES = `diambra-${CACHE_VERSION}-images`;
+const CACHE_VERSION = 'v2';
+const CACHE_STATIC = `lolomaths-${CACHE_VERSION}-static`;
+const CACHE_IMAGES = `lolomaths-${CACHE_VERSION}-images`;
 
 const PRECACHE_ASSETS = ['/offline.html'];
 const MAX_ENTRIES = { static: 500, images: 200 };

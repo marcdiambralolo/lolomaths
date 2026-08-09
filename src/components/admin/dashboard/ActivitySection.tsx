@@ -172,6 +172,4 @@ const ActivitySection = memo<ActivitySectionProps>(({ stats, derivedStats }) => 
   );
 });
 
-ActivitySection.displayName = "ActivitySection";
-
 export default ActivitySection;

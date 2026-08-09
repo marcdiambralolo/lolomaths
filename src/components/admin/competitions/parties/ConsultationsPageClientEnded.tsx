@@ -135,7 +135,7 @@ export default function ConsultationsPage() {
       if (username) {
         const player = playersMap.get(username);
         player.games++;
-        if (c.combinaison) player.combinaisons.add(c.combinaison);
+        if (c.timeSpent) player.combinaisons.add(c.timeSpent);
       }
     });
 
@@ -146,7 +146,7 @@ export default function ConsultationsPage() {
     // Combinaisons uniques
     const combinaisonsMap = new Map();
     consultations.forEach(c => {
-      const comb = c.combinaison;
+      const comb = c.timeSpent;
       if (comb && comb !== '????') {
         combinaisonsMap.set(comb, (combinaisonsMap.get(comb) || 0) + 1);
       }
@@ -165,7 +165,7 @@ export default function ConsultationsPage() {
       .slice(0, 15);
 
     // Taux de complétion
-    const completedGames = consultations.filter(c => c.combinaison && c.combinaison !== '????').length;
+    const completedGames = consultations.filter(c => c.timeSpent).length;
     const completionRate = consultations.length > 0 ? Math.round((completedGames / consultations.length) * 100) : 0;
 
     // Statistiques de temps

@@ -49,9 +49,9 @@ interface ConsultationCardProps {
 }
 
 export function ConsultationCard({ consultation, index, isDuplicate = false, duplicateCount = 0 }: ConsultationCardProps) {
-  const nomJoueur = consultation.clientId?.username || 'Diambra';
+  const nomJoueur = consultation.clientId?.username || 'LoloMaths';
   const country = consultation.clientId?.country || 'Côte d\'Ivoire';
-  const combinaison = consultation.combinaison || '????';
+  const combinaison = consultation.timeSpent || '0';
   const timeSpent = consultation.timeSpent;
   const relativeDate = formatEditionDate(new Date(consultation.createdAt || ''));
 
@@ -138,15 +138,15 @@ function HistoriquePageClientImpl() {
 
       const consultations = (response.data as any)?.consultations as Consultation[] ?? [];
       const sorted = [...consultations].sort((a, b) => {
-        const valueA = parseInt(a.combinaison || '0', 10);
-        const valueB = parseInt(b.combinaison || '0', 10);
+        const valueA = parseInt(a.timeSpent || '0', 10);
+        const valueB = parseInt(b.timeSpent || '0', 10);
         return valueA - valueB;
       });
       setSortedConsultations(sorted);
 
       const combinaisonCount = new Map<string, number>();
       sorted.forEach((consultation) => {
-        const comb = consultation.combinaison || '????';
+        const comb = consultation.timeSpent || '0';
         combinaisonCount.set(comb, (combinaisonCount.get(comb) || 0) + 1);
       });
 
@@ -253,7 +253,7 @@ function HistoriquePageClientImpl() {
             className="space-y-4 space-x-2"
           >
             {sortedConsultations.map((consultation, index) => {
-              const comb = consultation.combinaison || '????';
+              const comb = consultation.timeSpent || '0';
               const duplicateInfo = duplicateMap.get(comb);
               const isDuplicate = duplicateInfo?.isDuplicate || false;
               const duplicateCount = duplicateInfo?.count || 0;

@@ -1,8 +1,8 @@
 "use client";
 import { cx } from "@/lib/functions";
-import { 
+import {
   ArrowLeft, Brain, ChevronRight, Grid, Info, Trophy as TrophyIcon,
-  Target, Gamepad2, Zap, Calculator, BookOpen, Award, Star, 
+  Target, Gamepad2, Zap, Calculator, BookOpen, Award, Star,
   Crown, AlertCircle, MousePointerClick, BarChart
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -85,7 +85,7 @@ function BonusCard({ icon, title, value, color = "purple" }: { icon: React.React
     orange: "from-orange-50 to-orange-100 text-orange-700",
     yellow: "from-yellow-50 to-amber-100 text-amber-700",
   };
-  
+
   const bgClass = colorClasses[color as keyof typeof colorClasses] || colorClasses.purple;
 
   return (
@@ -112,12 +112,12 @@ export default function AboutPageClient() {
           <div className="hidden sm:flex items-center gap-2 text-[13px] font-bold">
             {["but", "regles", "deroulement", "lexique", "notation", "enchainement"].map((item) => (
               <a key={item} className="text-purple-500 hover:text-purple-800 transition capitalize" href={`#${item}`}>
-                {item === "regles" ? "Règles" : 
-                 item === "deroulement" ? "Déroulement" :
-                 item === "lexique" ? "Lexique" :
-                 item === "notation" ? "Notation" :
-                 item === "enchainement" ? "Enchaînement" :
-                 item === "but" ? "But du jeu" : item}
+                {item === "regles" ? "Règles" :
+                  item === "deroulement" ? "Déroulement" :
+                    item === "lexique" ? "Lexique" :
+                      item === "notation" ? "Notation" :
+                        item === "enchainement" ? "Enchaînement" :
+                          item === "but" ? "But du jeu" : item}
               </a>
             ))}
           </div>
@@ -125,7 +125,7 @@ export default function AboutPageClient() {
       </nav>
 
       <div className="mx-auto max-w-5xl px-4 py-4 sm:py-8">
-        
+
         {/* Header */}
         <section className="text-center reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700">
           <h3 className="text-balance text-2xl font-black tracking-tight bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent sm:text-6xl">
@@ -218,7 +218,6 @@ export default function AboutPageClient() {
           </ConicPanel>
         </section>
 
-        {/* Lexique */}
         <section id="lexique" className="mt-10 sm:mt-12 reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700 delay-400">
           <div className="mb-4 text-center">
             <h2 className="text-2xl font-black text-purple-900 flex items-center justify-center gap-2">
@@ -273,16 +272,14 @@ export default function AboutPageClient() {
           </div>
         </section>
 
-        {/* Système de notation & Bonus */}
         <section id="notation" className="mt-10 sm:mt-12 reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700 delay-500">
           <ConicPanel>
             <h2 className="text-2xl font-black text-purple-900 flex items-center gap-2">
               <Award className="w-6 h-6 text-yellow-500" />
               📊 Système de notation & Bonus
             </h2>
-            
+
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
-              {/* Note de base */}
               <div className="bg-purple-50/50 rounded-xl p-4">
                 <h3 className="font-bold text-purple-800 mb-2 flex items-center gap-1">
                   <span className="text-sm">a)</span> Note de base
@@ -296,7 +293,6 @@ export default function AboutPageClient() {
                 </div>
               </div>
 
-              {/* Grille des Bonus */}
               <div>
                 <h3 className="font-bold text-purple-800 mb-2 flex items-center gap-1">
                   <span className="text-sm">b)</span> Grille des Bonus
@@ -316,7 +312,6 @@ export default function AboutPageClient() {
               </div>
             </div>
 
-            {/* Scores */}
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div className="text-center p-3 rounded-xl bg-gradient-to-br from-yellow-50 to-amber-100">
                 <div className="text-2xl mb-1">🎯</div>
@@ -337,7 +332,6 @@ export default function AboutPageClient() {
           </ConicPanel>
         </section>
 
-        {/* Règle importante d'enchaînement */}
         <section id="enchainement" className="mt-10 sm:mt-12 reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700 delay-600">
           <div className="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 p-5 border-2 border-orange-200">
             <div className="flex items-start gap-3">
@@ -352,7 +346,6 @@ export default function AboutPageClient() {
           </div>
         </section>
 
-        {/* Call to Action */}
         <section className="mt-12 text-center reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700 delay-700">
           <div className="rounded-3xl bg-gradient-to-r from-purple-600 to-indigo-600 p-8 text-white">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 mb-3">

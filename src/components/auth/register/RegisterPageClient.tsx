@@ -243,7 +243,7 @@ const RegisterForm: React.FC = () => {
 
                   <Image
                     src="/logo.png"
-                    alt="Diambra"
+                    alt="Lolomaths"
                     fill
                     sizes="(max-width: 768px) 120px, 160px"
                     className="object-contain p-3"
@@ -258,7 +258,7 @@ const RegisterForm: React.FC = () => {
               Créer un compte
             </h1>
 
-            <p className="mx-auto max-w-md text-xs text-gray-600 sm:text-sm">Diambra</p>
+            <p className="mx-auto max-w-md text-xs text-gray-600 sm:text-sm">Lolomaths</p>
           </div>
 
           {error && <RegisterErrorMessage error={error} onClose={() => setError(null)} />}
@@ -358,7 +358,7 @@ const RegisterForm: React.FC = () => {
         </div>
         <WelcomePageClient />
         <p className="mt-2 text-center text-xs mb-16 text-gray-400">
-          © 2026 Diambra. Tous droits réservés.
+          © 2026 Lolomaths. Tous droits réservés.
         </p>
       </div>
     </div>

@@ -26,7 +26,7 @@ export default function ConsultationCard({ consultation, index, showDate = true,
     const [isHovered, setIsHovered] = useState(false);
 
     const nomJoueur = consultation.clientId?.username || 'Anonyme';
-    const combinaison = consultation.combinaison || '????';
+    const combinaison = consultation.timeSpent || '0';
     const timeSpent = consultation.timeSpent;
     const createdAt = consultation.createdAt;
 

@@ -123,7 +123,7 @@ const LoginForm = () => {
               <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow">
                 <Image
                   src="/logo.png"
-                  alt="Diambra"
+                  alt="Logo Lolomaths"
                   fill
                   sizes="(max-width: 768px) 120px, 160px"
                   className="object-contain p-3"
@@ -135,7 +135,7 @@ const LoginForm = () => {
 
           <div className="text-center mb-6">
             <h1 className="mb-2 text-2xl font-bold text-blue-900 sm:text-3xl">
-              DIAMBRA
+              LOLOMATHS
             </h1>
 
             <p className="mx-auto max-w-md text-xs text-gray-600 sm:text-sm">
@@ -196,7 +196,7 @@ const LoginForm = () => {
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-400 mb-16">
-          © 2026 Diambra. Tous droits réservés.
+          © 2026 Lolomaths. Tous droits réservés.
         </p>
       </div>
     </div>

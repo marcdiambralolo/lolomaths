@@ -150,13 +150,13 @@ export default function ConsultationsArchivePage() {
     });
     const uniquePlayers = playersMap.size;
     
-    const completedGames = consultations.filter(c => c.combinaison && c.combinaison !== '????').length;
+    const completedGames = consultations.filter(c => c.timeSpent).length;
     const completionRate = totalGames > 0 ? Math.round((completedGames / totalGames) * 100) : 0;
     
     const combinaisonsMap = new Map();
     consultations.forEach(c => {
-      const comb = c.combinaison;
-      if (comb && comb !== '????') {
+      const comb = c.timeSpent;
+      if (comb && comb !== '0') {
         combinaisonsMap.set(comb, (combinaisonsMap.get(comb) || 0) + 1);
       }
     });

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: "À propos — Lolomaths",
         description:
-            "Lolomaths est un jeu en ligne.",
+            "Lolomaths est un jeu en ligne",
         url: "/a-propos",
         type: "website",
         images: [

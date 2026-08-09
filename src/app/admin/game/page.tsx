@@ -1,6 +1,6 @@
-import GameConfigurationManager from "@/components/admin/game/GameConfigurationManager";
+import Historique from "@/components/lolomaths/historique/Historique";
 
 export default function ConsultationsPage() {    
   
-  return <GameConfigurationManager />;
+  return <Historique />;
 }

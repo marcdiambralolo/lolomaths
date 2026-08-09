@@ -1,4 +1,4 @@
-/* Diambra — service worker minimal : scope du site, pas de cache (Next.js gère les assets). */
+/* Lolomaths — service worker minimal : scope du site, pas de cache (Next.js gère les assets). */
 self.addEventListener("install", () => {
   self.skipWaiting();
 });

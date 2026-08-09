@@ -542,7 +542,6 @@ export function CustomDateTimePicker({
                     ))}
                   </div>
 
-                  {/* Calendrier */}
                   <Calendar
                     viewMonth={viewMonth}
                     tempDate={tempDate}

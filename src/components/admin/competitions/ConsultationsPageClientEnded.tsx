@@ -2,22 +2,11 @@
 import CacheLink from '@/components/commons/CacheLink';
 import { useAdminConsultationsPageFinished } from '@/hooks/admin/competitions/useAdminConsultationsPageFinished';
 import { formatEditionDate, formatTime } from '@/lib/functions';
-import { motion, Variant } from 'framer-motion';
 import {
   ArrowLeft, Clock, FileText, Flame, Medal, RefreshCw, Sparkles,
-  TrendingUp, Trophy, Users, Zap,
+  Trophy, Users, Zap
 } from 'lucide-react';
-import { useMemo } from 'react';
-
-// ============================================================================
-// ANIMATIONS
-// ============================================================================
-
-
-
-// ============================================================================
-// COMPOSANTS
-// ============================================================================
+import { useMemo } from 'react'; 
 
 const LoadingSkeleton = () => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 p-6">
@@ -31,9 +20,7 @@ const LoadingSkeleton = () => (
 );
 
 const StatCard = ({ icon, label, value, subValue, color }: any) => (
-  <div
-  
-
+  <div 
     className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${color} p-5 text-white shadow-xl group cursor-pointer`}
   >
     <div className="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-white/10 group-hover:scale-150 transition-transform duration-700" />
@@ -50,7 +37,6 @@ const StatCard = ({ icon, label, value, subValue, color }: any) => (
 
 const TopCard = ({ title, icon, items, color }: any) => (
   <div
-
     className="relative overflow-hidden rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-100 dark:border-gray-700 shadow-xl group"
   >
     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-2xl" />
@@ -81,10 +67,6 @@ const TopCard = ({ title, icon, items, color }: any) => (
     </div>
   </div>
 );
-
-// ============================================================================
-// COMPOSANT PRINCIPAL
-// ============================================================================
 
 export default function ConsultationsPage() {
   const { consultations, loading, error, isRefreshing, activeEdition, handleRefresh } = useAdminConsultationsPageFinished();

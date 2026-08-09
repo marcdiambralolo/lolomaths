@@ -3,30 +3,30 @@ const faviconAnySize = `${'an'}y`;
 export function getRootMetadata() {
   return {
     title: {
-      default: "Diambra",
-      template: "%s | Diambra",
+      default: "Lolomaths",
+      template: "%s | Lolomaths",
     },
     description:
-      "✨ Jouez DIAMBRA dès maintenant!",
+      "✨ Jouez LOLOMATHS dès maintenant!",
     metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://www.lolomaths.com"),
     openGraph: {
       type: "website",
       locale: "fr_FR",
       url: "/",
-      siteName: "Diambra win",
-      title: "Diambra",
+      siteName: "Lolomaths",
+      title: "Lolomaths",
       description:
         "🔮 Jeu .",
       images: [
-        { url: "/og-image.jpg", width: 1200, height: 630, alt: "Diambra", type: "image/jpeg" },
-        { url: "/og-image-square.jpg", width: 800, height: 800, alt: "Diambra", type: "image/jpeg" },
+        { url: "/og-image.jpg", width: 1200, height: 630, alt: "Lolomaths", type: "image/jpeg" },
+        { url: "/og-image-square.jpg", width: 800, height: 800, alt: "Lolomaths", type: "image/jpeg" },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      site: "@DiambraApp",
-      creator: "@DiambraApp",
-      title: "Diambra",
+      site: "@Lolomaths",
+      creator: "@Lolomaths",
+      title: "Lolomaths",
       description: "🔮 Jeu.",
       images: ["/twitter-image.jpg"],
     },
@@ -42,7 +42,7 @@ export function getRootMetadata() {
       other: [{ rel: "mask-icon", url: "/safari-pinned-tab.svg", color: "#8b5cf6" }],
     },
     manifest: "/site.webmanifest",
-    appleWebApp: { capable: true, title: "Diambra", statusBarStyle: "black-translucent" as const },
+    appleWebApp: { capable: true, title: "Lolomaths", statusBarStyle: "black-translucent" as const },
     other: { "mobile-web-app-capable": "yes", "apple-mobile-web-app-capable": "yes" },
   };
 }

@@ -2,9 +2,18 @@
 import Loader from '@/app/loading';
 import { useAuthStore } from '@/lib/store/auth.store';
 import {
-  ArrowRight, Brain, ChevronRight, Gamepad2, Grid, Info, MousePointerClick, 
-  Rocket, TrophyIcon, Zap, Calculator, Award, Target, BookOpen, 
-  BarChart, Star, Crown, AlertCircle
+  AlertCircle,
+  ArrowRight,
+  Award,
+  BookOpen,
+  Brain,
+  Calculator,
+  ChevronRight, Gamepad2,
+  Info,
+  Rocket,
+  Star,
+  Target,
+  Zap
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
@@ -73,7 +82,7 @@ function BonusCard({ icon, title, value, color = "purple" }: { icon: React.React
     green: "from-green-50 to-green-100 text-green-700",
     orange: "from-orange-50 to-orange-100 text-orange-700",
   };
-  
+
   const bgClass = colorClasses[color as keyof typeof colorClasses] || colorClasses.purple;
 
   return (
@@ -101,7 +110,7 @@ export function WelcomePageClientContent() {
   const { user } = useAuthStore();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-   useEffect(() => {
+  useEffect(() => {
     if (user && user.secretCode) {
       setIsRedirecting(true);
       router.replace('/star/profil');
@@ -113,8 +122,7 @@ export function WelcomePageClientContent() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-white via-purple-50/30 to-indigo-50/50 overflow-x-hidden">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-        
-        {/* Header */}
+
         <section className="text-center reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700">
           <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 bg-clip-text text-transparent">
             LOLOMATHS
@@ -156,33 +164,33 @@ export function WelcomePageClientContent() {
             <p className="text-gray-500 mt-2">Placez votre première combinaison depuis la case &apos;Départ&apos; en respectant ces 4 règles élémentaires</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Pill 
-              icon={<div className="text-xl font-bold">1,3,5</div>} 
-              title="Alternance des nombres" 
-              desc="Pas de juxtaposition de deux pions de nombre." 
+            <Pill
+              icon={<div className="text-xl font-bold">1,3,5</div>}
+              title="Alternance des nombres"
+              desc="Pas de juxtaposition de deux pions de nombre."
               tooltip="Les nombres doivent être séparés par des opérateurs"
-              delay={0} 
+              delay={0}
             />
-            <Pill 
-              icon={<div className="text-xl font-bold">+ − × ÷</div>} 
-              title="Alternance des opérateurs" 
-              desc="Pas de juxtaposition de deux pions d'opérateur." 
+            <Pill
+              icon={<div className="text-xl font-bold">+ − × ÷</div>}
+              title="Alternance des opérateurs"
+              desc="Pas de juxtaposition de deux pions d'opérateur."
               tooltip="Les opérateurs doivent être séparés par des nombres"
-              delay={50} 
+              delay={50}
             />
-            <Pill 
-              icon={<div className="text-xl">🚫</div>} 
-              title="Fermeture propre" 
-              desc="Pas de mise d'un pion d'opérateur en bout de combinaison." 
+            <Pill
+              icon={<div className="text-xl">🚫</div>}
+              title="Fermeture propre"
+              desc="Pas de mise d'un pion d'opérateur en bout de combinaison."
               tooltip="Une combinaison doit commencer et finir par un nombre"
-              delay={100} 
+              delay={100}
             />
-            <Pill 
-              icon={<div className="text-xl">📍</div>} 
-              title="Emplacement unique" 
-              desc="Pas de superposition de pions sur la même case." 
+            <Pill
+              icon={<div className="text-xl">📍</div>}
+              title="Emplacement unique"
+              desc="Pas de superposition de pions sur la même case."
               tooltip="Chaque case ne peut contenir qu'un seul pion"
-              delay={150} 
+              delay={150}
             />
           </div>
         </section>
@@ -229,41 +237,41 @@ export function WelcomePageClientContent() {
             <p className="text-gray-500 mt-2">Le vocabulaire essentiel pour bien comprendre le plateau et vos pièces.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Pill 
-              icon={<div className="text-xl font-bold">+ − × ÷</div>} 
-              title="Opérateurs" 
-              desc="Signes d'Addition (+), Soustraction (−), Multiplication (×) et Division (÷)." 
-              delay={0} 
+            <Pill
+              icon={<div className="text-xl font-bold">+ − × ÷</div>}
+              title="Opérateurs"
+              desc="Signes d'Addition (+), Soustraction (−), Multiplication (×) et Division (÷)."
+              delay={0}
             />
-            <Pill 
-              icon={<div className="text-xl">🎯</div>} 
-              title="Plateau" 
-              desc="Cases comportant des nombres et une case 'Départ'." 
-              delay={50} 
+            <Pill
+              icon={<div className="text-xl">🎯</div>}
+              title="Plateau"
+              desc="Cases comportant des nombres et une case 'Départ'."
+              delay={50}
             />
-            <Pill 
-              icon={<div className="text-xl">🔢</div>} 
-              title="Pions de nombre" 
-              desc="Pions marqués de nombres (6 pions par jeu)." 
-              delay={100} 
+            <Pill
+              icon={<div className="text-xl">🔢</div>}
+              title="Pions de nombre"
+              desc="Pions marqués de nombres (6 pions par jeu)."
+              delay={100}
             />
-            <Pill 
-              icon={<div className="text-xl">➗</div>} 
-              title="Pions d'opérateur" 
-              desc="Pions marqués d'opérateurs (4 pions par jeu)." 
-              delay={150} 
+            <Pill
+              icon={<div className="text-xl">➗</div>}
+              title="Pions d'opérateur"
+              desc="Pions marqués d'opérateurs (4 pions par jeu)."
+              delay={150}
             />
-            <Pill 
-              icon={<div className="text-xl">📊</div>} 
-              title="Nombres du plateau" 
-              desc="Nombres inscrits dans les cases du plateau." 
-              delay={200} 
+            <Pill
+              icon={<div className="text-xl">📊</div>}
+              title="Nombres du plateau"
+              desc="Nombres inscrits dans les cases du plateau."
+              delay={200}
             />
-            <Pill 
-              icon={<div className="text-xl">🧩</div>} 
-              title="Combinaison de pions" 
-              desc="Agencement (en ligne ou colonne) de pion(s) de nombre et d'opérateur. Débute et finit par un pion de nombre." 
-              delay={250} 
+            <Pill
+              icon={<div className="text-xl">🧩</div>}
+              title="Combinaison de pions"
+              desc="Agencement (en ligne ou colonne) de pion(s) de nombre et d'opérateur. Débute et finit par un pion de nombre."
+              delay={250}
             />
           </div>
         </section>
@@ -276,7 +284,7 @@ export function WelcomePageClientContent() {
               📊 Système de notation & Bonus
             </h2>
           </div>
-          
+
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Note de base */}
             <div className="bg-white rounded-2xl p-6 border border-purple-100 shadow-sm">

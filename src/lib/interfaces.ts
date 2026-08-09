@@ -129,11 +129,10 @@ export interface Consultation {
   price: number;
   createdAt: string;
   updatedAt: string;
-  combinaison: string;
   timeSpent: string;
   idjeu: string | GameConfiguration;
   edition: any;
-  nombredevues:number;
+  nombredevues: number;
   [key: string]: unknown;
 }
 
@@ -386,14 +385,6 @@ export interface Case {
   mode?: boolean;
 }
 
-export interface MenuItem {
-  title: string;
-  icon: React.ReactNode;
-  tpsglobal?: number;
-  color: string;
-  gradient?: string;
-}
-
 export interface TimeLeft {
   days: number;
   hours: number;
@@ -450,7 +441,6 @@ export interface CompetitionInfo {
   punChangeCount: number;
 }
 
-
 export interface GameCompletionState {
   isCompletelyFinished: boolean;
   isWaitingForProclamation: boolean;
@@ -464,8 +454,6 @@ export interface GameState {
   countdown: number | null;
 }
 
-
-// types/tournament.ts
 export interface TournamentSummary {
   id: string;
   tournamentNumber: string;
@@ -481,16 +469,11 @@ export interface TournamentSummary {
   totalScore?: number | 'xxx';
 }
 
-
-// types/game.ts
-
-/** Direction de déplacement sur le plateau */
 export enum Direction {
   HORIZONTAL = 'HORIZONTAL',
   VERTICAL = 'VERTICAL',
 }
 
-/** Niveau de difficulté (ancien Dtfil) */
 export enum DifficultyLevel {
   MINIME = 'MINIME', // Min
   CADET = 'CADET',   // Cad
@@ -498,7 +481,6 @@ export enum DifficultyLevel {
   SENIOR = 'SENIOR', // Sen
 }
 
-/** État d'une case sur le plateau (ancien Etca) */
 export enum CellState {
   EMPTY = 'EMPTY',       // Cre (Creux / Vide)
   LOCKED = 'LOCKED',     // Lo
@@ -506,7 +488,6 @@ export enum CellState {
   SELECTED = 'SELECTED', // Choi
 }
 
-/** Informations de score d'une manche de jeu (ancien Game) */
 export interface GameScore {
   baseScore: number;     // notedebase
   result: number;        // result
@@ -516,22 +497,12 @@ export interface GameScore {
   combination?: string;  // combine
 }
 
-/** Structure de configuration d'une grille/matrice de jeu (ancien Matrix) */
 export interface GameMatrix {
   name: string;          // nom
   cells: string[];       // cases
   numbers: string[];     // nbre
   operators: string[];   // oper
 }
-
-/** Item de menu d'accueil ou de sélection (ancien Menumo) */
-export interface MenuItem {
-  title: string;
-  description: string;
-  iconUrl?: string;
-}
-
-// types/match.ts
 
 export interface MatchModel {
   id: string;             // idpartie (MongoDB ObjectId sous forme de string)
@@ -547,7 +518,6 @@ export interface MatchModel {
   score?: string;         // score
 }
 
-/** Factory function pour initialiser une nouvelle partie */
 export function createMatch(
   tournamentId: string,
   orderIndex: number,
@@ -564,16 +534,12 @@ export function createMatch(
   };
 }
 
-// types/game.ts (Extrait / Complément)
-
 export enum MovementSense {
   UP = 'UP',
   DOWN = 'DOWN',
   LEFT = 'LEFT',
   RIGHT = 'RIGHT',
 }
-
-// types/theme.ts
 
 export interface BoardTheme {
   id: number;                          // numero
@@ -588,9 +554,8 @@ export interface BoardTheme {
   hoverPawnBgColor: string;            // coulfondpionover
 }
 
-/** Utility pour convertir le JSON Android brut vers notre type typé */
 export function parseTheme(rawJson: Record<string, unknown>): BoardTheme {
-  const getStringColor = (key: string, fallback: string) => 
+  const getStringColor = (key: string, fallback: string) =>
     typeof rawJson[key] === 'string' && rawJson[key] ? (rawJson[key] as string) : fallback;
 
   return {
@@ -607,10 +572,6 @@ export function parseTheme(rawJson: Record<string, unknown>): BoardTheme {
   };
 }
 
-
-// types/tournament.ts
-
- 
 export interface TournamentModel {
   id: string;               // idtournoi (MongoDB _id)
   playerName: string;       // nomjoueur (max 20 caractères)
@@ -629,7 +590,6 @@ export interface TournamentModel {
   score?: string;           // score
 }
 
-/** DTO pour la création d'un nouveau tournoi via formulaire / API */
 export interface CreateTournamentDto {
   playerName: string;
   matchTimeLimit: string;
@@ -641,7 +601,6 @@ export interface CreateTournamentDto {
   totalMatches: number;
 }
 
-/** Factory function d'initialisation propre */
 export function createTournament(dto: CreateTournamentDto): Omit<TournamentModel, 'id'> {
   return {
     playerName: dto.playerName.slice(0, 20),
@@ -656,7 +615,7 @@ export function createTournament(dto: CreateTournamentDto): Omit<TournamentModel
     startedAt: new Date(),
   };
 }
- 
+
 export interface TournamentFormState {
   playerName: string;          // njoueur
   tournamentNumber: string;    // numetour
@@ -713,9 +672,7 @@ export const MAIN_MENU_ITEMS: MainMenuItem[] = [
   },
 ];
 
-// Types de données principaux
-//export type StateCase = 'Cre' | 'Pla' | 'Choi' | 'Lo';
- export type SensoryDirection = 'Up' | 'Down' | 'Left' | 'Right';
+export type SensoryDirection = 'Up' | 'Down' | 'Left' | 'Right';
 
 export interface UneCase {
   ncase: number;
@@ -736,8 +693,6 @@ export interface GameResult {
   notedjeu: number;
   combine: string;
 }
-
-
 
 export enum StateCase {
   Cre = 'Cre', // Vide / Disponible

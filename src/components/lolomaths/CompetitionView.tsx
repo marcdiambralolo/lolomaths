@@ -2,7 +2,6 @@ import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import React, { useState } from 'react';
 import { Fdialog } from './Fdialog';
 import { Board } from './game/Board';
-import { TileRack } from './game/TileRack';
  
 
 export const CompetitionView: React.FC = () => {

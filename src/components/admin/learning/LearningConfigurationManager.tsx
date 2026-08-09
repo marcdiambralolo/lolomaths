@@ -108,7 +108,6 @@ function ConfigCard({ config, onEdit, onDelete, onEnd }: {
         <div className="p-5 md:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex-1">
-              {/* Badges */}
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <motion.div whileHover={{ scale: 1.03 }} className={`rounded-full border px-3 py-1 text-xs font-bold ${status.bg} ${status.text} ${status.border}`}>
                   <span className="mr-1">{status.icon}</span>

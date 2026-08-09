@@ -1,7 +1,7 @@
   {
-    "name": "DIAMBRA",
-    "short_name": "DIAMBRA",
-    "description": "DIAMBRA PUZZLE",
+    "name": "LOLOMATHS",
+    "short_name": "LOLOMATHS",
+    "description": "LOLOMATHS",
     "start_url": "/",
     "display": "standalone",
     "orientation": "portrait",

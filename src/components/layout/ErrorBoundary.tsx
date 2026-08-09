@@ -221,7 +221,7 @@ const LoadingFallbackComponent = () => {
               WebkitTextFillColor: 'transparent'
             }}
           >
-          DIAMBRA
+          LOLOMATHS
           </motion.h2>
 
           <motion.p
