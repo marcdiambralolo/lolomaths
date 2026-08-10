@@ -131,7 +131,8 @@ export default function AboutPageClient() {
           <h3 className="text-balance text-2xl font-black tracking-tight bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent sm:text-6xl">
             LOLOMATHS
           </h3>
-          <p className="mt-2 text-sm text-purple-600 font-semibold sm:text-base">Le jeu de calcul stratégique</p>
+          <p className="mt-2 text-sm text-purple-600 font-semibold sm:text-base">Réveillons le génie qui sommeille en nous.
+          </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <CacheLink href="/star/profil" className={btnPrimary}>
               🎯 Jouer maintenant ! <ChevronRight className="h-4 w-4" />
@@ -352,7 +353,7 @@ export default function AboutPageClient() {
               <Gamepad2 className="w-4 h-4" />
               <span className="text-xs font-bold uppercase">Prêt à relever le défi ?</span>
             </div>
-            <h2 className="text-2xl font-black">Commencez votre première partie !</h2>
+            <h2 className="text-2xl font-black">Commencez votre première competition !</h2>
             <CacheLink href="/star/profil" className="inline-flex items-center gap-2 mt-5 px-6 py-3 bg-white text-purple-700 rounded-2xl font-bold hover:shadow-lg transition-all hover:scale-105">
               Jouer maintenant <ChevronRight className="h-4 w-4" />
             </CacheLink>

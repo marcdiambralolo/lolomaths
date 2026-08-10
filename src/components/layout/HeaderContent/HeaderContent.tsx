@@ -225,27 +225,28 @@ export function ScrollProgressBar({ scrollY, progressWidth }: ScrollProgressBarP
 
 export function HeaderLogo() {
   return (
-    <CacheLink href="/star/profil" className="flex items-center gap-2.5 group">
+    <CacheLink href="/star/profil" className="flex items-center gap-3 group">
       <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
-        className="relative flex items-center justify-center overflow-hidden py-1 px-2 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm"
+        className="relative flex items-center gap-3"
       >
-        {/* Conteneur adapté aux proportions rectangulaires (128x36) */}
-        <div className="relative h-9 w-36 sm:h-12 sm:w-48 flex items-center justify-center">
+        <div className="relative h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center flex-shrink-0">
           <Image
             src="/logo.png"
-            alt="Lolomaths"
+            alt="Lolomaths Logo"
             width={986}
             height={241}
             className="w-full h-full object-contain"
             priority
           />
         </div>
-
-        {/* Effet d'éclat lumineux discret au survol (Glow) */}
-        <div className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-[#2E5AA6]/20 via-[#4F83D1]/20 to-[#244A8A]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md" />
+        <div className="flex items-center">
+          <span className="text-lg sm:text-xl font-black tracking-tight">
+            <span className="text-blue-600">Lolomaths</span>
+          </span>
+        </div>
       </motion.div>
     </CacheLink>
   );

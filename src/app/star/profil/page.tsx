@@ -1,4 +1,4 @@
-import HomePage from '@/components/lolomaths/accueil/HomePage';
+import HomePage from '@/components/menu/HomePage';
 
 export default function Home() {
 

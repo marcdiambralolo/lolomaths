@@ -61,8 +61,8 @@ function ConsultationsEmpty({ edition }: ConsultationsEmptyProps) {
 
             <p className="text-white/70 mb-8 max-w-md mx-auto">
                 {isEditionActive
-                    ? "Vous n'avez pas encore participé à cette édition. Lancez votre première partie et entrez dans l'aventure !"
-                    : "Vous n'avez pas encore joué dans cette édition. Revenez lors de la prochaine édition pour participer."
+                    ? "Vous n'avez pas encore participé à cette édition. Lancez votre première competition !"
+                    : "Vous n'avez pas encore joué dans cette competition. Revenez lors de la prochaine competition pour participer."
                 }
             </p>
 

@@ -651,24 +651,24 @@ export interface MainMenuItem {
 export const MAIN_MENU_ITEMS: MainMenuItem[] = [
   {
     id: 'nouveau',
-    title: 'Nouveau',
-    description: 'Jeu Lolomaths - Lancer un tournoi ou un match',
+    title: 'Jouer',
+    description: 'Participer à la competition',
     href: '/tournoi/nouveau',
     icon: 'play-circle',
-  },
-  {
-    id: 'scores',
-    title: 'Scores',
-    description: 'Lolomaths Analytics - Consulter vos statistiques',
-    href: '/scores',
-    icon: 'chart-bar',
   },
   {
     id: 'aide',
     title: 'Aide',
     description: 'Apprendre Lolomaths - Règles et tutoriels',
-    href: '/star/lolomaths/help',
+    href: '/help',
     icon: 'question-mark-circle',
+  },
+  {
+    id: 'scores',
+    title: 'Scores',
+    description: 'Consulter vos statistiques',
+    href: '/scores',
+    icon: 'chart-bar',
   },
 ];
 
