@@ -2,14 +2,12 @@ import { useAuth } from '@/lib/hooks';
 import { Role } from '@/lib/interfaces';
 import { useAuthStore } from '@/lib/store/auth.store';
 import { useScroll, useTransform } from 'framer-motion';
-import { LayoutDashboard, MessageCircle, Stars, User, Wallet } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { LayoutDashboard, Stars, User, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export function useHeaderState() {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const { user: userstore } = useAuthStore();
 
@@ -83,10 +81,6 @@ export function useHeaderState() {
     setMobileMenuOpen(false);
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  }, [theme, setTheme]);
-
   const userBadge = useMemo(() => {
     if (hasRole(Role.ADMIN) || hasRole(Role.SUPER_ADMIN)) {
       return { text: 'Admin ⚡', label: 'Admin' };
@@ -106,8 +100,8 @@ export function useHeaderState() {
   const hasMountedUser = mounted && Boolean(user);
 
   return {
-    handleLogout, setMobileMenuOpen, setShowUserMenu, closeMobileMenu, toggleTheme,
-    user: user || userstore, theme, mounted, mobileMenuOpen, isScrolled, showUserMenu,
+    handleLogout, setMobileMenuOpen, setShowUserMenu, closeMobileMenu,
+    user: user || userstore, mounted, mobileMenuOpen, isScrolled, showUserMenu,
     scrollY, progressWidth, userBadge, navItems, hasMountedUser,
   };
 }

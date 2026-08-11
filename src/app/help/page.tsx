@@ -1,4 +1,4 @@
-import HelpPage from '@/components/lolomaths/aide/HelpPage';
+import HelpPage from '@/components/aide/HelpPage';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

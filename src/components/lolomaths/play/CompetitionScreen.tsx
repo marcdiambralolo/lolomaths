@@ -3,10 +3,10 @@ import { useChrono } from '@/hooks/lolomaths/useChrono';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { isStartCaseCovered, getPlacedPions, hasLockedPionInSequence } from '@/components/lolomaths/game/competitionEngine';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Fdialog } from '../Fdialog';
+import { Fdialog } from '../game/Fdialog';
 import { OplaGrid } from '../game/OplaGrid';
-import { TileRack } from '../TileRack';
 import { StateCase } from '@/lib/interfaces';
+import { TileRack } from '../game/TileRack';
 
 export const CompetitionScreen: React.FC = () => {
   const {

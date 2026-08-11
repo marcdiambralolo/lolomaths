@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import AboutPage from "@/components/about/AboutPage";
 
 export const metadata: Metadata = {
-    title: "À propos — Lolomaths",
+    title: "À propos de Lolomaths",
     description:
         "Lolomaths est un jeu.",
     alternates: { canonical: "/a-propos" },

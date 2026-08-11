@@ -16,13 +16,13 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["games", "entertainment"],
     icons: [
       {
-        src: "/icons/icon.svg",
+        src: "/icon.svg",
         sizes: "any",
         type: "image/svg+xml",
         purpose: "any",
       },
       {
-        src: "/icons/icon.svg",
+        src: "/icon.svg",
         sizes: "512x512",
         type: "image/svg+xml",
         purpose: "maskable",

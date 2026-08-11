@@ -3,8 +3,8 @@
 import React from 'react';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { StateCase } from '@/lib/interfaces';
-import { isOperateur } from './game/competitionEngine';
- 
+import { isOperateur } from './competitionEngine';
+  
 export const TileRack: React.FC = () => {
   const { pions, handleCaseClick } = useCompetitionStore();
 
