@@ -1,4 +1,4 @@
-import { CompetitionScreen } from '@/components/lolomaths/play/CompetitionScreen';
+import { CompetitionScreen } from '@/components/lolomaths/game/CompetitionScreen';
 
 export default function Home() {
 

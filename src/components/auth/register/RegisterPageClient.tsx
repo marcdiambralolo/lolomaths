@@ -169,6 +169,4 @@ const RegisterForm: React.FC = () => {
   );
 };
 
-export default function RegisterPageClient() {
-  return (<RegisterForm />);
-}
+export default RegisterForm;

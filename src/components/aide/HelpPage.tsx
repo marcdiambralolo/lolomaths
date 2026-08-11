@@ -10,11 +10,11 @@ import PageHeader from './components/PageHeader';
 import ScoringSection from './components/ScoringSection';
 
 export default function HelpPage() {
+
     return (
         <main className="w-full max-w-4xl mx-auto bg-white pb-20">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
                 <BackButton />
-
                 <PageHeader />
 
                 <div className="space-y-8">

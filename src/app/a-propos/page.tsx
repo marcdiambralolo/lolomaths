@@ -4,7 +4,7 @@ import AboutPage from "@/components/about/AboutPage";
 export const metadata: Metadata = {
     title: "À propos de Lolomaths",
     description:
-        "Lolomaths est un jeu.",
+        "Lolomaths est un jeu en ligne",
     alternates: { canonical: "/a-propos" },
     openGraph: {
         title: "À propos de Lolomaths",

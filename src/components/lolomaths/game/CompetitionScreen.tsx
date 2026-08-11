@@ -3,10 +3,10 @@ import { useChrono } from '@/hooks/lolomaths/useChrono';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { isStartCaseCovered, getPlacedPions, hasLockedPionInSequence } from '@/components/lolomaths/game/competitionEngine';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Fdialog } from '../game/Fdialog';
-import { OplaGrid } from '../game/OplaGrid';
+import { Fdialog } from './Fdialog';
+import { OplaGrid } from './OplaGrid';
 import { StateCase } from '@/lib/interfaces';
-import { TileRack } from '../game/TileRack';
+import { TileRack } from './TileRack';
 
 export const CompetitionScreen: React.FC = () => {
   const {
@@ -28,8 +28,7 @@ export const CompetitionScreen: React.FC = () => {
   const [showHelp, setShowHelp] = useState<boolean>(false);
   const [gameHistory, setGameHistory] = useState<Array<{ score: number; combination: string }>>([]);
 
-  // Chronomètre avec gestion du temps global
-  const chrono = useChrono({
+   const chrono = useChrono({
     initialSeconds: 300, // Temps par défaut (sera remplacé par la config)
     autoStart: false,
     onTimeUp: () => {
@@ -37,10 +36,8 @@ export const CompetitionScreen: React.FC = () => {
     },
   });
 
-  // Initialisation du jeu
-  useEffect(() => {
-    // Charger la configuration depuis le localStorage ou utiliser les valeurs par défaut
-    const savedConfig = localStorage.getItem('lolomaths_config');
+   useEffect(() => {
+     const savedConfig = localStorage.getItem('lolomaths_config');
     let numbers = ['12', '5', '3', '20', '8', '2'];
     let operators = ['+', '-', '*', '/'];
     let niveau = 3; // Dtfil.Sen par défaut
@@ -168,26 +165,14 @@ export const CompetitionScreen: React.FC = () => {
 
   return (
     <div className="w-full mx-auto max-w-md mt-2 flex flex-col select-none">
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col">
         {!showResultZone ? (
-          <div id="zcom" className="flex flex-col gap-2">
-            {/* En-tête avec infos match */}
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-2 flex justify-between items-center text-xs text-slate-400">
-              <span>Match #{cnbjeu + 1}</span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                {chrono.isRunning ? 'En cours' : 'Pause'}
-              </span>
-              <span>Score: {scoreTotal} pts</span>
-            </div>
+          <div id="zcom" className="flex flex-col gap-3">
 
-            {/* Plateau de jeu */}
             <OplaGrid />
 
-            {/* Porte-pions */}
             <TileRack />
 
-            {/* Messages d'aide */}
             {helpMessages.length > 0 && (
               <div className="p-2 text-center text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-1">
                 {helpMessages.map((msg, idx) => (
@@ -196,7 +181,6 @@ export const CompetitionScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Contrôles */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
               <div className="font-mono text-xs font-bold text-slate-400 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
                 Jeu #{cnbjeu + 1}
@@ -220,7 +204,6 @@ export const CompetitionScreen: React.FC = () => {
               </button>
             </div>
 
-            {/* Scores */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center">
                 <span className="text-xs text-slate-500 block uppercase font-medium">Score Total</span>
@@ -242,7 +225,6 @@ export const CompetitionScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Historique rapide */}
             {gameHistory.length > 0 && (
               <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-2 max-h-16 overflow-y-auto">
                 <div className="flex flex-wrap gap-1 text-[10px] text-slate-400">
@@ -255,10 +237,8 @@ export const CompetitionScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Directions de validation */}
             {isStartCovered && renderDirectionButtons()}
 
-            {/* Switch d'aide */}
             <div className="flex justify-end p-2">
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 cursor-pointer">
                 <span>Aide visuelle</span>
@@ -272,12 +252,11 @@ export const CompetitionScreen: React.FC = () => {
             </div>
           </div>
         ) : (
-          // Écran de fin de match
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col gap-6 text-center shadow-2xl max-w-lg mx-auto my-auto">
+          <div className="p-6 flex flex-col gap-6 text-center shadow-2xl max-w-lg mx-auto my-auto">
             <h3 className="text-2xl font-black text-amber-400">🏆 Match Terminé !</h3>
-            
+
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-slate-300 text-sm">
-              {chrono.isFinished 
+              {chrono.isFinished
                 ? '⏰ Temps écoulé ! Bravo pour votre participation.'
                 : '✅ Match validé avec succès !'}
             </div>
@@ -316,7 +295,7 @@ export const CompetitionScreen: React.FC = () => {
                       if (config.numbers) numbers = config.numbers;
                       if (config.operators) operators = config.operators;
                       if (config.niveau !== undefined) niveau = config.niveau;
-                    } catch (e) {}
+                    } catch (e) { }
                   }
                   initGame(numbers, operators, niveau);
                   chrono.reset(300);
@@ -340,7 +319,6 @@ export const CompetitionScreen: React.FC = () => {
         )}
       </div>
 
-      {/* Dialogue de validation */}
       <Fdialog
         isOpen={selectedDirectionIndex !== null}
         gameResult={selectedDirectionIndex !== null ? gameResults[selectedDirectionIndex] : null}

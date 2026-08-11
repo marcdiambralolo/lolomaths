@@ -7,16 +7,16 @@ function Pill({ icon, title, desc, tooltip, delay = 0 }: { icon: React.ReactNode
 
     return (
         <div
-            className="group relative flex items-start gap-3 rounded-2xl border border-purple-100 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+            className="group relative flex items-start gap-4 rounded-2xl border border-purple-100 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
             style={{ transitionDelay: `${delay}ms` }}
         >
-            <div className="mt-0.5 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-purple-100 to-indigo-100 text-purple-700 group-hover:scale-110 transition-transform">
+            <div className="mt-0.5 grid h-30 w-30 place-items-center rounded-2xl bg-gradient-to-br from-purple-100 to-indigo-100 text-purple-700 group-hover:scale-110 transition-transform">
                 {icon}
             </div>
 
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                    <div className="text-[12px] font-bold text-purple-900">{title}</div>
+                    <div className="text-[13px] font-bold text-purple-900">{title}</div>
                     {tooltip && (
                         <button
                             onMouseEnter={() => setShowTooltip(true)}
