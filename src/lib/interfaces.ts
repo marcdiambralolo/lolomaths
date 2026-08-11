@@ -653,7 +653,7 @@ export const MAIN_MENU_ITEMS: MainMenuItem[] = [
     id: 'nouveau',
     title: 'Jouer',
     description: 'Participer à la competition',
-    href: '/tournoi/nouveau',
+    href: '/star/play',
     icon: 'play-circle',
   },
   {
@@ -667,7 +667,7 @@ export const MAIN_MENU_ITEMS: MainMenuItem[] = [
     id: 'scores',
     title: 'Scores',
     description: 'Consulter vos statistiques',
-    href: '/scores',
+    href: '/star/scores',
     icon: 'chart-bar',
   },
 ];
