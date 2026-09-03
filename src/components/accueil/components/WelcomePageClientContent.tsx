@@ -1,8 +1,7 @@
 "use client";
 import Loader from '@/app/loading';
-import { useAuthStore } from '@/lib/store/auth.store';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useScrollReveal } from '@/hooks/about/useScrollReveal';
+import { useAuthRedirect } from '@/hooks/accueil/useAuthRedirect';
 import CallToAction from './CallToAction';
 import ChainRuleWarning from './ChainRuleWarning';
 import GameFlow from './GameFlow';
@@ -11,39 +10,6 @@ import GameObjective from './GameObjective';
 import GameRules from './GameRules';
 import ScoringSystem from './ScoringSystem';
 import WelcomeHeader from './WelcomeHeader';
-
-const useScrollReveal = () => {
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add("opacity-100", "translate-y-0");
-                        entry.target.classList.remove("opacity-0", "translate-y-8");
-                    }
-                });
-            },
-            { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
-        );
-        document.querySelectorAll(".reveal-on-scroll").forEach((el) => observer.observe(el));
-        return () => observer.disconnect();
-    }, []);
-};
-
-const useAuthRedirect = () => {
-    const router = useRouter();
-    const { user } = useAuthStore();
-    const [isRedirecting, setIsRedirecting] = useState(false);
-
-    useEffect(() => {
-        if (user && user.secretCode) {
-            setIsRedirecting(true);
-            router.replace('/star/profil');
-        }
-    }, [user, router]);
-
-    return isRedirecting;
-};
 
 export default function WelcomePageClientContent() {
     const isRedirecting = useAuthRedirect();

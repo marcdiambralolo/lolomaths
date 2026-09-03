@@ -4,7 +4,7 @@ export const LEXICON_DATA: LexiconItem[] = [
     { term: 'Opérateurs', definition: 'Ce sont les signes d\'Addition (+), de Soustraction (-), de Multiplication (×) et de Division (÷).' },
     { term: 'Plateau', definition: 'Le plateau est constitué de cases comportant des nombres et une case "Départ".' },
     { term: 'Pions de nombre', definition: 'Ce sont les pions marqués de nombres (6 pions par jeu).' },
-    { term: 'Pions d\'opérateur', definition: 'Ce sont les pions marqués d\'opérateurs (4 pions par jeu).' },
+    { term: 'Pions d\'opérateur', definition: 'Ce sont les pions marqués d\'opérateurs (6 pions par jeu).' },
     { term: 'Nombres du plateau', definition: 'Ce sont les nombres inscrits dans les cases du plateau.' },
     { term: 'Combinaison de pions', definition: 'C\'est l\'agencement (en ligne ou en colonne) sur le plateau de pion(s) de nombre et de pion(s) d\'opérateur. Une combinaison débute et finit par un pion de nombre.' },
     { term: 'Jeu', definition: 'C\'est la combinaison de pions validée.' },

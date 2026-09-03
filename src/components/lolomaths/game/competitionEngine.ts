@@ -2,7 +2,135 @@ import { UneCase, StateCase, Sens, Dtfil, GameResult } from "@/lib/interfaces";
 
 export const GRID_ROWS = 17;
 export const GRID_COLS = 13;
-export const START_CASE_INDEX = 110; // Case de départ centrale
+export const START_CASE_INDEX = 110; // Case de départ centrale (Ligne 8, Col 6)
+/**
+ * Mélange déterministe d'une liste (pioche de jetons / tirage initial)
+ * Transposition stricte de radlist(list, seed) Kotlin.
+ *
+ * @param list - Liste initiale des jetons à mélanger
+ * @param seed - Numéro de match (numeromat) ou graine de tirage
+ * @returns La liste mélangée de façon déterministe
+ */
+export function radlist(list: string[], seed: number | string): string[] {
+  if (!list || list.length === 0) return [];
+
+  const numericSeed = typeof seed === 'string' ? parseInt(seed, 10) || 12345 : seed;
+  const rng = new JavaRandom(numericSeed);
+  
+  const use = new Array(list.length).fill(false);
+  const lra: string[] = [];
+
+  // Reconstitution exacte de la boucle while / break de Kotlin
+  while (lra.length < list.length) {
+    while (true) {
+      const compteur = Math.round(rng.nextDouble() * (list.length - 1));
+      
+      // Si la position a déjà été piochée, on casse la boucle interne pour re-tirer
+      if (use[compteur]) break;
+
+      if (compteur !== list.length) {
+        use[compteur] = true;
+        lra.push(list[compteur]);
+      }
+    }
+  }
+
+  return lra;
+}
+
+/**
+ * Distribution initiale de la main du joueur (ex: 7 jetons)
+ */
+export function generateInitialRack(fullPool: string[], numeromat: string, count: number = 7): {
+  rack: string[];
+  remainingPool: string[];
+} {
+  const shuffledPool = radlist(fullPool, numeromat);
+  const rack = shuffledPool.slice(0, count);
+  const remainingPool = shuffledPool.slice(count);
+
+  return {
+    rack,
+    remainingPool
+  };
+}
+// ============================================================
+// 1. GENERATEUR PSEUDO-ALEATOIRE DÉTERMINISTE (JavaRandom LCG 48-bit)
+// ============================================================
+
+export class JavaRandom {
+  private seed: number;
+
+  constructor(seed: number) {
+    // JavaRandom utilise un masque 48-bit
+    const multiplier = 0x5DEECE66D;
+    const addend = 0xB;
+    const mask = 0xFFFFFFFFFFFF; // 2^48 - 1
+    
+    // Simulation du XOR avec le multiplier en utilisant des opérations 64-bit
+    // On utilise des nombres JavaScript (double 64-bit) avec des précautions
+    this.seed = (seed ^ multiplier) & mask;
+  }
+
+  private next(bits: number): number {
+    const multiplier = 0x5DEECE66D;
+    const addend = 0xB;
+    const mask = 0xFFFFFFFFFFFF; // 2^48 - 1
+    
+    // Simulation 64-bit de: seed = (seed * multiplier + addend) & mask
+    // En JavaScript, on doit simuler manuellement pour éviter les problèmes de précision
+    const high = Math.floor(this.seed / 0x100000000);
+    const low = this.seed & 0xFFFFFFFF;
+    
+    // Multiplication 64-bit simulée
+    const multHigh = Math.floor(multiplier / 0x100000000);
+    const multLow = multiplier & 0xFFFFFFFF;
+    
+    const resultLow = low * multLow;
+    const resultHigh = high * multLow + low * multHigh + Math.floor(resultLow / 0x100000000);
+    const result = ((resultHigh & 0xFFFF) * 0x100000000 + (resultLow & 0xFFFFFFFF)) + addend;
+    
+    this.seed = (result & mask) >>> 0;
+    return this.seed >>> (48 - bits);
+  }
+
+  public nextDouble(): number {
+    const high = this.next(26);
+    const low = this.next(27);
+    const combined = (high << 27) + low;
+    return combined / 9007199254740992; // 2^53
+  }
+}
+
+// Version simplifiée utilisant BigInt (pour ES2020+)
+// Si vous pouvez utiliser ES2020+, décommentez ceci et commentez la version ci-dessus
+/*
+export class JavaRandom {
+  private seed: bigint;
+
+  constructor(seed: number) {
+    const multiplier = 0x5DEECE66Dn;
+    const addend = 0xBn;
+    const mask = (1n << 48n) - 1n;
+    this.seed = (BigInt(seed) ^ multiplier) & mask;
+  }
+
+  private next(bits: number): number {
+    const multiplier = 0x5DEECE66Dn;
+    const addend = 0xBn;
+    const mask = (1n << 48n) - 1n;
+    this.seed = (this.seed * multiplier + addend) & mask;
+    return Number(this.seed >> BigInt(48 - bits));
+  }
+
+  public nextDouble(): number {
+    const high = BigInt(this.next(26));
+    const low = BigInt(this.next(27));
+    const combined = (high << 27n) + low;
+    return Number(combined) / Math.pow(2, 53);
+  }
+}
+*/
 
 export function isOperateur(txt: string): boolean {
   return ['+', '-', '*', '/'].includes(txt);
@@ -14,36 +142,90 @@ export function isOperateur(txt: string): boolean {
 export function isStartCaseCovered(flatGrid: UneCase[]): boolean {
   const startCase = flatGrid.find((c) => c.ncase === START_CASE_INDEX);
   if (!startCase) return false;
-  // La case de départ est couverte s'il y a un pion actif (Pla/Choi) ou déjà verrouillé (Lo)
-  return startCase.etat === StateCase.Pla || startCase.etat === StateCase.Choi || startCase.etat === StateCase.Lo;
+  return (
+    startCase.etat === StateCase.Pla ||
+    startCase.etat === StateCase.Choi ||
+    startCase.etat === StateCase.Lo
+  );
 }
 
 /**
- * Génère un nombre aléatoire entre 0 et 639 inclus
+ * Génère un nombre aléatoire (Fallback non déterministe)
  */
 export function getRandomBoardNumber(): string {
   return Math.floor(Math.random() * 640).toString();
 }
 
 /**
- * Crée la grille initiale de 17 lignes x 13 colonnes
- * Chaque case contient un chiffre aléatoire de 0 à 639, sauf la case de départ (index 110)
+ * Version simplifiée de la génération aléatoire sans BigInt
  */
-export function createInitialGrid(): UneCase[][] {
+function generateShuffledList(seed: number, referenceList: string[]): string[] {
+  const result: string[] = [];
+  const used = new Array(referenceList.length).fill(false);
+  let currentSeed = seed;
+
+  // Simple générateur aléatoire basé sur un LCG pour éviter BigInt
+  function nextRandom(): number {
+    // Multiplicateur et incrément pour un LCG 32-bit
+    const a = 1103515245;
+    const c = 12345;
+    const m = 0x7FFFFFFF;
+    currentSeed = (currentSeed * a + c) & m;
+    return currentSeed / m;
+  }
+
+  while (result.length < referenceList.length) {
+    const randomIndex = Math.floor(nextRandom() * referenceList.length);
+    if (!used[randomIndex]) {
+      used[randomIndex] = true;
+      result.push(referenceList[randomIndex]);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Crée la grille initiale de 17 lignes x 13 colonnes
+ * Si un numeromat (seed) et listecaseRef sont fournis, la grille est générée de façon
+ * 100% déterministe.
+ */
+export function createInitialGrid(numeromat?: string, listecaseRef?: string[]): UneCase[][] {
+  let lcases: string[] = [];
+
+  if (numeromat && listecaseRef && listecaseRef.length >= GRID_ROWS * GRID_COLS) {
+    const seed = parseInt(numeromat, 10) || 12345;
+    const wl = [...listecaseRef];
+    
+    // Version simplifiée sans BigInt
+    lcases = generateShuffledList(seed, wl);
+
+    // Permutation forcée de la case 'depart' vers l'index central 110
+    const indp = lcases.indexOf('depart');
+    if (indp !== -1) {
+      const tdep = lcases[START_CASE_INDEX];
+      lcases[START_CASE_INDEX] = lcases[indp];
+      lcases[indp] = tdep;
+    }
+  } else {
+    // Fallback de secours si aucune liste de référence n'est fournie
+    for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
+      lcases.push(i === START_CASE_INDEX ? 'depart' : getRandomBoardNumber());
+    }
+  }
+
   const grid: UneCase[][] = [];
   let count = 0;
   for (let j = 0; j < GRID_ROWS; j++) {
     const row: UneCase[] = [];
     for (let i = 0; i < GRID_COLS; i++) {
-      const isStart = count === START_CASE_INDEX;
-      const initialValue = isStart ? '' : getRandomBoardNumber();
-
+      const val = lcases[count] || '';
       row.push({
         ncase: count,
         indi: i,
         indj: j,
-        txt: initialValue,
-        itxt: initialValue,
+        txt: val === 'depart' ? '' : val,
+        itxt: val === 'depart' ? '' : val,
         etat: StateCase.Cre,
         tca: 1
       });
@@ -67,11 +249,13 @@ export function getNextCase(grid: UneCase[][], current: UneCase, direction: Sens
       return grid[current.indj - 1]?.[current.indi] || null;
     case Sens.Down:
       return grid[current.indj + 1]?.[current.indi] || null;
+    default:
+      return null;
   }
 }
 
 // ============================================================
-// NOUVELLES FONCTIONS DE VALIDATION (inspirées du Kotlin)
+// 2. FONCTIONS DE VALIDATION (Transposition Kotlin)
 // ============================================================
 
 /**
@@ -79,39 +263,32 @@ export function getNextCase(grid: UneCase[][], current: UneCase, direction: Sens
  * Équivalent de "justapo" en Kotlin
  */
 export function sontDeMemeType(cellA: UneCase, cellB: UneCase): boolean {
-  const aIsOp = isOperateur(cellA.txt);
-  const bIsOp = isOperateur(cellB.txt);
-  return aIsOp === bIsOp;
+  return isOperateur(cellA.txt) === isOperateur(cellB.txt);
 }
 
 /**
  * Vérifie l'alternance stricte des pions dans une séquence
- * Règle 1: Pas de deux nombres juxtaposés
- * Règle 2: Pas de deux opérateurs juxtaposés
- * Règle 3: La combinaison doit commencer et finir par un nombre (Fermeture propre)
  */
 export function validateAlternance(sequence: UneCase[]): boolean {
   if (sequence.length < 3) return false;
-  
+
   // Doit commencer et finir par un nombre (Fermeture propre)
   if (isOperateur(sequence[0].txt) || isOperateur(sequence[sequence.length - 1].txt)) {
     return false;
   }
-  
+
   // Vérifie l'alternance
   for (let i = 0; i < sequence.length - 1; i++) {
-    // Pas de deux nombres ou deux opérateurs consécutifs
     if (sontDeMemeType(sequence[i], sequence[i + 1])) {
       return false;
     }
   }
-  
+
   return true;
 }
 
 /**
  * Vérifie qu'il n'y a pas de superposition (Règle d'emplacement unique)
- * Équivalent de "!pions.filter(Unecase::place).none { !vt.contains(pioncase(it.indj, it.indi)) }"
  */
 export function validateNoSuperposition(sequence: UneCase[], placedPions: UneCase[]): boolean {
   const usedCells = new Set<number>();
@@ -119,56 +296,61 @@ export function validateNoSuperposition(sequence: UneCase[], placedPions: UneCas
     if (usedCells.has(cell.ncase)) return false;
     usedCells.add(cell.ncase);
   }
-  
-  // Vérifie qu'aucun pion placé n'est en dehors de la séquence
-  // (tous les pions placés doivent être dans la séquence)
+
   for (const pion of placedPions) {
     if (pion.etat === StateCase.Pla || pion.etat === StateCase.Choi) {
-      if (!sequence.some(cell => cell.ncase === pion.ncase)) {
+      if (!sequence.some((cell) => cell.ncase === pion.ncase)) {
         return false;
       }
     }
   }
-  
+
   return true;
 }
 
 /**
- * Vérifie la règle d'enchaînement
- * Après le premier jeu, tous les coups suivants doivent comporter au moins un pion Lo
- * Équivalent de "cnbjeu != 0 && !vh.any { it.etat == Lo }"
+ * Vérifie la règle d'enchaînement (après le premier jeu)
  */
 export function validateEnchainement(sequence: UneCase[], cnbjeu: number): boolean {
-  if (cnbjeu === 0) return true; // Premier jeu : pas de restriction
-  return sequence.some(cell => cell.etat === StateCase.Lo);
+  if (cnbjeu === 0) return true;
+  return sequence.some((cell) => cell.etat === StateCase.Lo);
+}
+
+const isOccupied = (c: UneCase | null): boolean => {
+  if (!c) return false;
+  return c.etat !== StateCase.Cre;
+};
+
+/**
+ * Transposition exacte de encadre(a, b) Kotlin :
+ * Deux voisins opposés d'un opérateur doivent être TOUS LES DEUX occupés ou TOUS LES DEUX vides.
+ */
+export function encadre(a: UneCase | null, b: UneCase | null): boolean {
+  const occupiedA = isOccupied(a);
+  const occupiedB = isOccupied(b);
+  return occupiedA === occupiedB;
 }
 
 /**
- * Vérifie que les opérateurs sont encadrés par des nombres
- * Équivalent de "tpencadre()" en Kotlin
+ * Transposition de tpencadre() Kotlin :
+ * Vérifie qu'AUCUN opérateur présent sur le plateau ne viole la règle d'encadrement.
  */
 export function validateOperateursEncadres(sequence: UneCase[], grid: UneCase[][]): boolean {
-  for (let i = 0; i < sequence.length; i++) {
-    const cell = sequence[i];
-    if (isOperateur(cell.txt)) {
-      // Vérifie l'encadrement à droite et à gauche (horizontal)
-      const right = getNextCase(grid, cell, Sens.Right);
-      const left = getNextCase(grid, cell, Sens.Left);
-      const rightIsNumber = right && !isOperateur(right.txt) && right.etat !== StateCase.Cre;
-      const leftIsNumber = left && !isOperateur(left.txt) && left.etat !== StateCase.Cre;
-      
-      // Vérifie l'encadrement en haut et en bas (vertical)
-      const up = getNextCase(grid, cell, Sens.Up);
-      const down = getNextCase(grid, cell, Sens.Down);
-      const upIsNumber = up && !isOperateur(up.txt) && up.etat !== StateCase.Cre;
-      const downIsNumber = down && !isOperateur(down.txt) && down.etat !== StateCase.Cre;
-      
-      // L'opérateur doit être encadré soit horizontalement, soit verticalement
-      const encadreHorizontal = (rightIsNumber && leftIsNumber);
-      const encadreVertical = (upIsNumber && downIsNumber);
-      
-      if (!encadreHorizontal && !encadreVertical) {
-        return false;
+  for (let j = 0; j < GRID_ROWS; j++) {
+    for (let i = 0; i < GRID_COLS; i++) {
+      const cell = grid[j][i];
+      if (cell.etat !== StateCase.Cre && isOperateur(cell.txt)) {
+        const left = i > 0 ? grid[j][i - 1] : null;
+        const right = i < GRID_COLS - 1 ? grid[j][i + 1] : null;
+        const up = j > 0 ? grid[j - 1][i] : null;
+        const down = j < GRID_ROWS - 1 ? grid[j + 1][i] : null;
+
+        const horizValid = encadre(left, right);
+        const vertValid = encadre(up, down);
+
+        if (!horizValid || !vertValid) {
+          return false;
+        }
       }
     }
   }
@@ -177,7 +359,6 @@ export function validateOperateursEncadres(sequence: UneCase[], grid: UneCase[][
 
 /**
  * Validation complète d'une combinaison
- * Combine toutes les règles du jeu
  */
 export function validateCombination(
   sequence: UneCase[],
@@ -189,33 +370,29 @@ export function validateCombination(
   if (!validateAlternance(sequence)) {
     return { valid: false, reason: 'Alternance incorrecte ou fermeture non propre' };
   }
-  
-  // Règle 4: Emplacement unique (pas de superposition)
+
+  // Règle 4: Emplacement unique
   if (!validateNoSuperposition(sequence, placedPions)) {
     return { valid: false, reason: 'Superposition détectée' };
   }
-  
+
   // Règle 5: Enchaînement (après le premier jeu)
   if (!validateEnchainement(sequence, cnbjeu)) {
     return { valid: false, reason: 'Aucun pion verrouillé utilisé (enchaînement requis)' };
   }
-  
-  // Vérification supplémentaire : les opérateurs doivent être encadrés
+
+  // Règle 6: Encadrement global des opérateurs
   if (!validateOperateursEncadres(sequence, grid)) {
-    return { valid: false, reason: 'Opérateur non encadré par des nombres' };
+    return { valid: false, reason: 'Un ou plusieurs opérateurs ne sont pas encadrés sur le plateau' };
   }
-  
+
   return { valid: true };
 }
 
 // ============================================================
-// FONCTIONS DE COLLECTE DE SÉQUENCE (inspirées du Kotlin)
+// 3. FONCTIONS DE COLLECTE ET DE CALCUL DE SÉQUENCE
 // ============================================================
 
-/**
- * Collecte une séquence de cases dans une direction donnée
- * Équivalent de "cpver" et "cphor" en Kotlin
- */
 export function collectSequence(
   grid: UneCase[][],
   startCase: UneCase,
@@ -223,28 +400,25 @@ export function collectSequence(
 ): { sequence: UneCase[]; hasLoPion: boolean } {
   const sequence: UneCase[] = [];
   let hasLoPion = false;
-  
-  // Aller dans la direction positive
+
   let current: UneCase | null = startCase;
   while (current && current.txt !== '') {
     sequence.push(current);
     if (current.etat === StateCase.Lo) hasLoPion = true;
-    // S'arrêter si on rencontre une case vide (Cre)
     const next = getNextCase(grid, current, direction);
     if (next && next.etat === StateCase.Cre) break;
     current = next;
   }
-  
-  // Aller dans la direction opposée (pour la séquence complète)
+
   let oppositeDirection: Sens;
   switch (direction) {
     case Sens.Up: oppositeDirection = Sens.Down; break;
     case Sens.Down: oppositeDirection = Sens.Up; break;
     case Sens.Left: oppositeDirection = Sens.Right; break;
     case Sens.Right: oppositeDirection = Sens.Left; break;
+    default: oppositeDirection = Sens.Right;
   }
-  
-  // Commencer depuis le voisin opposé
+
   let prev = getNextCase(grid, startCase, oppositeDirection);
   while (prev && prev.txt !== '') {
     sequence.unshift(prev);
@@ -253,20 +427,12 @@ export function collectSequence(
     if (next && next.etat === StateCase.Cre) break;
     prev = next;
   }
-  
+
   return { sequence, hasLoPion };
 }
 
-/**
- * Trie une séquence par indices (horizontal ou vertical)
- * Équivalent de "trita" en Kotlin
- */
-export function sortSequence(
-  sequence: UneCase[],
-  direction: Sens
-): UneCase[] {
+export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
   const isHorizontal = direction === Sens.Left || direction === Sens.Right;
-  
   return [...sequence].sort((a, b) => {
     const aIndex = isHorizontal ? a.indi : a.indj;
     const bIndex = isHorizontal ? b.indi : b.indj;
@@ -274,14 +440,6 @@ export function sortSequence(
   });
 }
 
-// ============================================================
-// FONCTION DE CALCUL CORRIGÉE
-// ============================================================
-
-/**
- * Évalue la séquence mathématique formée et calcule les points selon le barème officiel
- * Corrigé pour correspondre au comportement Kotlin
- */
 export function calculateGameResult(
   boutCase: UneCase,
   sequence: UneCase[],
@@ -308,46 +466,41 @@ export function calculateGameResult(
     const operand = parseInt(copySeq.shift()!.txt, 10) || 0;
 
     switch (operator) {
-      case '/':
-        currentVal /= operand;
+      case '/': 
+        if (operand !== 0) currentVal /= operand; 
         break;
-      case '*':
-        currentVal *= operand;
+      case '*': 
+        currentVal *= operand; 
         break;
-      case '+':
-        currentVal += operand;
+      case '+': 
+        currentVal += operand; 
         break;
-      case '-':
-        currentVal -= operand;
+      case '-': 
+        currentVal -= operand; 
+        break;
+      default:
+        // Opérateur inconnu, ignore
         break;
     }
   }
 
   game.result = currentVal;
 
-  // Note de base (comme dans Kotlin)
   const diff = Math.abs(game.result - game.nbreatind);
   game.notedbase = game.result === game.nbreatind ? 5 : -diff;
 
   let totalBonus = 0;
 
-  // 1. Égalité parfaite (déjà inclus dans notedbase, mais Kotlin l'ajoute aussi en bonus)
-  // En réalité, le Kotlin ne double pas le bonus, donc on ne le remet pas ici
-  // (le +5 est déjà dans notedbase)
-
-  // 2. Nombre de pions utilisés (7 -> +1, 8 -> +2, 9 -> +3, 10 -> +4)
   const totalPionsUsed = sequence.length;
   if (totalPionsUsed >= 7 && totalPionsUsed <= 10) {
     totalBonus += totalPionsUsed - 6;
   }
 
-  // 3. Niveau de difficulté
   if (niveau === Dtfil.Min && game.nbreatind >= 30) totalBonus += 1;
   if (niveau === Dtfil.Cad && game.nbreatind >= 100) totalBonus += 1;
   if (niveau === Dtfil.Jun && game.nbreatind >= 200) totalBonus += 1;
   if (niveau === Dtfil.Sen && game.nbreatind >= 300) totalBonus += 1;
 
-  // 4. Première utilisation de × ou ÷ (comme dans Kotlin)
   const hasMultiplicationOrDivision = sequence.some(
     (cell) => cell.txt === '*' || cell.txt === '/'
   );
@@ -362,38 +515,25 @@ export function calculateGameResult(
 }
 
 // ============================================================
-// FONCTIONS UTILITAIRES POUR LE STORE
+// 4. FONCTIONS UTILITAIRES POUR LE STORE ZUSTAND
 // ============================================================
 
-/**
- * Vérifie si une séquence est valide (longueur impaire, etc.)
- * Utilisé pour le calcul des directions
- */
 export function isValidSequence(sequence: UneCase[]): boolean {
   if (sequence.length < 3) return false;
   if (sequence.length % 2 === 0) return false;
   return true;
 }
 
-/**
- * Récupère les pions placés sur le plateau (Pla ou Choi)
- */
 export function getPlacedPions(flatGrid: UneCase[]): UneCase[] {
   return flatGrid.filter(
-    c => c.etat === StateCase.Pla || c.etat === StateCase.Choi
+    (c) => c.etat === StateCase.Pla || c.etat === StateCase.Choi
   );
 }
 
-/**
- * Récupère les pions verrouillés (Lo) sur le plateau
- */
 export function getLockedPions(flatGrid: UneCase[]): UneCase[] {
-  return flatGrid.filter(c => c.etat === StateCase.Lo);
+  return flatGrid.filter((c) => c.etat === StateCase.Lo);
 }
 
-/**
- * Vérifie s'il y a au moins un pion Lo dans une séquence
- */
 export function hasLockedPionInSequence(sequence: UneCase[]): boolean {
-  return sequence.some(cell => cell.etat === StateCase.Lo);
+  return sequence.some((cell) => cell.etat === StateCase.Lo);
 }

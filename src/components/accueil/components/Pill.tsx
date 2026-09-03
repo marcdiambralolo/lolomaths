@@ -15,8 +15,8 @@ function Pill({ icon, title, desc, tooltip, delay = 0 }: { icon: React.ReactNode
             </div>
 
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                    <div className="text-[13px] font-bold text-purple-900">{title}</div>
+                <div className="flex items-center gap-2">
+                    <div className="text-[12px] font-bold text-purple-900">{title}</div>
                     {tooltip && (
                         <button
                             onMouseEnter={() => setShowTooltip(true)}

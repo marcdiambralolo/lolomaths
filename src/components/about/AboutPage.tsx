@@ -1,4 +1,5 @@
 'use client';
+import { useScrollReveal } from "@/hooks/about/useScrollReveal";
 import BasicRules from "./components/BasicRules";
 import CallToAction from "./components/CallToAction";
 import ChainRuleWarning from "./components/ChainRuleWarning";
@@ -8,8 +9,7 @@ import Lexicon from "./components/Lexicon";
 import PageHeader from './components/PageHeader';
 import ScoringSystem from "./components/ScoringSystem";
 import StickyNav from "./components/StickyNav";
-import { useScrollReveal } from './components/useScrollReveal';
-
+ 
 export default function AboutPageClient() {
   useScrollReveal();
 

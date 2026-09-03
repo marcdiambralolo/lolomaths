@@ -25,7 +25,7 @@ const GameLexicon = () => {
         {
             icon: <div className="text-xl">➗</div>,
             title: "Pions d'opérateur",
-            desc: "Pions marqués d'opérateurs (4 pions par jeu).",
+            desc: "Pions marqués d'opérateurs (6 pions par jeu).",
             delay: 150
         },
         {

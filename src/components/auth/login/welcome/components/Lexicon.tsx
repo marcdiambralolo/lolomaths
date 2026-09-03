@@ -25,7 +25,7 @@ const LEXIQUE = [
         id: 'pions_operateur',
         icon: <div className="text-sm">➗</div>,
         title: "Pions d'opérateur",
-        desc: "Pions marqués d'opérateurs (4 pions par jeu).",
+        desc: "Pions marqués d'opérateurs (6 pions par jeu).",
     },
     {
         id: 'nombres_plateau',

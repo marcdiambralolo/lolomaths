@@ -1,4 +1,3 @@
-// hooks/useScrollReveal.ts
 import { useEffect } from "react";
 
 export const useScrollReveal = () => {

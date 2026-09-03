@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Règles du jeu, lexique et système de notation pour maîtriser Lolomaths.',
 };
 
-export default function MarcheOffrandes() {
+export default function Aide() {
 
   return <HelpPage />;
 }

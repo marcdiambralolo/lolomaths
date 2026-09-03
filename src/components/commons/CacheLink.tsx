@@ -16,14 +16,7 @@ interface CacheLinkProps extends Omit<NextLinkProps, 'href' | 'children'> {
   customTimestamp?: number;
 }
 
-/**
- * Ajoute un paramètre de cache busting à l'URL
- * @param url - URL d'origine
- * @param timestamp - Timestamp à utiliser (optionnel)
- * @returns URL avec paramètre de cache busting
- */
 const addCacheBusting = (url: string, timestamp?: number): string => {
-  // Ne pas ajouter de cache busting pour les URLs externes
   if (url.startsWith('http') || url.startsWith('//') || url.startsWith('mailto:') || url.startsWith('tel:')) {
     return url;
   }
@@ -31,7 +24,6 @@ const addCacheBusting = (url: string, timestamp?: number): string => {
   const bustTimestamp = timestamp || Date.now();
   const separator = url.includes('?') ? '&' : '?';
 
-  // Éviter d'ajouter plusieurs fois le même paramètre
   if (url.includes('_cb=')) {
     return url.replace(/_cb=\d+/, `_cb=${bustTimestamp}`);
   }
@@ -39,12 +31,7 @@ const addCacheBusting = (url: string, timestamp?: number): string => {
   return `${url}${separator}_cb=${bustTimestamp}`;
 };
 
-/**
- * Génère un timestamp unique pour la session (change toutes les 5 minutes)
- * Pour éviter de trop rafraîchir, on utilise un intervalle de 5 minutes
- */
 const getSessionTimestamp = (): number => {
-  // Timestamp arrondi à 5 minutes (300000 ms)
   return Math.floor(Date.now() / 300000) * 300000;
 };
 
@@ -68,7 +55,6 @@ export default function CacheLink({
     return hash ? `${urlWithCache}#${hash}` : urlWithCache;
   }, [href, disableCacheBusting, customTimestamp]);
 
-  // Version sans cache busting pour la préfetch (évite de polluer le cache)
   const prefetchHref = useMemo(() => {
     return href.replace(/[?&]_cb=\d+/, '').replace(/[?&]$/, '');
   }, [href]);
@@ -77,7 +63,6 @@ export default function CacheLink({
     if (props.prefetch === false) {
       return;
     }
-    // Utiliser l'URL sans cache busting pour la préfetch
     void router.prefetch(prefetchHref);
     void prefetchRouteData(queryClient, prefetchHref, isAuthenticated);
   }, [prefetchHref, isAuthenticated, props.prefetch, queryClient, router]);

@@ -1,17 +1,18 @@
 import {
-  createInitialGrid,
-  isOperateur,
   calculateGameResult,
-  isStartCaseCovered,
-  validateCombination,
   collectSequence,
+  createInitialGrid,
   getPlacedPions,
-  isValidSequence
+  isOperateur,
+  isStartCaseCovered,
+  isValidSequence,
+  validateCombination
 } from '@/components/lolomaths/game/competitionEngine';
 import { create } from 'zustand';
-import { UneCase, GameResult, Dtfil, StateCase, Sens } from '../interfaces';
+import { Dtfil, GameResult, Sens, StateCase, UneCase } from '../interfaces';
 
 interface CompetitionState {
+  numeromat: string;
   grid: UneCase[][];
   flatGrid: UneCase[];
   numbers: UneCase[];
@@ -24,7 +25,7 @@ interface CompetitionState {
   directionsValid: { left: boolean; right: boolean; up: boolean; down: boolean };
   hasUsedMultiplicationOrDivision: boolean;
 
-  initGame: (numbersTxt: string[], operatorsTxt: string[], niveau?: Dtfil) => void;
+  initGame: (numbersTxt: string[], operatorsTxt: string[], niveau?: Dtfil, numeromat?: string, listecaseRef?: string[]) => void;
   handleCaseClick: (targetCase: UneCase) => void;
   resetPions: () => void;
   calculateScores: () => void;
@@ -33,6 +34,7 @@ interface CompetitionState {
 }
 
 export const useCompetitionStore = create<CompetitionState>((set, get) => ({
+  numeromat: '',
   grid: [],
   flatGrid: [],
   numbers: [],
@@ -45,10 +47,12 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   directionsValid: { left: false, right: false, up: false, down: false },
   hasUsedMultiplicationOrDivision: false,
 
-  initGame: (numbersTxt, operatorsTxt, niveau = Dtfil.Sen) => {
-    const grid = createInitialGrid();
+  initGame: (numbersTxt, operatorsTxt, niveau = Dtfil.Sen, numeromat = '12345', listecaseRef) => {
+    // 1. Initialisation déterministe de la grille 17x13 via le seed (numeromat)
+    const grid = createInitialGrid(numeromat, listecaseRef);
     const flatGrid = grid.flat();
 
+    // 2. Mélange optionnel ou attribution des jetons du chevalet
     const numbers: UneCase[] = numbersTxt.map((txt, index) => ({
       ncase: index,
       indi: 0,
@@ -74,6 +78,7 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
     const pions = [...numbers, ...operators];
 
     set({
+      numeromat,
       grid,
       flatGrid,
       numbers,
@@ -297,7 +302,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
             hasUsedMultiplicationOrDivision
           );
 
-          // Ajout dense dans le tableau
           results.push(gameRes);
 
           switch (dir) {
@@ -363,8 +367,8 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   },
 
   resetToInitialState: () => {
-    const { numbers, operators } = get();
-    const grid = createInitialGrid();
+    const { numbers, operators, numeromat } = get();
+    const grid = createInitialGrid(numeromat);
     const flatGrid = grid.flat();
 
     const resetNumbers: UneCase[] = numbers.map((p, index) => ({

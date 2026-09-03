@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 
 const MAX_COMPETITIONS = 10;
 const STORAGE_NAME = 'diambra-store';
+const CURRENT_VERSION = 2;
 
 interface StoredMatchInfo {
     id?: string;
@@ -40,7 +41,6 @@ interface StoredCompetition {
 interface MonEtoileStore {
     // État
     gameConfig: LearningConfiguration | null;
-   // isGameConfigLoaded: boolean; // ✅ NOUVEAU: Indique si la config a été chargée initialement
     currentMatchInfo: MatchInfo[];
     competitions: CompetitionInfo[];
     competitionsVersion: number;
@@ -56,11 +56,11 @@ interface MonEtoileStore {
     afficheChoix: boolean;
     afficheGame: boolean;
     gameIsFinished: boolean;
+    gameSequenceCounter: number;
 
     // Actions - Configuration
     setGameConfig: (config: LearningConfiguration | null) => void;
-  //  setIsGameConfigLoaded: (loaded: boolean) => void; // ✅ NOUVELLE ACTION
-    resetGameConfig: () => void; // ✅ NOUVELLE ACTION: Réinitialise la config
+    resetGameConfig: () => void;
 
     // Actions - Matchs
     setCurrentMatchInfo: (matches: MatchInfo[]) => void;
@@ -78,6 +78,11 @@ interface MonEtoileStore {
     addMultipleCompetitions: (newCompetitions: CompetitionInfo[]) => void;
     refreshCompetitions: () => void;
     updateCompetitionValidation: (id: string, isValidated: boolean) => void;
+
+    // Actions - Séquence de jeu
+    incrementGameSequenceCounter: () => void;
+    resetGameSequenceCounter: () => void;
+    getGameSequenceCounter: () => number;
 
     // Actions - UI
     setAfficheBanana: (value: boolean) => void;
@@ -183,12 +188,55 @@ const isStorageNearLimit = (): boolean => {
 };
 
 // ============================================================================
+// FONCTION DE MIGRATION
+// ============================================================================
+
+type PersistedStateV1 = {
+    gameConfig?: LearningConfiguration | null;
+    competitions?: StoredCompetition[];
+    afficheBanana?: boolean;
+    afficheStat?: boolean;
+    gameIsFinished?: boolean;
+    currentConsultationId?: string | null;
+    gameSequenceCounter?: number;
+};
+
+const migrateStore = (persistedState: unknown, version: number): unknown => {
+    // Si c'est déjà la bonne version, retourner tel quel
+    if (version === CURRENT_VERSION) {
+        return persistedState;
+    }
+
+    const state = persistedState as PersistedStateV1;
+
+    // Migration depuis la version 1 vers la version 2
+    if (version < 2) {
+        return {
+            // Conserver toutes les propriétés existantes
+            ...state,
+            // Ajouter les nouveaux champs avec valeurs par défaut
+            gameSequenceCounter: state?.gameSequenceCounter ?? 0,
+            // S'assurer que les compétitions ont les nouveaux champs
+            competitions: state?.competitions?.map(comp => ({
+                ...comp,
+                matchInfo: comp?.matchInfo?.map(match => ({
+                    ...match,
+                    combinaisons: match?.combinaisons || [],
+                })) || [],
+            })) || [],
+        };
+    }
+
+    // Fallback: retourner l'état tel quel
+    return persistedState;
+};
+
+// ============================================================================
 // ÉTAT INITIAL
 // ============================================================================
 
 const INITIAL_STATE = {
     gameConfig: null,
-    isGameConfigLoaded: false, // ✅ NOUVEAU: Initialisé à false
     currentMatchInfo: [] as MatchInfo[],
     competitions: [] as CompetitionInfo[],
     competitionsVersion: 0,
@@ -204,6 +252,7 @@ const INITIAL_STATE = {
     gameIsFinished: false,
     afficheChoix: false,
     afficheGame: false,
+    gameSequenceCounter: 0,
 };
 
 // ============================================================================
@@ -219,18 +268,9 @@ export const useDiambraStore = create<MonEtoileStore>()(
             // Configuration
             // ========================================================================
 
-            setGameConfig: (config) => set({ 
-                gameConfig: config,
-                // Si on set une config, on la marque comme chargée
-               // isGameConfigLoaded: config !== null 
-            }),
+            setGameConfig: (config) => set({ gameConfig: config }),
 
-           // setIsGameConfigLoaded: (loaded) => set({ isGameConfigLoaded: loaded }),
-
-            resetGameConfig: () => set({ 
-                gameConfig: null, 
-               // isGameConfigLoaded: false 
-            }),
+            resetGameConfig: () => set({ gameConfig: null }),
 
             // ========================================================================
             // Matchs
@@ -338,6 +378,20 @@ export const useDiambraStore = create<MonEtoileStore>()(
             },
 
             // ========================================================================
+            // Séquence de jeu
+            // ========================================================================
+
+            incrementGameSequenceCounter: () =>
+                set((state) => ({
+                    gameSequenceCounter: state.gameSequenceCounter + 1,
+                })),
+
+            resetGameSequenceCounter: () =>
+                set({ gameSequenceCounter: 0 }),
+
+            getGameSequenceCounter: () => get().gameSequenceCounter,
+
+            // ========================================================================
             // UI
             // ========================================================================
 
@@ -371,16 +425,18 @@ export const useDiambraStore = create<MonEtoileStore>()(
         }),
         {
             name: STORAGE_NAME,
+            version: CURRENT_VERSION,
+            migrate: migrateStore,
             partialize: (state) => {
                 const compressedCompetitions = state.competitions.map(compressCompetition);
                 return {
                     gameConfig: state.gameConfig,
-                   // isGameConfigLoaded: state.isGameConfigLoaded, // ✅ Persistance du flag
                     competitions: compressedCompetitions,
                     afficheBanana: state.afficheBanana,
                     afficheStat: state.afficheStat,
                     gameIsFinished: state.gameIsFinished,
                     currentConsultationId: state.currentConsultationId,
+                    gameSequenceCounter: state.gameSequenceCounter,
                 };
             },
             onRehydrateStorage: () => (state) => {
@@ -396,6 +452,10 @@ export const useDiambraStore = create<MonEtoileStore>()(
                 }
                 if (state) {
                     state.currentMatchInfo = state.currentMatchInfo || [];
+                    // Initialiser gameSequenceCounter si non défini
+                    if (state.gameSequenceCounter === undefined) {
+                        state.gameSequenceCounter = 0;
+                    }
                 }
             },
         }

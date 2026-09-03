@@ -44,22 +44,14 @@ export const TileRack: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl w-full">
-      {/* 1. Nombres (en haut) */}
       <div>
-        <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
-         Nombres
-        </span>
-        <div className="flex flex-wrap gap-2 min-h-[48px] items-center">
+         <div className="flex flex-wrap gap-2 min-h-[48px] items-center">
           {numbers.map(renderPion)}
         </div>
       </div>
 
-      {/* 2. Opérateurs (en dessous) */}
       <div className="pt-2 border-t border-slate-800/60">
-        <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
-          Opérateurs
-        </span>
-        <div className="flex flex-wrap gap-2 min-h-[48px] items-center">
+           <div className="flex flex-wrap gap-2 min-h-[48px] items-center">
           {operators.map(renderPion)}
         </div>
       </div>

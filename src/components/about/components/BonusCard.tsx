@@ -1,14 +1,8 @@
 "use client";
 
+import { colorClasses } from "./about.constants";
+
 function BonusCard({ icon, title, value, color = "purple" }: { icon: React.ReactNode; title: string; value: string; color?: string }) {
-    const colorClasses = {
-        purple: "from-purple-50 to-purple-100 text-purple-700",
-        indigo: "from-indigo-50 to-indigo-100 text-indigo-700",
-        pink: "from-pink-50 to-pink-100 text-pink-700",
-        green: "from-green-50 to-green-100 text-green-700",
-        orange: "from-orange-50 to-orange-100 text-orange-700",
-        yellow: "from-yellow-50 to-amber-100 text-amber-700",
-    };
 
     const bgClass = colorClasses[color as keyof typeof colorClasses] || colorClasses.purple;
 

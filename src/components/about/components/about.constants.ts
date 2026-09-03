@@ -23,7 +23,7 @@ export const LEXICON_DATA = [
     { icon: "+ − × ÷", title: "Opérateurs", desc: "Signes d'Addition (+), Soustraction (−), Multiplication (×) et Division (÷)." },
     { icon: "🎯", title: "Plateau", desc: "Cases comportant des nombres et une case 'Départ'." },
     { icon: "🔢", title: "Pions de nombre", desc: "Pions marqués de nombres (6 pions par jeu)." },
-    { icon: "➗", title: "Pions d'opérateur", desc: "Pions marqués d'opérateurs (4 pions par jeu)." },
+    { icon: "➗", title: "Pions d'opérateur", desc: "Pions marqués d'opérateurs (6 pions par jeu)." },
     { icon: "📊", title: "Nombres du plateau", desc: "Nombres inscrits dans les cases du plateau." },
     { icon: "🧩", title: "Combinaison de pions", desc: "Agencement (en ligne ou colonne) de pion(s) de nombre et d'opérateur. Débute et finit par un pion de nombre." },
     { icon: "🎮", title: "Jeu", desc: "Combinaison de pions validée." },
@@ -48,3 +48,12 @@ export const SCORE_METRICS = [
     { icon: "🏆", title: "Score d'un match", description: "Cumul des notes", gradient: "bg-gradient-to-br from-blue-50 to-cyan-100", titleColor: "text-blue-800", descColor: "text-blue-600" },
     { icon: "👑", title: "Score Compétition", description: "Cumul des matchs", gradient: "bg-gradient-to-br from-purple-50 to-indigo-100", titleColor: "text-purple-800", descColor: "text-purple-600" }
 ];
+
+export const colorClasses = {
+    purple: "from-purple-50 to-purple-100 text-purple-700",
+    indigo: "from-indigo-50 to-indigo-100 text-indigo-700",
+    pink: "from-pink-50 to-pink-100 text-pink-700",
+    green: "from-green-50 to-green-100 text-green-700",
+    orange: "from-orange-50 to-orange-100 text-orange-700",
+    yellow: "from-yellow-50 to-amber-100 text-amber-700",
+};
