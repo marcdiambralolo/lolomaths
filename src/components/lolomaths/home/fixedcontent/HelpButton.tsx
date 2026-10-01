@@ -7,7 +7,7 @@ export const HelpButton = memo(function HelpButton() {
     const router = useRouter();
 
     const handleClick = useCallback(() => {
-        router.push('/star/learning/help');
+        router.push('/help');
     }, [router]);
 
     return (

@@ -7,6 +7,9 @@ import BottomHeroImage from './components/BottomHeroImage';
 import MenuSection from './components/MenuSection';
 import PageFooter from './components/PageFooter';
 import SplashScreen from './components/SplashScreen';
+import PageContainer from '../learning/accueil/components/PageContainer';
+import HorlogeInit from '../learning/home/accueil/HorlogeInit';
+import ResultsSection from '../learning/accueil/components/ResultsSection';
 
 const SPLASH_IMAGES = [
     '/splash.jpg',
@@ -68,10 +71,13 @@ export default function HomePage() {
                     className="relative min-h-screen select-none overflow-hidden"
                 >
                     <div className="w-full max-w-md mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8">
-                        <div className="my-auto flex flex-col items-center">
-                            
-                            <MenuSection items={MAIN_MENU_ITEMS} onNavigate={handleNavigation} />
+                        <PageContainer>
+                            <HorlogeInit />
+                            <ResultsSection />
+                        </PageContainer>
 
+                        <div className="my-auto flex flex-col items-center">
+                            <MenuSection items={MAIN_MENU_ITEMS} onNavigate={handleNavigation} />
                             <BottomHeroImage splashImage={splashImage} />
                         </div>
 

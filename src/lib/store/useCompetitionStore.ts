@@ -396,4 +396,4 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       hasUsedMultiplicationOrDivision: false
     });
   }
-}));
+}));  

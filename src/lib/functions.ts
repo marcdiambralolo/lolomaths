@@ -342,3 +342,7 @@ export function normalizeStatus(value: unknown): ConfigStatus {
   }
   return 'pending';
 }
+
+export const pluralize = (count: number, singular: string, plural: string) =>
+  `${count} ${count > 1 ? plural : singular}`;
+

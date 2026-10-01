@@ -103,8 +103,8 @@ export function useLaMise() {
         },
         retry: 1,
         onSuccess: async (consultationId) => {
-            setAfficheChoix(false);
-            setAfficheGame(true);
+            // setAfficheChoix(false);
+            // setAfficheGame(true);
             setCurrentConsultationId(consultationId);
 
             await Promise.allSettled([
@@ -115,13 +115,14 @@ export function useLaMise() {
                     queryKey: [QUERY_KEYS.WALLET_UNUSED_OFFERINGS],
                 }),
             ]);
-
-            router.refresh();
+ router.push(`/star/play?retour=learning&monjeu=${monidjeu}`);
+           
         },
     });
 
     const handlePlayClick = useCallback(async () => {
         if (!monidjeu || !isSufficient || submitMutation.isPending || isPendingNavigation) {
+            alert('Vous ne pouvez pas jouer pour le moment. Veuillez vérifier votre solde de jetons ou réessayer plus tard.');
             return;
         }
 

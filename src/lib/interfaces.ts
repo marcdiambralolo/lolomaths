@@ -649,13 +649,7 @@ export interface MainMenuItem {
 }
 
 export const MAIN_MENU_ITEMS: MainMenuItem[] = [
-  {
-    id: 'nouveau',
-    title: 'Jouer',
-    description: 'Participer à la competition',
-    href: '/star/play',
-    icon: 'play-circle',
-  },
+  
   {
     id: 'aide',
     title: 'Aide',
@@ -740,3 +734,38 @@ export interface GameResult {
   notedjeu: number;
   combine: string;
 }
+
+
+export interface FeatureItem {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+}
+
+export interface PillItem {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  tooltip?: string;
+}
+
+export interface StepItem {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+}
+
+export interface TipItem {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  color: "purple" | "indigo";
+}
+
+export type CityItem = {
+  id: string;
+  name: string;
+  countryName?: string;
+  countryCode?: string;
+  region?: string;
+};
