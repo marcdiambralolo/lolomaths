@@ -28,8 +28,6 @@ const useMatchManagement = (
             casesdujeuencours: matchData.listeCaseOpLab ?? [],
             casesinitiales: matchData.listeCaseOpLabInitiale ?? [],
             pieces: matchData.pieces ?? [],
-            selectedCase: null,
-            showPun: true,
         });
     }, [updateState]);
 
@@ -84,10 +82,9 @@ const useMatchManagement = (
             name: gameConfig?.id,
             displayName: gameConfig?.id!,
             niveau: gameConfig?.niveau,
-            punChangeCount: state.punChangeCount,
-        };
+         };
         addCompetition(competition);
-    }, [allMatchesFinished, state.infomatch, state.datedebut, state.punChangeCount, gameConfig?.id, gameConfig?.niveau, addCompetition, currentConsultationId]);
+    }, [allMatchesFinished, state.infomatch, state.datedebut,   gameConfig?.id, gameConfig?.niveau, addCompetition, currentConsultationId]);
 
     useEffect(() => {
         if (lancementRef.current) return;
@@ -147,7 +144,7 @@ const useMatchManagement = (
         }));
 
         if (matchEnCours + 1 < infomatch.length) {
-            updateState({ matchEnCours: matchEnCours + 1, showPun: false, selectedCase: null });
+            updateState({ matchEnCours: matchEnCours + 1,   });
         }
     }, [state.casesdujeuencours, state.isTransitioning, state.matchEnCours, state.infomatch, updateState, setState]);
 

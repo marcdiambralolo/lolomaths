@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 export const useAuthRedirect = () => {
     const router = useRouter();
     const { user } = useAuthStore();
+    
     const [isRedirecting, setIsRedirecting] = useState(false);
 
     useEffect(() => {

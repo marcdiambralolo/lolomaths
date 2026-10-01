@@ -13,6 +13,7 @@ export const useScrollReveal = () => {
             },
             { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
         );
+        
         document.querySelectorAll(".reveal-on-scroll").forEach((el) => observer.observe(el));
         return () => observer.disconnect();
     }, []);

@@ -79,7 +79,7 @@ export function useTermsSections(): TermsSection[] {
             'Tricher ou utiliser des programmes automatisés',
             'Tenter de pirater ou modifier le jeu',
             'Perturber l\'expérience des autres joueurs',
-            "Utiliser le jeu à des fins malveillantes",
+            "Utiliser le jeu à des fins malveillantes.",
           ]} />
         </>
       ),

@@ -6,15 +6,7 @@ export type ConsultationCreateResponse = {
         id?: string;
     };
 };
-
-export type CreateConsultationLearningPayload = {
-    idjeu: string;
-    tpsglobal?: number;
-    niveau?: number;
-    status?: 'pending' | 'in_progress' | 'completed' | 'abandoned';
-    country?: string;
-    clientId?: string;
-};
+ 
 
 export function getCategoryErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof Error) {
@@ -28,23 +20,7 @@ export function getCategoryErrorMessage(error: unknown, fallback: string): strin
 
     return fallback;
 }
-
-export async function createCategoryConsultation(monidjeu: string): Promise<string> {
-    const payload: Record<string, unknown> = {
-        idjeu: monidjeu,
-        status: 'pending',
-    };
-
-    const response = await api.post<ConsultationCreateResponse>("/consultations", payload);
-    const consultationId = response.data?.consultation?.consultationId || response.data?.consultation?.id;
-
-    if (!consultationId) {
-        throw new Error("ID de consultation manquant");
-    }
-
-    return consultationId;
-}
-
+ 
 export async function createCategoryConsultationLearning(
     monidjeu: string
 ): Promise<string> {

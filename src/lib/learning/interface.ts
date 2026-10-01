@@ -34,15 +34,12 @@ export interface GameState {
     casesdujeuencours: Case[];
     casesinitiales: Case[];
     pieces: string[];
-    selectedCase: Case | null;
     datedebut: string;
     start: boolean;
-    showPun: boolean;
     matchEnCours: number;
     infomatch: MatchInfo[];
     isGameover: boolean;
     isTransitioning: boolean;
-    punChangeCount: number;
 }
 
 export interface Winner {

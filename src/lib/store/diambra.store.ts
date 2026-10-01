@@ -127,7 +127,7 @@ const compressCompetition = (competition: CompetitionInfo): StoredCompetition =>
     displayName: competition.displayName,
     isValidated: competition.isValidated,
     niveau: competition.niveau,
-    punChangeCount: competition.punChangeCount || 1,
+    punChangeCount:  1,
     matchInfo: competition.matchInfo.map(match => ({
         id: match.id,
         tpsglobal: match.tpsglobal,
@@ -157,7 +157,6 @@ const decompressCompetition = (stored: StoredCompetition): CompetitionInfo => ({
     displayName: stored.displayName || `N°: ${stored.id.slice(-12)}`,
     isValidated: stored.isValidated || false,
     niveau: stored.niveau,
-    punChangeCount: stored.punChangeCount || 0,
     matchInfo: stored.matchInfo.map(match => ({
         id: match.id,
         tpsglobal: match.tpsglobal,

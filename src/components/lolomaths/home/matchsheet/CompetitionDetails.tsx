@@ -51,7 +51,7 @@ const CompetitionDetails = memo(function CompetitionDetails({
           startDate={formattedStartDate}
           finishedDate={formattedFinishedDate ?? ''}
           timeSpent={competition.timeSpent}
-          punChangeCount={competition.punChangeCount}
+          punChangeCount={0}
           user={user}
         />
       </div>

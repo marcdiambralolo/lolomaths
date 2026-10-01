@@ -158,7 +158,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
       const updatedPayload = {
         ...consultation,
         status: 'completed' as const,
-        nombredevues: comp.punChangeCount,
+        nombredevues: 0,
         gameEndDate: endDate,
         totalTimeSeconds,
         timeSpent: totalTimeSeconds || 0,

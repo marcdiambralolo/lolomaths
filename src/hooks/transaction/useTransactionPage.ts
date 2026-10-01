@@ -46,6 +46,7 @@ export type PaymentStatus = "idle" | "initiating" | "pending_user_action" | "ver
 
 export function useTransactionPage() {
     const searchParams = useSearchParams();
+    
     const router = useRouter();
 
     const [transaction, setTransaction] = useState<Transaction | null>(null);
