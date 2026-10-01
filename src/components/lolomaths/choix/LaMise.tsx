@@ -1,58 +1,56 @@
 'use client';
 import Loader from '@/app/loading';
- import { useLaMise } from '@/hooks/learning/lamise/useLaMise';
+import ErrorMessage from '@/components/lolomaths/commons/ErrorMessage';
+import { useLaMise } from '@/hooks/lolomaths/lamise/useLaMise';
 import { memo } from 'react';
-import { MarketButton, PlayButton } from './lamise/ActionButtons';
-import { StatusBanner } from './lamise/StatusBanner';
-import { TokenCard } from './lamise/TokenCard';
-import ErrorMessage from '../commons/ErrorMessage';
+import InsufficientTokensMessage from './components/InsufficientTokensMessage';
+import MainContainer from './components/MainContainer';
+import MarketSection from './components/MarketSection';
+import PlaySection from './components/PlaySection';
+import { StatusBanner } from './components/StatusBanner';
+import { TokenCard } from './components/TokenCard';
 
 const LaMise = () => {
-  const {
-    handlePlayClick, handleMarketClick,
-    isSufficient, loading, requiredQuantity, error, availableQuantity, cardClasses,
-  } = useLaMise();
+    const {
+        handlePlayClick, handleMarketClick,
+        isSufficient, loading, requiredQuantity, error, availableQuantity, cardClasses,
+    } = useLaMise();
 
-  if (error) return <ErrorMessage />;
+    if (error) return <ErrorMessage />;
 
-  if (loading) return <Loader />;
+    if (loading) return <Loader />;
 
-  return (
-    <div className="w-full mx-auto max-w-md px-4 flex flex-col gap-2 space-y-3 items-center justify-center">
-      <StatusBanner
-        isSufficient={isSufficient}
-        requiredQuantity={requiredQuantity}
-        availableQuantity={availableQuantity}
-      />
+    return (
+        <MainContainer>
+            <StatusBanner
+                isSufficient={isSufficient}
+                requiredQuantity={requiredQuantity}
+                availableQuantity={availableQuantity}
+            />
 
-      <TokenCard
-        isSufficient={isSufficient}
-        requiredQuantity={requiredQuantity}
-        availableQuantity={availableQuantity}
-        cardClasses={cardClasses}
-        onPlayClick={handlePlayClick}
-        isPending={loading}
-      />
+            <TokenCard
+                isSufficient={isSufficient}
+                requiredQuantity={requiredQuantity}
+                availableQuantity={availableQuantity}
+                cardClasses={cardClasses}
+                onPlayClick={handlePlayClick}
+                isPending={loading}
+            />
 
-      <PlayButton
-        isSufficient={isSufficient}
-        onClick={handlePlayClick}
-        isPending={loading}
-      />
+            {!isSufficient && <InsufficientTokensMessage />}
 
-      {!isSufficient && (
-        <p className="text-center text-xs text-red-600 dark:text-red-400">
-          Vous ne disposez pas d&apos;assez de jetons.
-        </p>
-      )}
+            <PlaySection
+                isSufficient={isSufficient}
+                onPlay={handlePlayClick}
+                isPending={loading}
+            />
 
-      <MarketButton
-        onClick={handleMarketClick}
-        isPending={loading}
-      />
-      <div className="w-2 h-2 rounded-full bg-green-400" />
-    </div>
-  );
+            <MarketSection
+                onMarket={handleMarketClick}
+                isPending={loading}
+            />
+        </MainContainer>
+    );
 };
 
 export default memo(LaMise);

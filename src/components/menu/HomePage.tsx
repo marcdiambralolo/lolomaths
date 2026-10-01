@@ -7,9 +7,9 @@ import BottomHeroImage from './components/BottomHeroImage';
 import MenuSection from './components/MenuSection';
 import PageFooter from './components/PageFooter';
 import SplashScreen from './components/SplashScreen';
-import PageContainer from '../learning/accueil/components/PageContainer';
+import PageContainer from '../lolomaths/accueil/components/PageContainer';
 import HorlogeInit from '../learning/home/accueil/HorlogeInit';
-import ResultsSection from '../learning/accueil/components/ResultsSection';
+import ResultsSection from '../lolomaths/accueil/components/ResultsSection';
 
 const SPLASH_IMAGES = [
     '/splash.jpg',

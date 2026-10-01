@@ -1,10 +1,9 @@
 "use client";
 import Loader from "@/app/loading";
-import { useAdminConsultationsPageFinished } from "@/hooks/learning/historique/useAdminConsultationsPageFinished";
-import { useHistoriqueConsultations } from "@/hooks/learning/historique/useHistoriqueConsultations";
+import { useAdminConsultationsPageFinished } from "@/hooks/lolomaths/historique/useAdminConsultationsPageFinished";
+import { useHistoriqueConsultations } from "@/hooks/lolomaths/historique/useHistoriqueConsultations";
 import { memo } from "react";
-import ErrorMessage from "../../commons/ErrorMessage";
-import EditionCard from "../components/EditionCard";
+ import EditionCard from "../components/EditionCard";
 import ParticipationsSection from "../components/ParticipationsSection";
 import TitleSection from "../components/TitleSection";
 import WinnersSection from "../components/WinnersSection";
@@ -12,6 +11,7 @@ import { BackButton } from "./components/BackButton";
 import { ConsultationList } from "./components/ConsultationList";
 import EditionHeader from "./components/EditionHeader";
 import { StatisticsSection } from "./components/StatisticsSection";
+import ErrorMessage from "@/components/lolomaths/commons/ErrorMessage";
 
 const HistoriquePageClient = memo(() => {
   const {

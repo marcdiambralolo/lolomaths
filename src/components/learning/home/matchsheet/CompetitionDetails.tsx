@@ -1,5 +1,5 @@
 'use client';
-import { useCompetitionValidation } from '@/hooks/learning/endgame/useCompetitionValidation';
+import { useCompetitionValidation } from '@/hooks/lolomaths/endgame/useCompetitionValidation';
 import { memo } from 'react';
 import CompetitionHeader from './CompetitionHeader';
 import CompetitionStats from './CompetitionStats';

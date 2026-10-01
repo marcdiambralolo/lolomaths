@@ -3,10 +3,10 @@ import { useDiambraStore } from "@/lib/store/diambra.store";
 import { AlertCircle, History, Trophy } from "lucide-react";
 import Link from 'next/link';
 import { memo, useEffect, useState } from 'react';
-import { GlowButton } from '../../commons/Boutons';
-import { CountdownTimer } from './CountdownTimer';
+ import { CountdownTimer } from './CountdownTimer';
 import { GameStatsGrid } from './GameStatsGrid';
 import { Stats } from "@/hooks/cache/useStatsDataWithCache";
+import { GlowButton } from "@/components/lolomaths/commons/Boutons";
 
 interface ActiveBannerProps {
     demarrerJeu: () => void;

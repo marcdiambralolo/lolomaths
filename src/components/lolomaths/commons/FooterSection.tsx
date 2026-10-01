@@ -1,5 +1,5 @@
 'use client';
-import { useOnlineStatus } from '@/hooks/learning/home/useOnlineStatus';
+import { useOnlineStatus } from '@/hooks/lolomaths/home/useOnlineStatus';
 import { CURRENT_YEAR, STATUS_CONFIG } from '@/lib/learning/constantes';
 import { memo } from 'react';
 import { motion } from 'framer-motion';

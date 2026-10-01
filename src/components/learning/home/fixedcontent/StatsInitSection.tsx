@@ -4,8 +4,8 @@ import { useStatsDataWithCache } from '@/hooks/cache/useStatsDataWithCache';
 import { COLORS } from '@/lib/learning/constantes';
 import { Users } from 'lucide-react';
 import { memo } from 'react';
-import ErrorMessage from '../../commons/ErrorMessage';
-import { StatCard } from './StatCard';
+ import { StatCard } from './StatCard';
+import ErrorMessage from '@/components/lolomaths/commons/ErrorMessage';
 
 export const StatsInitSection = memo(function StatsSection() {
  

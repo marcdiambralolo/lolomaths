@@ -1,5 +1,5 @@
 import Loader from "@/app/loading";
-import { useHorloge } from "@/hooks/learning/home/useHorloge";
+import { useHorloge } from "@/hooks/lolomaths/home/useHorloge";
 import { memo } from 'react';
 import DashboardContent from "./DashboardContent";
 

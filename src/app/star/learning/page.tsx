@@ -1,4 +1,4 @@
-import ProfilPageLearning from "@/components/learning/accueil/ProfilPageLearning";
+import ProfilPageLearning from "@/components/lolomaths/accueil/ProfilPageLearning";
 
 export default function PagePrincipale() {
 

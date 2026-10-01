@@ -1,6 +1,6 @@
 'use client';
 import { memo } from 'react';
-import HorlogeInit from '../home/accueil/HorlogeInit';
+import HorlogeInit from '../../learning/home/accueil/HorlogeInit';
 import PageContainer from './components/PageContainer';
 import ResultsSection from './components/ResultsSection';
 

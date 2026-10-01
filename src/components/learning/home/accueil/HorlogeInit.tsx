@@ -1,6 +1,6 @@
 'use client';
 import Loader from "@/app/loading";
-import { useHorlogeInit } from "@/hooks/learning/home/useHorlogeInit";
+import { useHorlogeInit } from "@/hooks/lolomaths/home/useHorlogeInit";
 import { memo } from 'react';
 import DashboardContent from "./DashboardContent";
 

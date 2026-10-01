@@ -5,8 +5,8 @@ import { COLORS } from '@/lib/learning/constantes';
 import { useDiambraStore } from '@/lib/store/diambra.store';
 import { Users } from 'lucide-react';
 import { memo } from 'react';
-import ErrorMessage from '../../commons/ErrorMessage';
-import { StatCard } from './StatCard';
+ import { StatCard } from './StatCard';
+import ErrorMessage from '@/components/lolomaths/commons/ErrorMessage';
 
 export const StatsSection = memo(function StatsSection() {
   const afficheStat = useDiambraStore((state) => state.afficheStat);

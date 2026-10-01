@@ -1,9 +1,8 @@
 'use client';
 import { memo } from 'react';
 import FooterSection from "../commons/FooterSection";
-import Horloge from "../home/dashboard/Horloge";
-import { HelpButton } from "../home/fixedcontent/HelpButton";
-import FeuillesdeMatch from "../home/matchsheet/FeuillesdeMatch";
+import Horloge from "../../learning/home/dashboard/Horloge";
+import FeuillesdeMatch from "../../learning/home/matchsheet/FeuillesdeMatch";
 
 const ProfilPageLearning = memo(() => {
 
@@ -14,7 +13,6 @@ const ProfilPageLearning = memo(() => {
         <Horloge />
         <FeuillesdeMatch />
         <FooterSection />
-        <HelpButton />
       </footer>
     </div>
   );

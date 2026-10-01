@@ -1,5 +1,5 @@
 'use client';
-import { useEndGameGenerator } from "@/hooks/learning/endgame/useEndGameGenerator";
+import { useEndGameGenerator } from "@/hooks/lolomaths/endgame/useEndGameGenerator";
 import CompetitionDetails from "./CompetitionDetails";
 import LoadMoreButton from "./LoadMoreButton";
 

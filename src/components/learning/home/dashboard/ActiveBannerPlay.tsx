@@ -1,13 +1,13 @@
 'use client';
 import { Stats } from "@/hooks/cache/useStatsDataWithCache";
-import { useFinishState } from "@/hooks/learning/home/useFinishState";
+import { useFinishState } from "@/hooks/lolomaths/home/useFinishState";
 import { useDiambraStore } from "@/lib/store/diambra.store";
 import { AlertCircle, History, Trophy } from "lucide-react";
 import Link from 'next/link';
 import { memo } from 'react';
-import { GlowButton } from "../../commons/Boutons";
-import { CountdownTimer } from './CountdownTimer';
+ import { CountdownTimer } from './CountdownTimer';
 import { GameStatsGridPlay } from "./GameStatsGridPlay";
+import { GlowButton } from "@/components/lolomaths/commons/Boutons";
 
 interface ActiveBannerProps {
     endDate: Date;

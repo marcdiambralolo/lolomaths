@@ -1,4 +1,4 @@
-import ProfilPageLearning from "@/components/learning/diambraplay/ProfilPageLearning";
+import ProfilPageLearning from "@/components/lolomaths/diambraplay/ProfilPageLearning";
 
 export default function ProfilPage() {
 

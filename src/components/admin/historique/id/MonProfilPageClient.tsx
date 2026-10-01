@@ -1,6 +1,6 @@
 "use client";
 import Loader from "@/app/loading";
-import {  useHistoriqueConsultations } from "@/hooks/learning/historique/useHistoriqueConsultations";
+import {  useHistoriqueConsultations } from "@/hooks/lolomaths/historique/useHistoriqueConsultations";
 import { memo } from "react";
  
 import { BackButton } from "./components/BackButton";

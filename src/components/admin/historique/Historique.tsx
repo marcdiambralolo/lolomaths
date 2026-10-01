@@ -1,5 +1,5 @@
 'use client';
-import { useAdminConsultationsPageFinished } from "@/hooks/learning/historique/useAdminConsultationsPageFinished";
+import { useAdminConsultationsPageFinished } from "@/hooks/lolomaths/historique/useAdminConsultationsPageFinished";
 import { memo } from 'react';
 import EditionCard from "./components/EditionCard";
 import ParticipationsSection from "./components/ParticipationsSection";

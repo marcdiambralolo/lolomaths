@@ -1,7 +1,7 @@
 "use client";
 import Loader from "@/app/loading";
-import { useAdminConsultationsPageFinished } from "@/hooks/learning/historique/useAdminConsultationsPageFinished";
-import { useHistoriqueConsultations } from "@/hooks/learning/historique/useHistoriqueConsultations";
+import { useAdminConsultationsPageFinished } from "@/hooks/lolomaths/historique/useAdminConsultationsPageFinished";
+import { useHistoriqueConsultations } from "@/hooks/lolomaths/historique/useHistoriqueConsultations";
 import { memo } from "react";
 
 import { BackButton } from "./components/BackButton";
@@ -9,11 +9,11 @@ import { ConsultationList } from "./components/ConsultationList";
 import EditionBadge from "./components/EditionBadge";
 import EditionHeader from "./components/EditionHeader";
 import { StatisticsSection } from "./components/StatisticsSection";
-import ErrorMessage from "@/components/learning/commons/ErrorMessage";
-import EditionCard from "@/components/learning/historique/components/EditionCard";
+ import EditionCard from "@/components/learning/historique/components/EditionCard";
 import TitleSection from "@/components/learning/historique/components/TitleSection";
 import WinnersSection from "@/components/learning/historique/components/WinnersSection";
 import ParticipationsSection from "@/components/learning/historique/components/ParticipationsSection";
+import ErrorMessage from "@/components/lolomaths/commons/ErrorMessage";
  
 
 

@@ -1,5 +1,5 @@
 import Loader from "@/app/loading";
-import { useAdminConsultationsPageFinished } from "@/hooks/learning/home/useAdminConsultationsPageFinished";
+import { useAdminConsultationsPageFinished } from "@/hooks/lolomaths/home/useAdminConsultationsPageFinished";
 import { memo } from 'react';
 import ActiveBanner from "./ActiveBanner";
 import NoCompetitionBanner from "./NoCompetitionBanner";
