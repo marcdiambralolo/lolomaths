@@ -4,12 +4,13 @@ import React from 'react';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { StateCase } from '@/lib/interfaces';
 import { isOperateur } from './competitionEngine';
-  
+
 export const TileRack: React.FC = () => {
   const { pions, handleCaseClick } = useCompetitionStore();
 
-  const numbers = pions.filter((p) => p.tca === 2);
-  const operators = pions.filter((p) => p.tca === 3);
+  // Extraction stricte : 6 nombres et 4 opérateurs
+  const numbers = pions.filter((p) => p.tca === 2).slice(0, 6);
+  const operators = pions.filter((p) => p.tca === 3).slice(0, 4);
 
   const renderPion = (pion: typeof pions[0]) => {
     const isSelected = pion.etat === StateCase.Choi;
@@ -22,7 +23,7 @@ export const TileRack: React.FC = () => {
         onClick={() => handleCaseClick(pion)}
         disabled={isUsed}
         className={`
-          w-10 h-10 sm:w-12 sm:h-12
+          w-9 h-9 sm:w-11 sm:h-11
           flex items-center justify-center
           rounded-xl font-mono text-sm sm:text-base font-black
           border-2 transition-all duration-150 active:scale-95
@@ -43,15 +44,17 @@ export const TileRack: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl w-full">
+    <div className="flex flex-col gap-3 p-3 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl w-full max-w-md mx-auto">
+      {/* Zone Pions Nombres (6 jetons) */}
       <div>
-         <div className="flex flex-wrap gap-2 min-h-[48px] items-center">
+        <div className="grid grid-cols-6 gap-1.5 min-h-[44px] items-center">
           {numbers.map(renderPion)}
         </div>
       </div>
 
+      {/* Zone Pions Opérateurs (4 jetons) */}
       <div className="pt-2 border-t border-slate-800/60">
-           <div className="flex flex-wrap gap-2 min-h-[48px] items-center">
+        <div className="grid grid-cols-4 gap-1.5 min-h-[44px] items-center">
           {operators.map(renderPion)}
         </div>
       </div>

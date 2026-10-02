@@ -53,58 +53,24 @@ export function useChrono({
   autoStart = false,
   onTimeUp,
 }: UseChronoOptions = {}): UseChronoReturn {
-  /**
-   * Normalisation de la durée initiale.
-   */
-  const normalizedInitialSeconds = Math.max(
-    0,
-    Math.floor(initialSeconds)
-  );
+  const normalizedInitial = Math.max(0, Math.floor(initialSeconds));
 
-  const [totalDuration, setTotalDuration] = useState(
-    normalizedInitialSeconds
-  );
+  const [totalDuration, setTotalDuration] = useState(normalizedInitial);
+  const [timeLeft, setTimeLeft] = useState(normalizedInitial);
+  const [isRunning, setIsRunning] = useState(autoStart && normalizedInitial > 0);
 
-  const [timeLeft, setTimeLeft] = useState(
-    normalizedInitialSeconds
-  );
-
-  const [isRunning, setIsRunning] = useState(
-    autoStart && normalizedInitialSeconds > 0
-  );
-
-  /**
-   * Référence du timer.
-   *
-   * ReturnType<typeof setInterval> fonctionne correctement
-   * côté navigateur et côté TypeScript/Next.js.
-   */
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
-
-  /**
-   * Évite que le callback onTimeUp provoque la recréation
-   * du timer lorsqu'il change de référence.
-   */
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
-
-  /**
-   * Empêche onTimeUp d'être appelé plusieurs fois
-   * pour le même cycle.
-   */
   const hasTriggeredTimeUpRef = useRef(false);
 
-  /**
-   * Maintient le callback à jour sans redémarrer le timer.
-   */
+  // Stocke le timestamp cible précis (ms) pour compenser le ralentissement des onglets inactifs
+  const targetTimeRef = useRef<number | null>(null);
+
+  // Maintient la référence à jour du callback sans recréer les timers
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
 
-  /**
-   * Nettoyage centralisé du timer.
-   */
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
       clearInterval(timerRef.current);
@@ -113,145 +79,104 @@ export function useChrono({
   }, []);
 
   /**
-   * Boucle principale du chronomètre.
-   *
-   * Une seule responsabilité :
-   * gérer l'intervalle lorsque isRunning change.
+   * Boucle du timer basée sur l'horloge réelle (Timestamp Delta)
    */
   useEffect(() => {
     if (!isRunning) {
       clearTimer();
+      targetTimeRef.current = null;
       return;
     }
 
-    /**
-     * Sécurité : ne jamais créer deux intervals.
-     */
     clearTimer();
+
+    // Fixe la date de fin visée
+    if (targetTimeRef.current === null) {
+      targetTimeRef.current = Date.now() + timeLeft * 1000;
+    }
 
     timerRef.current = setInterval(() => {
-      setTimeLeft((previousTime) => {
-        if (previousTime <= 1) {
-          return 0;
+      if (targetTimeRef.current === null) return;
+
+      const remainingMs = targetTimeRef.current - Date.now();
+      const nextTimeLeft = Math.max(0, Math.ceil(remainingMs / 1000));
+
+      setTimeLeft(nextTimeLeft);
+
+      if (nextTimeLeft <= 0) {
+        clearTimer();
+        setIsRunning(false);
+        targetTimeRef.current = null;
+
+        if (!hasTriggeredTimeUpRef.current) {
+          hasTriggeredTimeUpRef.current = true;
+          onTimeUpRef.current?.();
         }
-
-        return previousTime - 1;
-      });
-    }, 1000);
+      }
+    }, 250); // Fréquence de vérification élevée pour une précision exacte
 
     return clearTimer;
-  }, [isRunning, clearTimer]);
+  }, [isRunning, clearTimer, timeLeft]);
 
   /**
-   * Gestion de l'arrivée à zéro.
-   *
-   * IMPORTANT :
-   * setIsRunning est maintenant séparé de setTimeLeft.
-   *
-   * Cela évite les mises à jour d'état imbriquées.
-   */
-  useEffect(() => {
-    if (timeLeft !== 0) {
-      return;
-    }
-
-    clearTimer();
-
-    if (isRunning) {
-      setIsRunning(false);
-    }
-
-    if (!hasTriggeredTimeUpRef.current) {
-      hasTriggeredTimeUpRef.current = true;
-      onTimeUpRef.current?.();
-    }
-  }, [timeLeft, isRunning, clearTimer]);
-
-  /**
-   * Nettoyage lors du démontage.
-   */
-  useEffect(() => {
-    return clearTimer;
-  }, [clearTimer]);
-
-  /**
-   * Démarrer / reprendre.
+   * Démarrer / Reprendre
    */
   const start = useCallback(() => {
-    setTimeLeft((currentTime) => {
-      if (currentTime <= 0) {
-        return currentTime;
-      }
-
-      return currentTime;
+    setTimeLeft((current) => {
+      if (current <= 0) return 0;
+      targetTimeRef.current = Date.now() + current * 1000;
+      setIsRunning(true);
+      return current;
     });
-
-    hasTriggeredTimeUpRef.current = false;
-    setIsRunning(true);
   }, []);
 
   /**
-   * Pause idempotente.
-   *
-   * Appeler pause() plusieurs fois ne provoque pas
-   * de mise à jour inutile.
+   * Mettre en pause
    */
   const pause = useCallback(() => {
     clearTimer();
-
-    setIsRunning((previousRunning) => {
-      if (!previousRunning) {
-        return previousRunning;
-      }
-
-      return false;
-    });
+    targetTimeRef.current = null;
+    setIsRunning(false);
   }, [clearTimer]);
 
   /**
-   * Réinitialisation.
+   * Réinitialisation
    */
   const reset = useCallback(
     (newSeconds?: number) => {
       clearTimer();
-
-      const duration =
-        newSeconds !== undefined
-          ? Math.max(0, Math.floor(newSeconds))
-          : totalDuration;
-
+      targetTimeRef.current = null;
       hasTriggeredTimeUpRef.current = false;
-
       setIsRunning(false);
 
-      if (newSeconds !== undefined) {
-        setTotalDuration(duration);
-      }
+      setTotalDuration((prevDuration) => {
+        const nextDuration =
+          newSeconds !== undefined
+            ? Math.max(0, Math.floor(newSeconds))
+            : prevDuration;
 
-      setTimeLeft(duration);
+        setTimeLeft(nextDuration);
+        return nextDuration;
+      });
     },
-    [clearTimer, totalDuration]
+    [clearTimer]
   );
 
   /**
-   * Ajouter / retirer du temps.
+   * Ajouter / Retirer des secondes
    */
   const addSeconds = useCallback((secondsToAdd: number) => {
-    if (!Number.isFinite(secondsToAdd)) {
-      return;
+    if (!Number.isFinite(secondsToAdd)) return;
+
+    const addedMs = Math.floor(secondsToAdd) * 1000;
+
+    if (targetTimeRef.current !== null) {
+      targetTimeRef.current += addedMs;
     }
 
     setTimeLeft((previousTime) => {
-      const nextTime = Math.max(
-        0,
-        previousTime + Math.floor(secondsToAdd)
-      );
+      const nextTime = Math.max(0, previousTime + Math.floor(secondsToAdd));
 
-      /**
-       * Si on ajoute du temps après avoir atteint 0,
-       * le callback onTimeUp pourra être déclenché
-       * à nouveau lors de la prochaine expiration.
-       */
       if (nextTime > 0) {
         hasTriggeredTimeUpRef.current = false;
       }
@@ -260,29 +185,18 @@ export function useChrono({
     });
   }, []);
 
-  /**
-   * Format MM:SS.
-   */
   const formattedTime = useMemo(() => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
 
-    return `${String(minutes).padStart(2, "0")}:${String(
-      seconds
-    ).padStart(2, "0")}`;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }, [timeLeft]);
 
-  /**
-   * Temps écoulé.
-   */
   const elapsedTime = useMemo(
     () => Math.max(0, totalDuration - timeLeft),
     [totalDuration, timeLeft]
   );
 
-  /**
-   * État terminé.
-   */
   const isFinished = timeLeft === 0;
 
   return {

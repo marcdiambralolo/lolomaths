@@ -7,16 +7,15 @@ export function useGameActions(gameConfig: any) {
   const hasRedirectedRef = useRef(false);
 
   const {
-    gameIsFinished, afficheChoix, afficheGame, competitions,
-    setGameIsFinished, setAfficheChoix, setAfficheGame, resetGameState,
+    gameIsFinished, afficheChoix,  competitions,
+    setGameIsFinished, setAfficheChoix,  resetGameState,
   } = useDiambraStore();
 
   const completeGameCleanup = useCallback(() => {
     if (gameIsFinished) setGameIsFinished(false);
     if (afficheChoix) setAfficheChoix(false);
-    if (afficheGame) setAfficheGame(false);
     if (resetGameState) resetGameState();
-  }, [gameIsFinished, afficheChoix, afficheGame, setGameIsFinished, setAfficheChoix, setAfficheGame, resetGameState]);
+  }, [gameIsFinished, afficheChoix,   setGameIsFinished, setAfficheChoix,resetGameState]);
 
   const demarrerJeu = useCallback(() => {
     if (hasRedirectedRef.current) return;
@@ -31,10 +30,10 @@ export function useGameActions(gameConfig: any) {
       if (!hasActiveCompetition) {
         setAfficheChoix(true);
       } else {
-        setAfficheGame(true);
+
       }
     });
-  }, [gameConfig, competitions, setAfficheChoix, setAfficheGame]);
+  }, [gameConfig, competitions, setAfficheChoix,]);
 
   return { completeGameCleanup, demarrerJeu };
 }

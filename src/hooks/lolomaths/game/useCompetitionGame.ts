@@ -1,10 +1,43 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import lcontentData from "@/data/lcontent.json";
 import { useChrono } from "@/hooks/lolomaths/useChrono";
 import { useCompetitionStore } from "@/lib/store/useCompetitionStore";
-import { isStartCaseCovered, getPlacedPions, hasLockedPionInSequence, } from "@/components/lolomaths/game/competitionEngine";
+import {
+  isStartCaseCovered,
+  getPlacedPions,
+  hasLockedPionInSequence,
+} from "@/components/lolomaths/game/competitionEngine";
 import { StateCase } from "@/lib/interfaces";
-import { loadGameConfig } from "@/services/configService";
 import { useGameHelpRules } from "./useGameHelpRules";
+
+export interface GameConfig {
+  niveau: number;
+  matrixIndex: number;
+  numeromatch: string;
+}
+
+const DEFAULT_CONFIG: GameConfig = {
+  niveau: 0,
+  matrixIndex: 0,
+  numeromatch: "12345",
+};
+
+export const loadGameConfig = (): GameConfig => {
+  try {
+    const savedConfig = localStorage.getItem("lolomaths_config");
+    if (!savedConfig) return DEFAULT_CONFIG;
+
+    const config = JSON.parse(savedConfig);
+    return {
+      niveau: config.niveau ?? DEFAULT_CONFIG.niveau,
+      matrixIndex: config.matrixIndex ?? DEFAULT_CONFIG.matrixIndex,
+      numeromatch: config.numeromatch ?? DEFAULT_CONFIG.numeromatch,
+    };
+  } catch (e) {
+    console.error("Erreur lors du chargement de la configuration:", e);
+    return DEFAULT_CONFIG;
+  }
+};
 
 export interface GameHistoryItem {
   score: number;
@@ -14,7 +47,20 @@ export interface GameHistoryItem {
 const MATCH_DURATION = 300;
 
 export const useCompetitionGame = () => {
-  const store = useCompetitionStore();
+  // 1. Sélecteurs Zustand ciblés pour éviter les re-rendus superflus
+   const grid = useCompetitionStore((state) => state.grid);
+  const flatGrid = useMemo(() => grid.flat(), [grid]);
+  const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
+  const scoreTotal = useCompetitionStore((state) => state.scoreTotal);
+  const directionsValid = useCompetitionStore((state) => state.directionsValid);
+  const hasUsedMultiplicationOrDivision = useCompetitionStore((state) => state.hasUsedMultiplicationOrDivision);
+  const gameResults = useCompetitionStore((state) => state.gameResults);
+
+  const initGame = useCompetitionStore((state) => state.initGame);
+  const resetPions = useCompetitionStore((state) => state.resetPions);
+  const confirmCalculation = useCompetitionStore((state) => state.confirmCalculation);
+
+  // 2. États locaux
   const [showResultZone, setShowResultZone] = useState(false);
   const [selectedDirectionIndex, setSelectedDirectionIndex] = useState<number | null>(null);
   const [showHelp, setShowHelp] = useState(true);
@@ -27,154 +73,136 @@ export const useCompetitionGame = () => {
     },
   });
 
+  const { reset: resetChrono, start: startChrono, pause: pauseChrono } = chrono;
   const hasInitializedMatch = useRef(false);
-
-  useEffect(() => {
-    if (hasInitializedMatch.current) {
-      return;
-    }
-
-    hasInitializedMatch.current = true;
-
-    const config = loadGameConfig();
-
-    store.initGame(
-      config.numbers,
-      config.operators,
-      config.niveau
-    );
-
-    chrono.reset(MATCH_DURATION);
-    chrono.start();
-
-    return () => {
-      chrono.pause();
-    };
-  }, []);
-
   const processedGamesRef = useRef(0);
 
+  /**
+   * Initialise le jeu avec la matrice extraite du fichier JSON
+   */
+  const initializeGameSession = useCallback(() => {
+    const config = loadGameConfig();
+    const activeMatrix = lcontentData[config.matrixIndex] ?? lcontentData[0];
 
+    if (activeMatrix) {
+      initGame(
+        activeMatrix.nombres,
+        activeMatrix.operateurs,
+        activeMatrix.niveau ?? config.niveau,
+        config.numeromatch,
+        activeMatrix.cases
+      );
+    }
+  }, [initGame]);
 
+  // Initialisation unique au montage
+  useEffect(() => {
+    if (hasInitializedMatch.current) return;
 
+    hasInitializedMatch.current = true;
+    initializeGameSession();
+
+    resetChrono(MATCH_DURATION);
+    startChrono();
+
+    return () => {
+      pauseChrono();
+    };
+  }, [initializeGameSession, resetChrono, startChrono, pauseChrono]);
+
+  // Calcul de l'état du jeu à partir de la grille
   const gameState = useMemo(() => {
-    const isStartCovered = isStartCaseCovered(store.flatGrid);
-
-    const placedPions = getPlacedPions(store.flatGrid);
-
-    const hasAvailablePions = store.flatGrid.some(
-      (cell) =>
-        cell.etat === StateCase.Pla ||
-        cell.etat === StateCase.Choi
+    const isStartCovered = isStartCaseCovered(flatGrid);
+    const placedPions = getPlacedPions(flatGrid);
+    const hasAvailablePions = flatGrid.some(
+      (cell) => cell.etat === StateCase.Pla || cell.etat === StateCase.Choi
     );
 
     return {
       isStartCovered,
       placedPions,
       hasLockedPion: hasLockedPionInSequence(placedPions),
-      isFirstGame: store.cnbjeu === 0,
+      isFirstGame: cnbjeu === 0,
       hasAvailablePions,
     };
-  }, [store.flatGrid, store.cnbjeu]);
+  }, [flatGrid, cnbjeu]);
 
   /**
-   * Reset de la manche.
+   * Reset de la manche en cours.
    */
   const handleResetRound = useCallback(() => {
-    store.resetPions();
+    resetPions();
     setSelectedDirectionIndex(null);
-  }, [store.resetPions]);
+  }, [resetPions]);
 
   /**
-   * Validation d'un calcul.
+   * Validation d'un calcul sélectionné.
    */
   const handleAcceptCalculation = useCallback(() => {
-    if (selectedDirectionIndex === null) {
-      return;
-    }
+    if (selectedDirectionIndex === null) return;
 
-    store.confirmCalculation(selectedDirectionIndex);
+    confirmCalculation(selectedDirectionIndex);
     setSelectedDirectionIndex(null);
-  }, [
-    selectedDirectionIndex,
-    store.confirmCalculation,
-  ]);
-
-  const handleRestartMatch = useCallback(() => {
-    setShowResultZone(false);
-
-    setSelectedDirectionIndex(null);
-
-    processedGamesRef.current = 0;
-
-    const config = loadGameConfig();
-
-    store.initGame(
-      config.numbers,
-      config.operators,
-      config.niveau
-    );
-
-    chrono.reset(MATCH_DURATION);
-    chrono.start();
-  }, [
-    store.initGame,
-    chrono.reset,
-    chrono.start,
-  ]);
+  }, [selectedDirectionIndex, confirmCalculation]);
 
   /**
-   * Affichage des statistiques du match.
+   * Redémarrage d'une nouvelle partie / match.
+   */
+  const handleRestartMatch = useCallback(() => {
+    setShowResultZone(false);
+    setSelectedDirectionIndex(null);
+    processedGamesRef.current = 0;
+
+    initializeGameSession();
+
+    resetChrono(MATCH_DURATION);
+    startChrono();
+  }, [initializeGameSession, resetChrono, startChrono]);
+
+  /**
+   * Affichage des détails du match.
    */
   const handleShowDetails = useCallback(() => {
-    const average =
-      store.cnbjeu > 0
-        ? (store.scoreTotal / store.cnbjeu).toFixed(1)
-        : "0";
+    const average = cnbjeu > 0 ? (scoreTotal / cnbjeu).toFixed(1) : "0";
 
     alert(
       `Détails du match:\n` +
-      `Score: ${store.scoreTotal} pts\n` +
-      `Jeux: ${store.cnbjeu}\n` +
-      `Moyenne: ${average} pts`
+        `Score: ${scoreTotal} pts\n` +
+        `Jeux: ${cnbjeu}\n` +
+        `Moyenne: ${average} pts`
     );
-  }, [
-    store.scoreTotal,
-    store.cnbjeu,
-  ]);
-
+  }, [scoreTotal, cnbjeu]);
 
   const helpMessages = useGameHelpRules({
     ...gameState,
-    directionsValid: store.directionsValid,
-    hasUsedMultiplicationOrDivision:
-      store.hasUsedMultiplicationOrDivision,
+    directionsValid,
+    hasUsedMultiplicationOrDivision,
   });
 
-  /**
-   * Évite de recalculer cette valeur à chaque rendu.
-   */
   const hasPlacedPions = useMemo(
     () => gameState.placedPions.length > 0,
     [gameState.placedPions.length]
   );
 
-  /**
-   * Résultat actuellement sélectionné.
-   */
   const selectedGameResult = useMemo(
-    () =>
-      selectedDirectionIndex !== null
-        ? store.gameResults[selectedDirectionIndex]
-        : null,
-    [selectedDirectionIndex, store.gameResults]
+    () => (selectedDirectionIndex !== null ? gameResults[selectedDirectionIndex] : null),
+    [selectedDirectionIndex, gameResults]
   );
 
   return {
-    chrono, showResultZone, selectedDirectionIndex, gameState, showHelp,
-    helpMessages, hasPlacedPions, selectedGameResult,
-    setSelectedDirectionIndex, setShowHelp,
-    handleResetRound, handleAcceptCalculation, handleRestartMatch,
+    chrono,
+    showResultZone,
+    selectedDirectionIndex,
+    gameState,
+    showHelp,
+    helpMessages,
+    hasPlacedPions,
+    selectedGameResult,
+    setSelectedDirectionIndex,
+    setShowHelp,
+    handleResetRound,
+    handleAcceptCalculation,
+    handleRestartMatch,
     handleShowDetails,
   };
 };

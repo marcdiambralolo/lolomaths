@@ -21,10 +21,9 @@ export function useHorloge() {
   const [, startTransition] = useTransition();
 
   const setGameConfig = useDiambraStore((state) => state.setGameConfig);
-  const afficheGame = useDiambraStore((state) => state.afficheGame);
+ 
   const setGameIsFinished = useDiambraStore((state) => state.setGameIsFinished);
   const setAfficheChoix = useDiambraStore((state) => state.setAfficheChoix);
-  const setAfficheGame = useDiambraStore((state) => state.setAfficheGame);
   const resetGameState = useDiambraStore((state) => state.resetGameState);
   const competitions = useDiambraStore((state) => state.competitions);
   const idEditionencours = useDiambraStore((state) => state.idEditionencours);
@@ -70,9 +69,9 @@ export function useHorloge() {
   const completeGameCleanup = useCallback(() => {
     setGameIsFinished(false);
     setAfficheChoix(false);
-    setAfficheGame(false);
+
     resetGameState?.();
-  }, [setGameIsFinished, setAfficheChoix, setAfficheGame, resetGameState]);
+  }, [setGameIsFinished, setAfficheChoix, resetGameState]);
 
   const navigateToGame = useCallback(
     (path: string, configId: string) => {
@@ -108,7 +107,6 @@ export function useHorloge() {
         setAfficheChoix(true);
         navigateToGame('/star/play', configId);
       } else {
-        setAfficheGame(true);
         navigateToGame('/star/diambraplay', configId);
       }
     });
@@ -119,12 +117,11 @@ export function useHorloge() {
     idEditionencours,
     competitions,
     setAfficheChoix,
-    setAfficheGame,
     navigateToGame,
     resetRedirectFlag,
   ]);
 
-  const showBandeauButton = Boolean(gameState.canUserPlay && !afficheGame);
+  const showBandeauButton = Boolean(gameState.canUserPlay  );
   const isLoading = isLastEndedLoading || isConfigLoading || isStatsLoading;
 
   return {

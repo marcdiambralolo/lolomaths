@@ -44,7 +44,7 @@ export function useLaMise() {
 
     const [isPendingNavigation, startNavigationTransition] = useTransition();
 
-    const { gameConfig, setAfficheChoix, setAfficheGame, setCurrentConsultationId, } = useDiambraStore();
+    const { gameConfig, setCurrentConsultationId, } = useDiambraStore();
 
     const monidjeu = gameConfig?._id ?? gameConfig?.id ?? '';
 
@@ -103,8 +103,6 @@ export function useLaMise() {
         },
         retry: 1,
         onSuccess: async (consultationId) => {
-            // setAfficheChoix(false);
-            // setAfficheGame(true);
             setCurrentConsultationId(consultationId);
 
             await Promise.allSettled([

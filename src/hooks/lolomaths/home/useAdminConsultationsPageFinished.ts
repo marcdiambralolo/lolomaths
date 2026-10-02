@@ -16,7 +16,7 @@ const REFRESH_CONFIG_INTERVAL = 5000;
 export function useAdminConsultationsPageFinished() {
   const setGameConfig = useDiambraStore((state) => state.setGameConfig);
   const afficheChoix = useDiambraStore((state) => state.afficheChoix);
-  const afficheGame = useDiambraStore((state) => state.afficheGame);
+  
 
   const { data: gameConfig = null, isLoading } = useQuery<LearningConfiguration | null>({
     queryKey: ['game', 'config'],
@@ -49,7 +49,7 @@ export function useAdminConsultationsPageFinished() {
 
   const { completeGameCleanup, demarrerJeu } = useGameActions(gameConfig);
 
-  const showBandeauButton = !!(gameState.canUserPlay && !afficheChoix && !afficheGame);
+  const showBandeauButton = !!(gameState.canUserPlay && !afficheChoix  );
 
   return useMemo(() => ({
     demarrerJeu,

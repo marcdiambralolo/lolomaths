@@ -23,7 +23,6 @@ export function useHorlogeInit() {
   const setGameConfig = useDiambraStore((state) => state.setGameConfig);
   const setGameIsFinished = useDiambraStore((state) => state.setGameIsFinished);
   const setAfficheChoix = useDiambraStore((state) => state.setAfficheChoix);
-  const setAfficheGame = useDiambraStore((state) => state.setAfficheGame);
   const resetGameState = useDiambraStore((state) => state.resetGameState);
   const idEditionencours = useDiambraStore((state) => state.idEditionencours);
 
@@ -59,9 +58,8 @@ export function useHorlogeInit() {
   const completeGameCleanup = useCallback(() => {
     setGameIsFinished(false);
     setAfficheChoix(false);
-    setAfficheGame(false);
     resetGameState?.();
-  }, [setGameIsFinished, setAfficheChoix, setAfficheGame, resetGameState]);
+  }, [setGameIsFinished, setAfficheChoix, resetGameState]);
 
   const navigateToGame = useCallback((path: string, configId: string) => {
     const targetPath = `${path}?puzzle=${configId}`;
@@ -79,14 +77,13 @@ export function useHorlogeInit() {
 
     startTransition(() => {
       if (idEditionencours === configId) {
-        setAfficheGame(true);
         navigateToGame('/star/diambraplay', configId);
       } else {
         setAfficheChoix(true);
         navigateToGame('/star/playlolomaths', configId);
       }
     });
-  }, [gameConfig, idEditionencours, setAfficheGame, setAfficheChoix, navigateToGame]);
+  }, [gameConfig, idEditionencours, setAfficheChoix, navigateToGame]);
 
   const isLoading = isLastEndedLoading || isConfigLoading || isStatsLoading;
 

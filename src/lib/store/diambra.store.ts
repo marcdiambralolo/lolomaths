@@ -43,7 +43,7 @@ interface MonEtoileStore {
     gameConfig: LearningConfiguration | null;
     currentMatchInfo: MatchInfo[];
     competitions: CompetitionInfo[];
-      idEditionencours: string | null;
+    idEditionencours: string | null;
     competitionsVersion: number;
     currentConsultationId: string | null;
     gameStarted: boolean;
@@ -55,7 +55,7 @@ interface MonEtoileStore {
     afficheBanana: boolean;
     afficheStat: boolean;
     afficheChoix: boolean;
-    afficheGame: boolean;
+ 
     gameIsFinished: boolean;
     gameSequenceCounter: number;
 
@@ -86,10 +86,10 @@ interface MonEtoileStore {
     getGameSequenceCounter: () => number;
 
     // Actions - UI
-   
+
     setAfficheBanana: (value: boolean) => void;
     setAfficheStat: (value: boolean) => void;
-    setAfficheGame: (value: boolean) => void;
+ 
     setAfficheChoix: (value: boolean) => void;
     setGameIsFinished: (value: boolean) => void;
     setJeuAcommencer: (value: boolean) => void;
@@ -127,7 +127,7 @@ const compressCompetition = (competition: CompetitionInfo): StoredCompetition =>
     displayName: competition.displayName,
     isValidated: competition.isValidated,
     niveau: competition.niveau,
-    punChangeCount:  1,
+    punChangeCount: 1,
     matchInfo: competition.matchInfo.map(match => ({
         id: match.id,
         tpsglobal: match.tpsglobal,
@@ -242,7 +242,7 @@ const INITIAL_STATE = {
     competitions: [] as CompetitionInfo[],
     competitionsVersion: 0,
     currentConsultationId: null,
-      idEditionencours: null, 
+    idEditionencours: null,
     gameStarted: false,
     jeuAcommencer: false,
     afficheaide: false,
@@ -253,7 +253,7 @@ const INITIAL_STATE = {
     afficheStat: false,
     gameIsFinished: false,
     afficheChoix: false,
-    afficheGame: false,
+ 
     gameSequenceCounter: 0,
 };
 
@@ -396,7 +396,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
             // ========================================================================
             // UI
             // ========================================================================
-   setIdEditionencours: (id: any) => set({ idEditionencours: id }),
+            setIdEditionencours: (id: any) => set({ idEditionencours: id }),
             setAfficheBanana: (value) => set({ afficheBanana: value }),
             setAfficheStat: (value) => set({ afficheStat: value }),
             setAfficheChoix: (value) => set({ afficheChoix: value }),
@@ -407,7 +407,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
             setLamise: (value) => set({ lamise: value }),
             setAfficheAide: (value) => set({ afficheaide: value }),
             setGameStarted: (value) => set({ gameStarted: value }),
-            setAfficheGame: (value) => set({ afficheGame: value }),
+   
             setCurrentConsultationId: (id) => set({ currentConsultationId: id }),
 
             resetGameState: () => set({
@@ -439,7 +439,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
                     gameIsFinished: state.gameIsFinished,
                     currentConsultationId: state.currentConsultationId,
                     gameSequenceCounter: state.gameSequenceCounter,
-                        idEditionencours: state.idEditionencours,
+                    idEditionencours: state.idEditionencours,
                 };
             },
             onRehydrateStorage: () => (state) => {
@@ -459,9 +459,9 @@ export const useDiambraStore = create<MonEtoileStore>()(
                     if (state.gameSequenceCounter === undefined) {
                         state.gameSequenceCounter = 0;
                     }
-                     if (state.idEditionencours === undefined) {
-            state.idEditionencours = null; // NOUVEAU
-          }
+                    if (state.idEditionencours === undefined) {
+                        state.idEditionencours = null; // NOUVEAU
+                    }
                 }
             },
         }

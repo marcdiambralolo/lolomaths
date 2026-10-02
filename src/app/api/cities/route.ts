@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     return response;
   } catch {
     return NextResponse.json(
-      { message: 'Impossible de joindre le service de recherche de villes' },
+      { message: 'Impossible de joindre le service de recherche de villes.' },
       { status: 502 },
     );
   }
