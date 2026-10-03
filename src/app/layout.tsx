@@ -131,7 +131,7 @@ const SchemaScript = memo(function SchemaScript() {
         "@id": `${SITE_CONFIG.url}/#webapplication`,
         name: SITE_CONFIG.name,
         url: SITE_CONFIG.url,
-        description: "Jeu  - Entraînez votre cerveau avec ce puzzle de chiffres addictif",
+        description: "Jeu  - Entraînez votre cerveau avec lolomaths",
         applicationCategory: "Game",
         operatingSystem: "All",
         offers: {
