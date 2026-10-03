@@ -5,7 +5,7 @@ export const GRID_COLS = 13;
 export const START_CASE_INDEX = 110; // Case de départ centrale (Ligne 8, Col 6)
 
 // Set réutilisable pour éviter la réallocation mémoire à chaque vérification
-const OPERATORS_SET = new Set(['+', '-', '*', '/']);
+const OPERATORS_SET = new Set(['+', '-', '*', '/', '×', '÷']);
 
 export function isOperateur(txt: string): boolean {
   return OPERATORS_SET.has(txt);
@@ -295,7 +295,7 @@ export function collectSequence(
     [Sens.Right]: Sens.Left
   };
 
-  const oppositeDirection = oppositeDirections[direction] || Sens.Right;
+  const oppositeDirection = oppositeDirections[direction];
 
   let prev = getNextCase(grid, startCase, oppositeDirection);
   while (prev && prev.txt !== '') {
@@ -316,77 +316,6 @@ export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
     const bIndex = isHorizontal ? b.indi : b.indj;
     return aIndex - bIndex;
   });
-}
-
-export function calculateGameResult(
-  boutCase: UneCase,
-  sequence: UneCase[],
-  placedPions: UneCase[],
-  niveau: Dtfil,
-  hasUsedMultiplicationOrDivision: boolean = false
-): GameResult {
-  const game: GameResult = {
-    nbreatind: parseInt(boutCase.txt, 10) || 0,
-    result: 0,
-    notedbase: 0,
-    bonus: 0,
-    notedjeu: 0,
-    combine: sequence.reduce((acc, c) => acc + c.txt, '') + boutCase.txt
-  };
-
-  const copySeq = [...sequence];
-  if (copySeq.length === 0) return game;
-
-  let currentVal = parseFloat(copySeq.shift()!.txt) || 0;
-
-  while (copySeq.length >= 2) {
-    const operator = copySeq.shift()!.txt;
-    const operand = parseInt(copySeq.shift()!.txt, 10) || 0;
-
-    switch (operator) {
-      case '/':
-        if (operand !== 0) currentVal /= operand;
-        break;
-      case '*':
-        currentVal *= operand;
-        break;
-      case '+':
-        currentVal += operand;
-        break;
-      case '-':
-        currentVal -= operand;
-        break;
-    }
-  }
-
-  game.result = currentVal;
-
-  const diff = Math.abs(game.result - game.nbreatind);
-  game.notedbase = game.result === game.nbreatind ? 5 : -diff;
-
-  let totalBonus = 0;
-  const totalPionsUsed = sequence.length;
-
-  if (totalPionsUsed >= 7 && totalPionsUsed <= 10) {
-    totalBonus += totalPionsUsed - 6;
-  }
-
-  if (niveau === Dtfil.Min && game.nbreatind >= 30) totalBonus += 1;
-  if (niveau === Dtfil.Cad && game.nbreatind >= 100) totalBonus += 1;
-  if (niveau === Dtfil.Jun && game.nbreatind >= 200) totalBonus += 1;
-  if (niveau === Dtfil.Sen && game.nbreatind >= 300) totalBonus += 1;
-
-  const hasMultiplicationOrDivision = sequence.some(
-    (cell) => cell.txt === '*' || cell.txt === '/'
-  );
-  if (hasMultiplicationOrDivision && !hasUsedMultiplicationOrDivision) {
-    totalBonus += 1;
-  }
-
-  game.bonus = totalBonus;
-  game.notedjeu = game.notedbase + game.bonus;
-
-  return game;
 }
 
 // ============================================================
@@ -413,4 +342,89 @@ export function getLockedPions(flatGrid: UneCase[] | undefined | null): UneCase[
 export function hasLockedPionInSequence(sequence: UneCase[] | undefined | null): boolean {
   if (!sequence || !Array.isArray(sequence)) return false;
   return sequence.some((cell) => cell.etat === StateCase.Lo);
+}
+
+/**
+ * Évalue la formule et calcule la note et les bonus.
+ * RÈGLE : TOUT coup est valide (inférieur, égal ou supérieur).
+ * Les bonus s'appliquent UNIQUEMENT si Resultat === CaseVisée.
+ */
+export function calculateGameResult(
+  targetCase: UneCase,
+  sequence: UneCase[],
+  placedPions: UneCase[],
+  niveau: Dtfil,
+  hasUsedMultiplicationOrDivision: boolean = false
+): GameResult {
+  const targetValue = parseInt(targetCase.itxt || targetCase.txt, 10) || 0;
+
+  const game: GameResult = {
+    nbreatind: targetValue,
+    result: 0,
+    notedbase: 0,
+    bonus: 0,
+    notedjeu: 0,
+    combine: sequence ? sequence.map((c) => c.txt).join('') : '',
+    targetCase
+  };
+
+  if (!sequence || sequence.length === 0) return game;
+
+  // Évaluation sécurisée de l'expression mathématique
+  const sanitizedExpr = sequence
+    .map((c) => c.txt)
+    .join('')
+    .replace(/×|x/gi, '*')
+    .replace(/÷/g, '/');
+
+  let calculatedValue = 0;
+  if (/^[0-9+\-*/().\s]+$/.test(sanitizedExpr)) {
+    try {
+      calculatedValue = Function(`"use strict"; return (${sanitizedExpr})`)();
+    } catch {
+      calculatedValue = 0;
+    }
+  }
+
+  game.result = Number.isFinite(calculatedValue) ? calculatedValue : 0;
+
+  const isExactMatch = game.result === game.nbreatind;
+
+  if (isExactMatch) {
+    // 1. Égalité parfaite : Note de base maximale (+5) + activation de tous les bonus
+    game.notedbase = 5;
+
+    let totalBonus = 0;
+    const totalPionsUsed = sequence.length;
+
+    // Bonus de longueur
+    if (totalPionsUsed >= 7 && totalPionsUsed <= 10) {
+      totalBonus += totalPionsUsed - 6;
+    }
+
+    // Bonus de palier par niveau
+    if (niveau === Dtfil.Min && game.nbreatind >= 30) totalBonus += 1;
+    if (niveau === Dtfil.Cad && game.nbreatind >= 100) totalBonus += 1;
+    if (niveau === Dtfil.Jun && game.nbreatind >= 200) totalBonus += 1;
+    if (niveau === Dtfil.Sen && game.nbreatind >= 300) totalBonus += 1;
+
+    // Bonus d'opérateurs (* ou /)
+    const hasMultiplicationOrDivision = sequence.some(
+      (cell) => cell.txt === '*' || cell.txt === '/' || cell.txt === '×' || cell.txt === '÷'
+    );
+    if (hasMultiplicationOrDivision && !hasUsedMultiplicationOrDivision) {
+      totalBonus += 1;
+    }
+
+    game.bonus = totalBonus;
+  } else {
+    // 2. Résultat supérieur ou inférieur : Valide, mais pénalité d'écart et AUCUN bonus
+    const diff = Math.abs(game.nbreatind - game.result);
+    game.notedbase = -diff;
+    game.bonus = 0;
+  }
+
+  game.notedjeu = game.notedbase + game.bonus;
+
+  return game;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { useCompetitionGame } from "@/hooks/lolomaths/game/useCompetitionGame";
 import { Fdialog } from "./Fdialog";
 import { OplaGrid } from "./OplaGrid";
@@ -13,7 +13,7 @@ import { HelpMessagesView } from "./components/HelpMessagesView";
 import HelpToggle from "./components/HelpToggle";
 import { MatchSummaryScreen } from "./components/MatchSummaryScreen";
 
-export const CompetitionScreen: React.FC = () => {
+export const CompetitionScreen: React.FC = React.memo(() => {
   const {
     chrono,
     showResultZone,
@@ -31,6 +31,17 @@ export const CompetitionScreen: React.FC = () => {
     handleShowDetails,
   } = useCompetitionGame();
 
+  // Fermeture optimisée de la boîte de dialogue
+  const handleCloseDialog = useCallback(() => {
+    setSelectedDirectionIndex(null);
+  }, [setSelectedDirectionIndex]);
+
+  // Calcul mémorisé de l'état d'ouverture du dialogue
+  const isDialogOpen = useMemo(
+    () => selectedDirectionIndex !== null && selectedGameResult !== undefined,
+    [selectedDirectionIndex, selectedGameResult]
+  );
+
   if (showResultZone) {
     return (
       <MatchSummaryScreen
@@ -40,8 +51,6 @@ export const CompetitionScreen: React.FC = () => {
       />
     );
   }
-
-  const isDialogOpen = selectedDirectionIndex !== null && selectedGameResult !== undefined;
 
   return (
     <main
@@ -73,8 +82,10 @@ export const CompetitionScreen: React.FC = () => {
         isOpen={isDialogOpen}
         gameResult={selectedGameResult ?? null}
         onAccept={handleAcceptCalculation}
-        onCancel={() => setSelectedDirectionIndex(null)}
+        onCancel={handleCloseDialog}
       />
     </main>
   );
-};
+});
+
+CompetitionScreen.displayName = "CompetitionScreen";

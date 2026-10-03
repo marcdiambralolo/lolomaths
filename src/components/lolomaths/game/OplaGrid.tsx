@@ -2,7 +2,7 @@
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { START_CASE_INDEX, isOperateur } from './competitionEngine';
-import { UneCase, StateCase } from '@/lib/interfaces';
+import { UneCase, StateCase, Sens } from '@/lib/interfaces';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 
 interface GridCellProps {
@@ -12,7 +12,12 @@ interface GridCellProps {
   onClick: (cell: UneCase) => void;
 }
 
-const GridCell: React.FC<GridCellProps> = memo(({ cell, rowIndex, colIndex, onClick }) => {
+const GridCell: React.FC<GridCellProps> = memo(({
+  cell,
+  rowIndex,
+  colIndex,
+  onClick
+}) => {
   const isStart = cell.ncase === START_CASE_INDEX;
   const isInteractive = cell.etat !== StateCase.Lo;
 
@@ -26,22 +31,22 @@ const GridCell: React.FC<GridCellProps> = memo(({ cell, rowIndex, colIndex, onCl
   const cellStyles = useMemo(() => {
     const isNumeric = !isOperateur(cell.txt) && cell.txt !== '';
 
-    // 1. Case verrouillée (pion déjà validé/bloqué)
+    // 1. Case verrouillée (pion déjà validé/bloqué sur le plateau)
     if (cell.etat === StateCase.Lo) {
-      return 'bg-slate-700 border-slate-600 text-slate-200 font-bold shadow-inner cursor-not-allowed opacity-80';
+      return 'bg-slate-800 border-slate-700 text-slate-300 font-bold shadow-inner cursor-not-allowed opacity-85';
     }
 
-    // 2. Case sélectionnée
+    // 2. Case sélectionnée / choisie par le joueur
     if (cell.etat === StateCase.Choi) {
-      return 'bg-yellow-400 border-yellow-500 text-slate-950 font-black scale-105 z-10 shadow-lg ring-2 ring-yellow-300 animate-pulse';
+      return 'bg-yellow-400 border-yellow-500 text-slate-950 font-black scale-105 z-20 shadow-lg ring-2 ring-yellow-300 animate-pulse';
     }
 
     // 3. Pion posé temporairement par le joueur
     if (cell.etat === StateCase.Pla) {
       if (isNumeric) {
-        return 'bg-gradient-to-br from-sky-500 to-sky-600 border-sky-400 text-white font-extrabold shadow-md hover:from-sky-400 hover:to-sky-500 hover:scale-105 transition-all duration-150';
+        return 'bg-gradient-to-br from-sky-500 to-sky-600 border-sky-400 text-white font-extrabold shadow-md hover:from-sky-400 hover:to-sky-500 hover:scale-105 transition-all duration-150 z-10';
       }
-      return 'bg-gradient-to-br from-amber-500 to-amber-600 border-amber-400 text-slate-950 font-black shadow-md hover:from-amber-400 hover:to-amber-500 hover:scale-105 transition-all duration-150';
+      return 'bg-gradient-to-br from-amber-500 to-amber-600 border-amber-400 text-slate-950 font-black shadow-md hover:from-amber-400 hover:to-amber-500 hover:scale-105 transition-all duration-150 z-10';
     }
 
     // 4. Case centrale de départ (vide)
@@ -52,8 +57,8 @@ const GridCell: React.FC<GridCellProps> = memo(({ cell, rowIndex, colIndex, onCl
     // 5. Case standard de la grille
     const hasInitialText = Boolean(cell.itxt && cell.itxt.trim() !== '');
     return [
-      'bg-slate-900/80 border-slate-800 hover:bg-slate-800 hover:border-slate-700 hover:text-white hover:scale-105 transition-all duration-150 cursor-pointer',
-      hasInitialText ? 'text-cyan-400/80 font-bold' : 'text-slate-500 font-normal'
+      'bg-slate-900/80 border-slate-800/80 hover:bg-slate-800/90 hover:border-slate-700 hover:text-white hover:scale-105 transition-all duration-150 cursor-pointer',
+      hasInitialText ? 'text-cyan-400/90 font-bold' : 'text-slate-500 font-normal'
     ].join(' ');
   }, [cell.etat, cell.txt, cell.itxt, isStart]);
 
@@ -97,7 +102,7 @@ export const OplaGrid: React.FC = () => {
   const handleCaseClick = useCompetitionStore((state) => state.handleCaseClick);
 
   return (
-    <div id="opla" className="w-full bg-slate-950 p-1 rounded-lg border border-slate-800 shadow-2xl">
+    <div id="opla" className="w-full bg-slate-950 p-1.5 rounded-xl border border-slate-800 shadow-2xl">
       <div
         className="w-full grid gap-0.5 select-none"
         style={{

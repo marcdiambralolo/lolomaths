@@ -402,26 +402,17 @@ export interface MatchResult {
 }
 
 export interface MatchInfo {
-  combinaisons: string[];
   id?: string;
   timeSpent?: number;
   matchNumber?: number;
   competitionId?: string;
-  listeCaseOpLab?: Case[];
-  listeCaseOpLabInitiale?: Case[];
-  pieces?: string[];
-  numordrep?: number;
   score?: number;
-  rates?: number;
-  tpsglobal?: number;
   entite?: number;
   niveau?: number;
   numeromatch?: string;
   isgameover?: boolean;
   datedebut?: string | null;
   datefin?: string | null;
-  trouves?: number;
-  nbCoup?: number;
 }
 
 export interface CompetitionInfo {
@@ -685,6 +676,7 @@ export interface GameResult {
   bonus: number;
   notedjeu: number;
   combine: string;
+  targetCase: UneCase;
 }
 
 export enum StateCase {
@@ -732,6 +724,7 @@ export interface GameResult {
   bonus: number;
   notedjeu: number;
   combine: string;
+  targetCase: UneCase;
 }
 
 

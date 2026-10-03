@@ -48,13 +48,13 @@ const calculateCompetitionStats = (competition: CompetitionInfo): CompetitionSta
   }
 
   const stats = matches.reduce((acc, m) => {
-    const trouves = m.trouves || 0;
-    const rates = m.rates || 0;
+    const trouves =   0;
+    const rates = 0;
 
     acc.totalScore += trouves;
     acc.totalTrouves += trouves;
     acc.totalRates += rates;
-    acc.totalTimeGlobal += m.tpsglobal || 0;
+    acc.totalTimeGlobal +=   0;
     if (m.isgameover) acc.completedMatches += 1;
 
     return acc;
@@ -139,17 +139,15 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
       const existingMatches = existingStats.matchesDetails || [];
 
       const matchesDetails = comp.matchInfo.map(m => ({
-        tpsglobal: m.tpsglobal || 0,
-        score: m.trouves || 0,
-        trouves: m.trouves || 0,
-        rates: m.rates || 0,
+   
+        score:  0,
+        trouves:  0,
+        rates:   0,
         timeSpent: comp.timeSpent || 0,
         isgameover: m.isgameover || false,
         niveau: comp.niveau || 0,
-        combinaisons: m.combinaisons || [],
         matchNumber: m.matchNumber,
         numeromatch: m.numeromatch,
-        numordrep: m.numordrep,
         entite: m.entite
       }));
 
@@ -165,7 +163,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
         finalScore: stats.totalScore,
         matchesCompleted: comp.matchInfo.length,
         niveau: comp.niveau || 0,
-        tpsglobal: comp.matchInfo[0]?.tpsglobal || 0,
+        tpsglobal:   0,
         learningStats: {
           totalTime: totalTimeFormatted,
           averageScore: stats.averageScore,

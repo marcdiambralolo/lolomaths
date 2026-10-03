@@ -92,4 +92,3 @@ export type BackendSessionFetchResult = {
   backendResponse: Response;
   refreshedSession: { accessToken: string; refreshToken?: string } | null;
 };
-

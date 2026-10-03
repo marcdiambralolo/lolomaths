@@ -8,9 +8,6 @@ const CURRENT_VERSION = 2;
 
 interface StoredMatchInfo {
     id?: string;
-    tpsglobal?: number;
-    trouves?: number;
-    rates?: number;
     isgameover?: boolean;
     timeSpent?: number;
     matchNumber?: number;
@@ -18,10 +15,7 @@ interface StoredMatchInfo {
     numeromatch?: string;
     datedebut?: string | null;
     datefin?: string | null;
-    combinaisons?: string[];
     score?: number;
-    numordrep?: number;
-    entite?: number;
 }
 
 interface StoredCompetition {
@@ -35,11 +29,9 @@ interface StoredCompetition {
     isValidated?: boolean;
     niveau?: number;
     matchInfo: StoredMatchInfo[];
-    punChangeCount?: number;
 }
 
 interface MonEtoileStore {
-    // État
     gameConfig: LearningConfiguration | null;
     currentMatchInfo: MatchInfo[];
     competitions: CompetitionInfo[];
@@ -55,22 +47,15 @@ interface MonEtoileStore {
     afficheBanana: boolean;
     afficheStat: boolean;
     afficheChoix: boolean;
- 
     gameIsFinished: boolean;
     gameSequenceCounter: number;
 
-    // Actions - Configuration
     setGameConfig: (config: LearningConfiguration | null) => void;
     resetGameConfig: () => void;
-
-    // Actions - Matchs
     setCurrentMatchInfo: (matches: MatchInfo[]) => void;
     appendMatchInfo: (match: MatchInfo) => void;
     updateMatchInfo: (index: number, match: Partial<MatchInfo>) => void;
     clearCurrentMatchInfo: () => void;
-    getCurrentMatchByType: (tpsglobal: number) => MatchInfo | undefined;
-
-    // Actions - Compétitions
     addCompetition: (competition: CompetitionInfo) => void;
     getCompetitionById: (id: string) => CompetitionInfo | undefined;
     removeCompetitionById: (id: string) => boolean;
@@ -79,34 +64,23 @@ interface MonEtoileStore {
     addMultipleCompetitions: (newCompetitions: CompetitionInfo[]) => void;
     refreshCompetitions: () => void;
     updateCompetitionValidation: (id: string, isValidated: boolean) => void;
-
-    // Actions - Séquence de jeu
     incrementGameSequenceCounter: () => void;
     resetGameSequenceCounter: () => void;
     getGameSequenceCounter: () => number;
-
-    // Actions - UI
-
     setAfficheBanana: (value: boolean) => void;
     setAfficheStat: (value: boolean) => void;
- 
     setAfficheChoix: (value: boolean) => void;
     setGameIsFinished: (value: boolean) => void;
     setJeuAcommencer: (value: boolean) => void;
     setJeuenattente: (value: boolean) => void;
     setLejeu: (value: boolean) => void;
     setLamise: (value: boolean) => void;
-    setAfficheAide: (value: boolean) => void;
     setGameStarted: (value: boolean) => void;
     setCurrentConsultationId: (id: string | null) => void;
     resetGameState: () => void;
     resetAll: () => void;
 }
-
-// ============================================================================
-// FONCTIONS UTILITAIRES
-// ============================================================================
-
+ 
 const sortByDateDesc = (a: CompetitionInfo, b: CompetitionInfo): number => {
     return new Date(b.datedebut).getTime() - new Date(a.datedebut).getTime();
 };
@@ -127,12 +101,8 @@ const compressCompetition = (competition: CompetitionInfo): StoredCompetition =>
     displayName: competition.displayName,
     isValidated: competition.isValidated,
     niveau: competition.niveau,
-    punChangeCount: 1,
     matchInfo: competition.matchInfo.map(match => ({
         id: match.id,
-        tpsglobal: match.tpsglobal,
-        trouves: match.trouves,
-        rates: match.rates,
         isgameover: match.isgameover,
         timeSpent: match.timeSpent,
         matchNumber: match.matchNumber,
@@ -140,9 +110,7 @@ const compressCompetition = (competition: CompetitionInfo): StoredCompetition =>
         numeromatch: match.numeromatch,
         datedebut: match.datedebut,
         datefin: match.datefin,
-        combinaisons: match.combinaisons || [],
         score: match.score,
-        numordrep: match.numordrep,
         entite: match.entite,
     })),
 });
@@ -159,9 +127,6 @@ const decompressCompetition = (stored: StoredCompetition): CompetitionInfo => ({
     niveau: stored.niveau,
     matchInfo: stored.matchInfo.map(match => ({
         id: match.id,
-        tpsglobal: match.tpsglobal,
-        trouves: match.trouves || 0,
-        rates: match.rates || 0,
         isgameover: match.isgameover || false,
         timeSpent: match.timeSpent,
         matchNumber: match.matchNumber || 0,
@@ -170,9 +135,6 @@ const decompressCompetition = (stored: StoredCompetition): CompetitionInfo => ({
         numeromatch: match.numeromatch || '',
         datedebut: match.datedebut || null,
         datefin: match.datefin || null,
-        combinaisons: match.combinaisons || [],
-        numordrep: match.numordrep || 0,
-        entite: match.entite || 0,
     })),
 });
 
@@ -187,10 +149,6 @@ const isStorageNearLimit = (): boolean => {
         return true;
     }
 };
-
-// ============================================================================
-// FONCTION DE MIGRATION
-// ============================================================================
 
 type PersistedStateV1 = {
     gameConfig?: LearningConfiguration | null;
@@ -222,7 +180,6 @@ const migrateStore = (persistedState: unknown, version: number): unknown => {
                 ...comp,
                 matchInfo: comp?.matchInfo?.map(match => ({
                     ...match,
-                    combinaisons: match?.combinaisons || [],
                 })) || [],
             })) || [],
         };
@@ -231,10 +188,6 @@ const migrateStore = (persistedState: unknown, version: number): unknown => {
     // Fallback: retourner l'état tel quel
     return persistedState;
 };
-
-// ============================================================================
-// ÉTAT INITIAL
-// ============================================================================
 
 const INITIAL_STATE = {
     gameConfig: null,
@@ -253,31 +206,15 @@ const INITIAL_STATE = {
     afficheStat: false,
     gameIsFinished: false,
     afficheChoix: false,
- 
     gameSequenceCounter: 0,
 };
-
-// ============================================================================
-// STORE
-// ============================================================================
 
 export const useDiambraStore = create<MonEtoileStore>()(
     persist(
         (set, get) => ({
             ...INITIAL_STATE,
-
-            // ========================================================================
-            // Configuration
-            // ========================================================================
-
             setGameConfig: (config) => set({ gameConfig: config }),
-
             resetGameConfig: () => set({ gameConfig: null }),
-
-            // ========================================================================
-            // Matchs
-            // ========================================================================
-
             setCurrentMatchInfo: (matches) => set({ currentMatchInfo: matches }),
 
             appendMatchInfo: (match) => set(state => ({
@@ -292,15 +229,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
                 return { currentMatchInfo: newMatches };
             }),
 
-            clearCurrentMatchInfo: () => set({ currentMatchInfo: [] }),
-
-            getCurrentMatchByType: (tpsglobal) => {
-                return get().currentMatchInfo.find(match => match.tpsglobal === tpsglobal);
-            },
-
-            // ========================================================================
-            // Compétitions
-            // ========================================================================
+            clearCurrentMatchInfo: () => set({ currentMatchInfo: [] }), 
 
             addCompetition: (competition) => {
                 set(state => {
@@ -377,11 +306,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
                     ),
                     competitionsVersion: state.competitionsVersion + 1
                 }));
-            },
-
-            // ========================================================================
-            // Séquence de jeu
-            // ========================================================================
+            }, 
 
             incrementGameSequenceCounter: () =>
                 set((state) => ({
@@ -391,11 +316,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
             resetGameSequenceCounter: () =>
                 set({ gameSequenceCounter: 0 }),
 
-            getGameSequenceCounter: () => get().gameSequenceCounter,
-
-            // ========================================================================
-            // UI
-            // ========================================================================
+            getGameSequenceCounter: () => get().gameSequenceCounter, 
             setIdEditionencours: (id: any) => set({ idEditionencours: id }),
             setAfficheBanana: (value) => set({ afficheBanana: value }),
             setAfficheStat: (value) => set({ afficheStat: value }),
@@ -404,10 +325,8 @@ export const useDiambraStore = create<MonEtoileStore>()(
             setJeuAcommencer: (value) => set({ jeuAcommencer: value }),
             setJeuenattente: (value) => set({ jeuenattente: value }),
             setLejeu: (value) => set({ lejeu: value }),
-            setLamise: (value) => set({ lamise: value }),
-            setAfficheAide: (value) => set({ afficheaide: value }),
-            setGameStarted: (value) => set({ gameStarted: value }),
-   
+            setLamise: (value) => set({ lamise: value }), 
+            setGameStarted: (value) => set({ gameStarted: value }), 
             setCurrentConsultationId: (id) => set({ currentConsultationId: id }),
 
             resetGameState: () => set({
@@ -455,8 +374,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
                 }
                 if (state) {
                     state.currentMatchInfo = state.currentMatchInfo || [];
-                    // Initialiser gameSequenceCounter si non défini
-                    if (state.gameSequenceCounter === undefined) {
+                     if (state.gameSequenceCounter === undefined) {
                         state.gameSequenceCounter = 0;
                     }
                     if (state.idEditionencours === undefined) {

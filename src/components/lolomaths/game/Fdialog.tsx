@@ -92,6 +92,16 @@ export const Fdialog: React.FC<FdialogProps> = ({
           </span>
         </div>
 
+        {/* Banner d'état du coup */}
+        <div className={`px-6 py-2 text-xs font-semibold uppercase tracking-wider flex justify-between items-center ${
+          isPerfect 
+            ? "bg-emerald-500/10 text-emerald-400 border-b border-emerald-500/20" 
+            : "bg-amber-500/10 text-amber-400 border-b border-amber-500/20"
+        }`}>
+          <span>{isPerfect ? "Coup Parfait" : "Coup Inexact (Pénalité d'écart)"}</span>
+          <span>{isPerfect ? "Bonus Activés" : "Bonus = 0"}</span>
+        </div>
+
         {/* Contenu principal */}
         <div className="p-6 flex flex-col gap-1 font-mono text-sm">
           <ScoreRow
@@ -109,19 +119,19 @@ export const Fdialog: React.FC<FdialogProps> = ({
           <ScoreRow
             label="Écart :"
             value={ecartAbsolu}
-            valueClassName={isPerfect ? "text-emerald-400" : "text-rose-400"}
+            valueClassName={isPerfect ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}
           />
 
           <ScoreRow
             label="Note de base :"
-            value={`${formattedBaseNote} pt${Math.abs(gameResult.notedbase) > 1 ? "s" : ""}`}
-            valueClassName={gameResult.notedbase >= 0 ? "text-emerald-400" : "text-rose-400"}
+            value={`${gameResult.notedbase > 0 ? "+" : ""}${formattedBaseNote} pt${Math.abs(gameResult.notedbase) > 1 ? "s" : ""}`}
+            valueClassName={gameResult.notedbase >= 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}
           />
 
           <ScoreRow
             label="Total Bonus :"
             value={`+${formattedBonus}`}
-            valueClassName="text-amber-400"
+            valueClassName={gameResult.bonus > 0 ? "text-amber-400 font-bold" : "text-slate-500"}
           />
 
           {/* Résultat Final */}
@@ -129,8 +139,10 @@ export const Fdialog: React.FC<FdialogProps> = ({
             <span className="font-bold text-slate-100 uppercase tracking-wide">
               Note obtenue :
             </span>
-            <span className="text-2xl font-black text-emerald-400 font-sans tracking-tight">
-              {formattedScore} pts
+            <span className={`text-2xl font-black font-sans tracking-tight ${
+              gameResult.notedjeu >= 0 ? "text-emerald-400" : "text-rose-400"
+            }`}>
+              {gameResult.notedjeu > 0 ? `+${formattedScore}` : formattedScore} pts
             </span>
           </div>
         </div>

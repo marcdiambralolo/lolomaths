@@ -24,7 +24,9 @@ interface CompetitionState {
   flatGrid: UneCase[];
   numbers: UneCase[];
   operators: UneCase[];
-  pions: UneCase[];
+  pions: UneCase[]; // Tirage actif du rack (10 pions max : 6 nombres, 4 opérateurs)
+  stockNumbers: string[]; // Réserve globale de nombres restants
+  stockOperators: string[]; // Réserve globale d'opérateurs restants
   gameResults: GameResult[];
   niveau: Dtfil;
   cnbjeu: number;
@@ -48,11 +50,48 @@ interface CompetitionState {
   resetToInitialState: () => void;
 }
 
-const buildRackItems = (numbersTxt: string[], operatorsTxt: string[]) => {
-  const cleanNumbers = numbersTxt.slice(0, 6);
-  const cleanOperators = operatorsTxt.slice(0, 4);
+/**
+ * Générateur pseudo-aléatoire déterministe (Mulberry32)
+ */
+function createPRNG(seedString: string) {
+  let seed = 0;
+  for (let i = 0; i < seedString.length; i++) {
+    seed = (seed << 5) - seed + seedString.charCodeAt(i);
+    seed |= 0;
+  }
 
-  const numbers: UneCase[] = cleanNumbers.map((txt, index) => ({
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Mélange déterministe Fisher-Yates
+ */
+function shuffleDeterministic<T>(array: T[], seedString: string): T[] {
+  const result = [...array];
+  const random = createPRNG(seedString);
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
+
+// Fonction de tirage des 10 pions depuis le stock
+const drawRackFromStock = (stockNum: string[], stockOp: string[]) => {
+  const currentNumTxt = stockNum.slice(0, 6);
+  const remainingNum = stockNum.slice(6);
+
+  const currentOpTxt = stockOp.slice(0, 4);
+  const remainingOp = stockOp.slice(4);
+
+  const numbers: UneCase[] = currentNumTxt.map((txt, index) => ({
     ncase: index,
     indi: 0,
     indj: 0,
@@ -63,7 +102,7 @@ const buildRackItems = (numbersTxt: string[], operatorsTxt: string[]) => {
     placep: index
   }));
 
-  const operators: UneCase[] = cleanOperators.map((txt, index) => ({
+  const operators: UneCase[] = currentOpTxt.map((txt, index) => ({
     ncase: index,
     indi: 0,
     indj: 0,
@@ -71,10 +110,16 @@ const buildRackItems = (numbersTxt: string[], operatorsTxt: string[]) => {
     itxt: txt,
     etat: StateCase.Pla,
     tca: 3,
-    placep: cleanNumbers.length + index
+    placep: currentNumTxt.length + index
   }));
 
-  return { numbers, operators, pions: [...numbers, ...operators] };
+  return {
+    numbers,
+    operators,
+    pions: [...numbers, ...operators],
+    remainingNum,
+    remainingOp
+  };
 };
 
 export const useCompetitionStore = create<CompetitionState>((set, get) => ({
@@ -84,6 +129,8 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   numbers: [],
   operators: [],
   pions: [],
+  stockNumbers: [],
+  stockOperators: [],
   gameResults: [],
   niveau: Dtfil.Sen,
   cnbjeu: 0,
@@ -94,7 +141,15 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   initGame: (numbersTxt, operatorsTxt, niveau = Dtfil.Sen, numeromat = '12345', listecaseRef) => {
     const grid = createInitialGrid(numeromat, listecaseRef);
     const flatGrid = grid.flat();
-    const { numbers, operators, pions } = buildRackItems(numbersTxt, operatorsTxt);
+
+    // Mélange déterministe des listes initiales basé sur numeromat
+    const shuffledNumbers = shuffleDeterministic(numbersTxt, `${numeromat}_num`);
+    const shuffledOperators = shuffleDeterministic(operatorsTxt, `${numeromat}_op`);
+
+    const { numbers, operators, pions, remainingNum, remainingOp } = drawRackFromStock(
+      shuffledNumbers,
+      shuffledOperators
+    );
 
     set({
       numeromat,
@@ -103,6 +158,8 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       numbers,
       operators,
       pions,
+      stockNumbers: remainingNum,
+      stockOperators: remainingOp,
       niveau,
       cnbjeu: 0,
       scoreTotal: 0,
@@ -113,12 +170,17 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   },
 
   nextJeu: (newNumbersTxt, newOperatorsTxt) => {
-    const { numbers, operators, pions } = buildRackItems(newNumbersTxt, newOperatorsTxt);
+    const { numbers, operators, pions, remainingNum, remainingOp } = drawRackFromStock(
+      newNumbersTxt,
+      newOperatorsTxt
+    );
 
     set((state) => ({
       numbers,
       operators,
       pions,
+      stockNumbers: remainingNum,
+      stockOperators: remainingOp,
       cnbjeu: state.cnbjeu + 1,
       gameResults: [],
       directionsValid: { left: false, right: false, up: false, down: false }
@@ -135,7 +197,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
 
     // 1. CLIC SUR LE RACK / PORTE-PIONS (tca === 2 ou 3)
     if (targetCase.tca === 2 || targetCase.tca === 3) {
-      // Si un pion de la grille était sélectionné -> On le remet dans le rack
       if (selectedCaseOnGrid && selectedCaseOnGrid.etat !== StateCase.Lo) {
         const nextGrid = grid.map((row) =>
           row.map((cell) => {
@@ -155,10 +216,8 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
         return;
       }
 
-      // Pion déjà placé/utilisé sur la grille
       if (targetCase.etat === StateCase.Cre) return;
 
-      // Sélection / Désélection d'un pion disponible dans le porte-pions
       if (targetCase.etat === StateCase.Pla || targetCase.etat === StateCase.Choi) {
         const nextGrid = grid.map((row) =>
           row.map((cell) => (cell.etat === StateCase.Choi ? { ...cell, etat: StateCase.Pla } : cell))
@@ -168,7 +227,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
           if (p.placep === targetCase.placep) {
             return { ...p, etat: p.etat === StateCase.Choi ? StateCase.Pla : StateCase.Choi };
           }
-          // Si un autre pion du rack était sélectionné, on le repasse en Pla
           return p.etat === StateCase.Choi ? { ...p, etat: StateCase.Pla } : p;
         });
 
@@ -181,7 +239,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
     if (targetCase.tca === 1) {
       if (targetCase.etat === StateCase.Lo) return;
 
-      // Poser un pion sélectionné depuis le porte-pions vers une case vide de la grille
       if (targetCase.etat === StateCase.Cre && selectedPionInRack) {
         const nextGrid = grid.map((row) =>
           row.map((cell) => {
@@ -197,7 +254,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
           })
         );
 
-        // Passe le pion posé en Cre (utilisé) et nettoie l'état Choi des autres
         const nextPions = pions.map((p) => {
           if (p.placep === selectedPionInRack.placep) {
             return { ...p, etat: StateCase.Cre };
@@ -210,7 +266,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
         return;
       }
 
-      // Déplacer un pion déjà sur la grille vers une autre case vide de la grille
       if (targetCase.etat === StateCase.Cre && selectedCaseOnGrid) {
         const nextGrid = grid.map((row) =>
           row.map((cell) => {
@@ -234,7 +289,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
         return;
       }
 
-      // Sélectionner ou désélectionner un pion temporairement posé sur le plateau
       if (targetCase.etat === StateCase.Pla || targetCase.etat === StateCase.Choi) {
         const nextPions = pions.map((p) => ({
           ...p,
@@ -266,22 +320,14 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       )
     );
 
-    const lockedPlaceps = new Set(
-      nextGrid
-        .flat()
-        .filter((c) => c.etat === StateCase.Lo && c.placep !== undefined)
-        .map((c) => c.placep!)
-    );
-
-    const nextPions = pions.map((p) => ({
-      ...p,
-      etat: lockedPlaceps.has(p.placep!) ? StateCase.Cre : StateCase.Pla
-    }));
+    const nextPions = pions.map((p) => ({ ...p, etat: StateCase.Pla }));
 
     set({
       grid: nextGrid,
       flatGrid: nextGrid.flat(),
       pions: nextPions,
+      numbers: nextPions.filter((p) => p.tca === 2),
+      operators: nextPions.filter((p) => p.tca === 3),
       directionsValid: { left: false, right: false, up: false, down: false },
       gameResults: []
     });
@@ -319,6 +365,7 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
         if (boutCase && !isOperateur(boutCase.txt)) {
           const sequenceWithoutBout = sequence.slice(0, -1);
 
+          // Calcule le résultat du coup (égalité, supérieur ou inférieur). Le coup est systématiquement valide.
           const gameRes = calculateGameResult(
             boutCase,
             sequenceWithoutBout,
@@ -351,7 +398,15 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   },
 
   confirmCalculation: (resultIndex: number) => {
-    const { grid, gameResults, scoreTotal, cnbjeu, pions, hasUsedMultiplicationOrDivision } = get();
+    const {
+      grid,
+      gameResults,
+      scoreTotal,
+      cnbjeu,
+      stockNumbers,
+      stockOperators,
+      hasUsedMultiplicationOrDivision
+    } = get();
 
     const selectedResult = gameResults[resultIndex];
     if (!selectedResult) return;
@@ -368,22 +423,19 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       )
     );
 
-    const lockedPlaceps = new Set(
-      nextGrid
-        .flat()
-        .filter((c) => c.etat === StateCase.Lo && c.placep !== undefined)
-        .map((c) => c.placep!)
+    const { numbers, operators, pions, remainingNum, remainingOp } = drawRackFromStock(
+      stockNumbers,
+      stockOperators
     );
-
-    const nextPions = pions.map((p) => ({
-      ...p,
-      etat: lockedPlaceps.has(p.placep!) ? StateCase.Cre : StateCase.Pla
-    }));
 
     set({
       grid: nextGrid,
       flatGrid: nextGrid.flat(),
-      pions: nextPions,
+      pions,
+      numbers,
+      operators,
+      stockNumbers: remainingNum,
+      stockOperators: remainingOp,
       scoreTotal: scoreTotal + selectedResult.notedjeu,
       cnbjeu: cnbjeu + 1,
       gameResults: [],
@@ -393,25 +445,28 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   },
 
   resetToInitialState: () => {
-    const { numbers, operators, numeromat } = get();
+    const { numeromat, stockNumbers, stockOperators, pions } = get();
     const grid = createInitialGrid(numeromat);
 
-    const resetNumbers: UneCase[] = numbers.map((p, index) => ({
-      ...p,
-      etat: StateCase.Pla,
-      placep: index
-    }));
+    const allNumbersTxt = [...pions.filter((p) => p.tca === 2).map((p) => p.txt), ...stockNumbers];
+    const allOperatorsTxt = [...pions.filter((p) => p.tca === 3).map((p) => p.txt), ...stockOperators];
 
-    const resetOperators: UneCase[] = operators.map((p, index) => ({
-      ...p,
-      etat: StateCase.Pla,
-      placep: numbers.length + index
-    }));
+    const shuffledNumbers = shuffleDeterministic(allNumbersTxt, `${numeromat}_num`);
+    const shuffledOperators = shuffleDeterministic(allOperatorsTxt, `${numeromat}_op`);
+
+    const { numbers, operators, pions: newPions, remainingNum, remainingOp } = drawRackFromStock(
+      shuffledNumbers,
+      shuffledOperators
+    );
 
     set({
       grid,
       flatGrid: grid.flat(),
-      pions: [...resetNumbers, ...resetOperators],
+      pions: newPions,
+      numbers,
+      operators,
+      stockNumbers: remainingNum,
+      stockOperators: remainingOp,
       cnbjeu: 0,
       scoreTotal: 0,
       gameResults: [],

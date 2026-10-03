@@ -9,6 +9,7 @@ import {
 } from "@/components/lolomaths/game/competitionEngine";
 import { StateCase } from "@/lib/interfaces";
 import { useGameHelpRules } from "./useGameHelpRules";
+import { useDiambraStore } from "@/lib/store/diambra.store";
 
 export interface GameConfig {
   niveau: number;
@@ -17,9 +18,9 @@ export interface GameConfig {
 }
 
 const DEFAULT_CONFIG: GameConfig = {
-  niveau: 0,
-  matrixIndex: 0,
-  numeromatch: "12345",
+  niveau: 1,
+  matrixIndex: 1,
+  numeromatch: "123456789",
 };
 
 export const loadGameConfig = (): GameConfig => {
@@ -47,13 +48,17 @@ export interface GameHistoryItem {
 const MATCH_DURATION = 300;
 
 export const useCompetitionGame = () => {
-  // 1. Sélecteurs Zustand ciblés pour éviter les re-rendus superflus
-   const grid = useCompetitionStore((state) => state.grid);
+   const { gameConfig, } = useDiambraStore();
+  
+  // 1. Sélecteurs Zustand
+  const grid = useCompetitionStore((state) => state.grid);
   const flatGrid = useMemo(() => grid.flat(), [grid]);
   const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
   const scoreTotal = useCompetitionStore((state) => state.scoreTotal);
   const directionsValid = useCompetitionStore((state) => state.directionsValid);
-  const hasUsedMultiplicationOrDivision = useCompetitionStore((state) => state.hasUsedMultiplicationOrDivision);
+  const hasUsedMultiplicationOrDivision = useCompetitionStore(
+    (state) => state.hasUsedMultiplicationOrDivision
+  );
   const gameResults = useCompetitionStore((state) => state.gameResults);
 
   const initGame = useCompetitionStore((state) => state.initGame);
@@ -82,14 +87,14 @@ export const useCompetitionGame = () => {
    */
   const initializeGameSession = useCallback(() => {
     const config = loadGameConfig();
-    const activeMatrix = lcontentData[config.matrixIndex] ?? lcontentData[0];
+    const activeMatrix = lcontentData[config.matrixIndex] ?? lcontentData[1];
 
     if (activeMatrix) {
       initGame(
         activeMatrix.nombres,
         activeMatrix.operateurs,
         activeMatrix.niveau ?? config.niveau,
-        config.numeromatch,
+        gameConfig?.numeromatch ?? config.numeromatch,
         activeMatrix.cases
       );
     }
