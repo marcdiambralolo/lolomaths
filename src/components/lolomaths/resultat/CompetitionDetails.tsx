@@ -3,9 +3,10 @@ import { useCompetitionValidation } from '@/hooks/lolomaths/endgame/useCompetiti
 import { memo } from 'react';
 import CompetitionHeader from './CompetitionHeader';
 import CompetitionStats from './CompetitionStats';
+ 
+import { CompetitionInfo, User } from '@/lib/interfaces';
 import MessageToast from './MessageToast';
 import PermanentSuccessMessage from './PermanentSuccessMessage';
-import { CompetitionInfo, User } from '@/lib/interfaces';
 
 interface CompetitionDetailsProps {
   competition: CompetitionInfo;
