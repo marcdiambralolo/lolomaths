@@ -78,7 +78,8 @@ export function useChrono({
     const remainingMs = targetTimeRef.current - Date.now();
     const nextTimeLeft = Math.max(0, Math.ceil(remainingMs / 1000));
 
-    setTimeLeft(nextTimeLeft);
+    // Évite les re-renders inutiles si la valeur n'a pas changé
+    setTimeLeft((prev) => (prev === nextTimeLeft ? prev : nextTimeLeft));
 
     if (nextTimeLeft <= 0) {
       clearTimer();
@@ -159,6 +160,7 @@ export function useChrono({
 
       // Mise à jour SYNCHRONE des refs
       timeLeftRef.current = nextDuration;
+      totalDurationRef.current = nextDuration;
 
       setTotalDuration(nextDuration);
       setTimeLeft(nextDuration);
@@ -177,6 +179,7 @@ export function useChrono({
 
       const duration = Math.max(0, Math.floor(newSeconds));
       timeLeftRef.current = duration;
+      totalDurationRef.current = duration;
       targetTimeRef.current = Date.now() + duration * 1000;
 
       setTotalDuration(duration);

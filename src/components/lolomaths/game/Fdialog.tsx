@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useEffect, useCallback } from "react";
-import { GameResult } from "@/lib/interfaces";
+import React, { useCallback, useEffect, useRef } from 'react';
+import { GameResult } from '@/lib/interfaces';
 
 interface FdialogProps {
   isOpen: boolean;
@@ -16,12 +16,19 @@ interface ScoreRowProps {
   valueClassName?: string;
 }
 
-const ScoreRow: React.FC<ScoreRowProps> = ({ label, value, valueClassName = "text-slate-200" }) => (
+const ScoreRow: React.FC<ScoreRowProps> = ({
+  label,
+  value,
+  valueClassName = 'text-slate-200',
+}) => (
   <div className="flex justify-between items-center py-1.5 border-b border-slate-800/80">
     <span className="text-slate-400">{label}</span>
     <span className={`font-bold ${valueClassName}`}>{value}</span>
   </div>
 );
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export const Fdialog: React.FC<FdialogProps> = ({
   isOpen,
@@ -29,25 +36,85 @@ export const Fdialog: React.FC<FdialogProps> = ({
   onAccept,
   onCancel,
 }) => {
-  // Fermeture lors de l'appui sur la touche Échap
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const acceptButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // ============================================================
+  // Gestion du focus : sauvegarde, restauration, focus initial
+  // ============================================================
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Sauvegarde de l'élément actif avant ouverture
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
+    // Focus sur le bouton "Valider" à l'ouverture
+    const timeoutId = setTimeout(() => {
+      acceptButtonRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+
+      // Restaure le focus à la fermeture
+      previousFocusRef.current?.focus?.();
+    };
+  }, [isOpen]);
+
+  // ============================================================
+  // Gestion clavier : Escape + focus trap (Tab / Shift+Tab)
+  // ============================================================
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
+        e.preventDefault();
         onCancel();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+
+        const focusables = dialog.querySelectorAll<HTMLElement>(
+          FOCUSABLE_SELECTOR
+        );
+        if (focusables.length === 0) return;
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+
+        // Focus trap : boucle entre premier et dernier élément
+        if (e.shiftKey) {
+          if (active === first || !dialog.contains(active)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (active === last || !dialog.contains(active)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     },
     [onCancel]
   );
 
+  // ============================================================
+  // Effet : attache le listener + bloque le scroll du body
+  // ============================================================
   useEffect(() => {
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden"; // Empêche le défilement en arrière-plan
-    }
+    if (!isOpen) return;
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
     };
   }, [isOpen, handleKeyDown]);
 
@@ -71,15 +138,18 @@ export const Fdialog: React.FC<FdialogProps> = ({
 
   return (
     <div
-      tabIndex={-1}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="dialog-title"
+      role="presentation"
       onClick={onCancel}
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-150"
     >
       <div
-        onClick={(e) => e.stopPropagation()} // Évite la fermeture lors d'un clic à l'intérieur de la boîte
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog-title"
+        aria-describedby="dialog-description"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
       >
         {/* En-tête */}
@@ -87,19 +157,25 @@ export const Fdialog: React.FC<FdialogProps> = ({
           <h3 id="dialog-title" className="text-lg font-bold text-amber-400">
             Détail du calcul
           </h3>
-          <span className="text-xs bg-amber-400/10 text-amber-400 border border-amber-400/20 px-2.5 py-1 rounded-full font-mono font-semibold">
+          <span
+            className="text-xs bg-amber-400/10 text-amber-400 border border-amber-400/20 px-2.5 py-1 rounded-full font-mono font-semibold"
+            aria-label={`Combinaison ${gameResult.combine}`}
+          >
             Combinaison : {gameResult.combine}
           </span>
         </div>
 
         {/* Banner d'état du coup */}
-        <div className={`px-6 py-2 text-xs font-semibold uppercase tracking-wider flex justify-between items-center ${
-          isPerfect 
-            ? "bg-emerald-500/10 text-emerald-400 border-b border-emerald-500/20" 
-            : "bg-amber-500/10 text-amber-400 border-b border-amber-500/20"
-        }`}>
-          <span>{isPerfect ? "Coup Parfait" : "Coup Inexact (Pénalité d'écart)"}</span>
-          <span>{isPerfect ? "Bonus Activés" : "Bonus = 0"}</span>
+        <div
+          id="dialog-description"
+          className={`px-6 py-2 text-xs font-semibold uppercase tracking-wider flex justify-between items-center ${
+            isPerfect
+              ? 'bg-emerald-500/10 text-emerald-400 border-b border-emerald-500/20'
+              : 'bg-amber-500/10 text-amber-400 border-b border-amber-500/20'
+          }`}
+        >
+          <span>{isPerfect ? 'Coup Parfait' : "Coup Inexact (Pénalité d'écart)"}</span>
+          <span>{isPerfect ? 'Bonus Activés' : 'Bonus = 0'}</span>
         </div>
 
         {/* Contenu principal */}
@@ -119,19 +195,31 @@ export const Fdialog: React.FC<FdialogProps> = ({
           <ScoreRow
             label="Écart :"
             value={ecartAbsolu}
-            valueClassName={isPerfect ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}
+            valueClassName={
+              isPerfect
+                ? 'text-emerald-400 font-bold'
+                : 'text-rose-400 font-bold'
+            }
           />
 
           <ScoreRow
             label="Note de base :"
-            value={`${gameResult.notedbase > 0 ? "+" : ""}${formattedBaseNote} pt${Math.abs(gameResult.notedbase) > 1 ? "s" : ""}`}
-            valueClassName={gameResult.notedbase >= 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}
+            value={`${gameResult.notedbase > 0 ? '+' : ''}${formattedBaseNote} pt${
+              Math.abs(gameResult.notedbase) > 1 ? 's' : ''
+            }`}
+            valueClassName={
+              gameResult.notedbase >= 0
+                ? 'text-emerald-400 font-bold'
+                : 'text-rose-400 font-bold'
+            }
           />
 
           <ScoreRow
             label="Total Bonus :"
             value={`+${formattedBonus}`}
-            valueClassName={gameResult.bonus > 0 ? "text-amber-400 font-bold" : "text-slate-500"}
+            valueClassName={
+              gameResult.bonus > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'
+            }
           />
 
           {/* Résultat Final */}
@@ -139,9 +227,11 @@ export const Fdialog: React.FC<FdialogProps> = ({
             <span className="font-bold text-slate-100 uppercase tracking-wide">
               Note obtenue :
             </span>
-            <span className={`text-2xl font-black font-sans tracking-tight ${
-              gameResult.notedjeu >= 0 ? "text-emerald-400" : "text-rose-400"
-            }`}>
+            <span
+              className={`text-2xl font-black font-sans tracking-tight ${
+                gameResult.notedjeu >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              }`}
+            >
               {gameResult.notedjeu > 0 ? `+${formattedScore}` : formattedScore} pts
             </span>
           </div>
@@ -157,6 +247,7 @@ export const Fdialog: React.FC<FdialogProps> = ({
             Annuler
           </button>
           <button
+            ref={acceptButtonRef}
             type="button"
             onClick={onAccept}
             className="px-5 py-2 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-400"

@@ -15,23 +15,18 @@ export interface GameConfig {
   niveau: number;
   matrixIndex: number;
   numeromatch: string;
-  matchDuration?: number; // durée effective en secondes
+  matchDuration?: number;
+  nombredejeu?: number;
 }
 
 const DEFAULT_CONFIG: GameConfig = {
   niveau: 1,
   matrixIndex: 1,
   numeromatch: '123456789',
-  matchDuration: 300, // 5 minutes par défaut
+  matchDuration: 300,
+  nombredejeu: 20,
 };
 
-/**
- * Convertit `tempsmatch` (format Kotlin) en durée effective en secondes.
- * - "-1"      → 86400s (24h, illimité en pratique)
- * - "5"       → 300s
- * - "10"      → 600s
- * - undefined → fallback (5 min)
- */
 function convertTempsmatchToSeconds(
   tempsmatch: string | undefined,
   fallback = 300
@@ -56,7 +51,6 @@ export const loadGameConfig = (): GameConfig => {
 
     const config = JSON.parse(savedConfig);
 
-    // Priorité : matchDuration (secondes) > tempsmatch (minutes Kotlin) > défaut
     let duration: number;
     if (typeof config.matchDuration === 'number') {
       duration = config.matchDuration;
@@ -71,6 +65,7 @@ export const loadGameConfig = (): GameConfig => {
       matrixIndex: config.matrixIndex ?? DEFAULT_CONFIG.matrixIndex,
       numeromatch: config.numeromatch ?? DEFAULT_CONFIG.numeromatch,
       matchDuration: duration,
+      nombredejeu: config.nombredejeu ?? DEFAULT_CONFIG.nombredejeu,
     };
   } catch (e) {
     console.error('Erreur lors du chargement de la configuration:', e);
@@ -86,15 +81,14 @@ export interface GameHistoryItem {
 export const useCompetitionGame = () => {
   const { gameConfig } = useDiambraStore();
 
-  // ============================================================
-  // Sélecteurs Zustand
-  // ============================================================
   const grid = useCompetitionStore((state) => state.grid);
   const flatGrid = useMemo(() => grid.flat(), [grid]);
   const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
+  const nombredejeu = useCompetitionStore((state) => state.nombredejeu);
   const scoreTotal = useCompetitionStore((state) => state.scoreTotal);
   const directionsValid = useCompetitionStore((state) => state.directionsValid);
   const gameResults = useCompetitionStore((state) => state.gameResults);
+  const isMatchOver = useCompetitionStore((state) => state.isMatchOver);
 
   const initGame = useCompetitionStore((state) => state.initGame);
   const resetPions = useCompetitionStore((state) => state.resetPions);
@@ -102,18 +96,12 @@ export const useCompetitionGame = () => {
     (state) => state.confirmCalculation
   );
 
-  // ============================================================
-  // États locaux
-  // ============================================================
   const [showResultZone, setShowResultZone] = useState(false);
   const [selectedDirectionIndex, setSelectedDirectionIndex] = useState<
     number | null
   >(null);
   const [showHelp, setShowHelp] = useState(true);
 
-  // ============================================================
-  // Chrono — démarre automatiquement au montage
-  // ============================================================
   const chrono = useChrono({
     initialSeconds: 300,
     autoStart: true,
@@ -125,11 +113,8 @@ export const useCompetitionGame = () => {
   const { resetAndStart: resetAndStartChrono, pause: pauseChrono } = chrono;
 
   const hasInitializedMatch = useRef(false);
+  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ============================================================
-  // Initialisation d'une session de jeu
-  // Retourne la durée effective du match (en secondes)
-  // ============================================================
   const initializeGameSession = useCallback((): number => {
     const config = loadGameConfig();
     const activeMatrix = lcontentData[config.matrixIndex] ?? lcontentData[1];
@@ -142,35 +127,43 @@ export const useCompetitionGame = () => {
       activeMatrix.operateurs,
       activeMatrix.niveau ?? config.niveau,
       gameConfig?.numeromatch ?? config.numeromatch,
-      activeMatrix.cases
+      activeMatrix.cases,
+      config.nombredejeu ?? 20
     );
 
     return duration;
   }, [initGame, gameConfig?.numeromatch]);
 
-  // ============================================================
-  // Init unique de la session (grille + rack)
-  // Le chrono démarre via `autoStart: true` mais avec une durée
-  // par défaut (300s). On le resynchronise avec la durée réelle
-  // une fois la config chargée.
-  // ============================================================
   useEffect(() => {
-    if (hasInitializedMatch.current) return;
-    hasInitializedMatch.current = true;
+    if (pauseTimeoutRef.current !== null) {
+      clearTimeout(pauseTimeoutRef.current);
+      pauseTimeoutRef.current = null;
+    }
 
-    const duration = initializeGameSession();
-    // Resynchronise le chrono avec la durée effective du match
-    resetAndStartChrono(duration);
+    if (!hasInitializedMatch.current) {
+      hasInitializedMatch.current = true;
+
+      const duration = initializeGameSession();
+      resetAndStartChrono(duration);
+    }
 
     return () => {
-      pauseChrono();
+      pauseTimeoutRef.current = setTimeout(() => {
+        pauseChrono();
+        hasInitializedMatch.current = false;
+        pauseTimeoutRef.current = null;
+      }, 100);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ============================================================
-  // État dérivé du jeu
-  // ============================================================
+  useEffect(() => {
+    if (isMatchOver) {
+      setShowResultZone(true);
+      pauseChrono();
+    }
+  }, [isMatchOver, pauseChrono]);
+
   const gameState = useMemo(() => {
     const isStartCovered = isStartCaseCovered(flatGrid);
     const placedPions = getPlacedPions(flatGrid);
@@ -187,9 +180,6 @@ export const useCompetitionGame = () => {
     };
   }, [flatGrid, cnbjeu]);
 
-  // ============================================================
-  // Actions
-  // ============================================================
   const handleResetRound = useCallback(() => {
     resetPions();
     setSelectedDirectionIndex(null);
@@ -205,6 +195,8 @@ export const useCompetitionGame = () => {
     setShowResultZone(false);
     setSelectedDirectionIndex(null);
 
+    useCompetitionStore.getState().resetToInitialState();
+
     const duration = initializeGameSession();
     resetAndStartChrono(duration);
   }, [initializeGameSession, resetAndStartChrono]);
@@ -214,20 +206,18 @@ export const useCompetitionGame = () => {
     alert(
       `Détails du match:\n` +
         `Score: ${scoreTotal} pts\n` +
-        `Jeux: ${cnbjeu}\n` +
+        `Jeux: ${cnbjeu}/${nombredejeu}\n` +
         `Moyenne: ${average} pts`
     );
-  }, [scoreTotal, cnbjeu]);
+  }, [scoreTotal, cnbjeu, nombredejeu]);
 
-  // ============================================================
-  // Messages d'aide
-  // ============================================================
   const helpMessages = useGameHelpRules({
     isStartCovered: gameState.isStartCovered,
     placedPions: gameState.placedPions,
     hasLockedPion: gameState.hasLockedPion,
     isFirstGame: gameState.isFirstGame,
     hasAvailablePions: gameState.hasAvailablePions,
+    isMatchOver,
     directionsValid,
   });
 
@@ -254,6 +244,8 @@ export const useCompetitionGame = () => {
     helpMessages,
     hasPlacedPions,
     selectedGameResult,
+    isMatchOver,
+    nombredejeu,
     setSelectedDirectionIndex,
     setShowHelp,
     handleResetRound,

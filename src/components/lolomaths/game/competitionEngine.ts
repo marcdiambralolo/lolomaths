@@ -1,40 +1,36 @@
-import { UneCase, StateCase, Sens, Dtfil, GameResult } from "@/lib/interfaces";
+import { UneCase, StateCase, Sens, Dtfil, GameResult } from '@/lib/interfaces';
+
+// ============================================================
+// CONSTANTES
+// ============================================================
 
 export const GRID_ROWS = 17;
 export const GRID_COLS = 13;
 export const START_CASE_INDEX = 110; // Case de départ centrale (Ligne 8, Col 6)
 
-// Set réutilisable pour éviter la réallocation mémoire à chaque vérification
-const OPERATORS_SET = new Set(['+', '-', '*', '/', '×', '÷']);
- 
- 
-export function validateOperateursEncadres(sequence: UneCase[], grid: UneCase[][]): boolean {
-  if (!grid || grid.length === 0) return false;
+/**
+ * Set des opérateurs reconnus. Inclut les variantes Unicode `×` et `÷`.
+ * Utilisé pour `isOperateur` (O(1) lookup).
+ */
+const OPERATORS_SET: ReadonlySet<string> = new Set([
+  '+',
+  '-',
+  '*',
+  '/',
+  '×',
+  '÷',
+]);
 
-  for (let j = 0; j < GRID_ROWS; j++) {
-    for (let i = 0; i < GRID_COLS; i++) {
-      const cell = grid[j]?.[i];
-      if (cell && cell.etat !== StateCase.Cre && isOperateur(cell.txt)) {
-        const left = i > 0 ? grid[j][i - 1] : null;
-        const right = i < GRID_COLS - 1 ? grid[j][i + 1] : null;
-        const up = j > 0 ? grid[j - 1][i] : null;
-        const down = j < GRID_ROWS - 1 ? grid[j + 1][i] : null;
-
-        if (!encadre(left, right) || !encadre(up, down)) {
-          return false;
-        }
-      }
-    }
-  }
-  return true;
-} 
-
+/**
+ * Vérifie si une chaîne est un opérateur.
+ */
 export function isOperateur(txt: string): boolean {
   return OPERATORS_SET.has(txt);
 }
 
 // ============================================================
-// 1. GÉNÉRATEUR PSEUDO-ALÉATOIRE DÉTERMINISTE (JavaRandom LCG 48-bit)
+// 1. GÉNÉRATEUR PSEUDO-ALÉATOIRE DÉTERMINISTE
+//    (JavaRandom LCG 48-bit — transposition stricte de Kotlin)
 // ============================================================
 
 export class JavaRandom {
@@ -132,17 +128,30 @@ export function malisteca(numeromat: string, wl: string[]): string[] {
   return lcases;
 }
 
+/**
+ * Fallback non déterministe : génère un nombre aléatoire pour la grille.
+ * Utilisé uniquement si aucune matrice n'est fournie.
+ */
 export function getRandomBoardNumber(): string {
   return Math.floor(Math.random() * 640).toString();
 }
 
+/**
+ * Crée la grille initiale (17 × 13) à partir de la matrice fournie.
+ * - Si `numeromat` et `listecaseRef` sont fournis, utilise `malisteca`.
+ * - Sinon, remplit avec `getRandomBoardNumber` (fallback).
+ */
 export function createInitialGrid(
   numeromat?: string,
   listecaseRef?: string[]
 ): UneCase[][] {
   let lcases: string[] = [];
 
-  if (numeromat && listecaseRef && listecaseRef.length >= GRID_ROWS * GRID_COLS) {
+  if (
+    numeromat &&
+    listecaseRef &&
+    listecaseRef.length >= GRID_ROWS * GRID_COLS
+  ) {
     lcases = malisteca(numeromat, listecaseRef);
   } else {
     for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
@@ -176,6 +185,9 @@ export function createInitialGrid(
 // 3. NAVIGATION SUR LA GRILLE
 // ============================================================
 
+/**
+ * Retourne la case adjacente dans la direction donnée, ou `null` si hors grille.
+ */
 export function getNextCase(
   grid: UneCase[][],
   current: UneCase,
@@ -200,17 +212,18 @@ export function getNextCase(
 // 4. VALIDATIONS (transposition Kotlin)
 // ============================================================
 
+/**
+ * Vérifie que deux cases sont du même type (opérateur vs non-opérateur).
+
+ */
 export function sontDeMemeType(a: UneCase, b: UneCase): boolean {
   return isOperateur(a.txt) === isOperateur(b.txt);
 }
 
 /**
- * Kotlin `justapo(lc, m)` : renvoie "o" si l'un est opérateur, "n" sinon.
+ * Vérifie l'alternance d'une séquence : commence et finit par un nombre,
+ * alterne nombre / opérateur.
  */
-export function justapo(a: UneCase, b: UneCase): boolean {
-  return isOperateur(a.txt) === isOperateur(b.txt);
-}
-
 export function validateAlternance(sequence: UneCase[]): boolean {
   if (!sequence || sequence.length < 3) return false;
   if (isOperateur(sequence[0].txt)) return false;
@@ -222,6 +235,10 @@ export function validateAlternance(sequence: UneCase[]): boolean {
   return true;
 }
 
+/**
+ * Vérifie qu'il n'y a pas de superposition et que tous les pions posés
+ * font partie de la séquence.
+ */
 export function validateNoSuperposition(
   sequence: UneCase[],
   placedPions: UneCase[]
@@ -231,7 +248,6 @@ export function validateNoSuperposition(
     if (used.has(c.ncase)) return false;
     used.add(c.ncase);
   }
-  // Tous les pions posés doivent faire partie de la séquence
   for (const p of placedPions) {
     if (
       (p.etat === StateCase.Pla || p.etat === StateCase.Choi) &&
@@ -243,6 +259,10 @@ export function validateNoSuperposition(
   return true;
 }
 
+/**
+ * Vérifie l'enchaînement : si `cnbjeu > 0`, la séquence doit contenir
+ * au moins un pion verrouillé (`Lo`).
+ */
 export function validateEnchainement(
   sequence: UneCase[],
   cnbjeu: number
@@ -250,11 +270,6 @@ export function validateEnchainement(
   if (cnbjeu === 0) return true;
   return sequence.some((c) => c.etat === StateCase.Lo);
 }
-
-const isOccupied = (c: UneCase | null): boolean => {
-  if (!c) return false;
-  return c.etat !== StateCase.Cre || c.txt !== '';
-};
 
 /**
  * Kotlin `encadre(a, b)` :
@@ -275,7 +290,7 @@ export function encadre(a: UneCase | null, b: UneCase | null): boolean {
 }
 
 /**
- * Kotlin `tpencadre()` : renvoie true si AU MOINS UN opérateur posé
+ * Kotlin `tpencadre()` : renvoie `true` si AU MOINS UN opérateur posé
  * n'est PAS correctement encadré horizontalement ou verticalement.
  */
 export function tpencadre(grid: UneCase[][]): boolean {
@@ -298,6 +313,10 @@ export function tpencadre(grid: UneCase[][]): boolean {
   return false;
 }
 
+/**
+ * Validation complète d'une combinaison (alternance, superposition,
+ * enchaînement, encadrement des opérateurs).
+ */
 export function validateCombination(
   sequence: UneCase[],
   placedPions: UneCase[],
@@ -323,8 +342,54 @@ export function validateCombination(
 // 5. COLLECTE DE SÉQUENCE
 // ============================================================
 
- 
+/**
+ * Transposition stricte de `cpver` / `cphor` Kotlin :
+ * - collecte depuis la case du pion posé, dans les deux sens
+ * - arrêt dès qu'une case `Cre` est rencontrée
+ */
+export function collectSequence(
+  grid: UneCase[][],
+  startCase: UneCase,
+  direction: Sens
+): { sequence: UneCase[]; hasLoPion: boolean } {
+  const sequence: UneCase[] = [];
+  let hasLoPion = false;
 
+  // Forward : partir de startCase, avancer tant que la case suivante n'est pas Cre/vide.
+  let current: UneCase | null = startCase;
+  while (current && current.txt !== '' && current.etat !== StateCase.Cre) {
+    sequence.push(current);
+    if (current.etat === StateCase.Lo) hasLoPion = true;
+    const next = getNextCase(grid, current, direction);
+    if (!next) break;
+    if (next.etat === StateCase.Cre || next.txt === '') break;
+    current = next;
+  }
+
+  // Backward : partir de la case opposée, avancer tant que la case courante n'est pas Cre/vide.
+  const opposite: Record<Sens, Sens> = {
+    [Sens.Up]: Sens.Down,
+    [Sens.Down]: Sens.Up,
+    [Sens.Left]: Sens.Right,
+    [Sens.Right]: Sens.Left,
+  };
+  let prev = getNextCase(grid, startCase, opposite[direction]);
+  while (prev && prev.txt !== '' && prev.etat !== StateCase.Cre) {
+    sequence.unshift(prev);
+    if (prev.etat === StateCase.Lo) hasLoPion = true;
+    const next = getNextCase(grid, prev, opposite[direction]);
+    if (!next) break;
+    if (next.etat === StateCase.Cre || next.txt === '') break;
+    prev = next;
+  }
+
+  return { sequence, hasLoPion };
+}
+
+/**
+ * Trie une séquence selon la direction : par `indi` (horizontal) ou `indj` (vertical).
+ * Fidèle à `trita` Kotlin.
+ */
 export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
   const isHorizontal = direction === Sens.Left || direction === Sens.Right;
   return [...sequence].sort((a, b) => {
@@ -338,28 +403,51 @@ export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
 // 6. UTILITAIRES POUR LE STORE
 // ============================================================
 
-export function isValidSequence(sequence: UneCase[] | null | undefined): boolean {
+/**
+ * Vérifie qu'une séquence est valide : au moins 3 éléments, longueur impaire.
+ */
+export function isValidSequence(
+  sequence: UneCase[] | null | undefined
+): boolean {
   if (!sequence || !Array.isArray(sequence)) return false;
   return sequence.length >= 3 && sequence.length % 2 !== 0;
 }
 
-export function getPlacedPions(flatGrid: UneCase[] | null | undefined): UneCase[] {
+/**
+ * Retourne tous les pions posés (`Pla` ou `Choi`) de la grille plate.
+ */
+export function getPlacedPions(
+  flatGrid: UneCase[] | null | undefined
+): UneCase[] {
   if (!flatGrid || !Array.isArray(flatGrid)) return [];
   return flatGrid.filter(
     (c) => c.etat === StateCase.Pla || c.etat === StateCase.Choi
   );
 }
 
-export function getLockedPions(flatGrid: UneCase[] | null | undefined): UneCase[] {
+/**
+ * Retourne tous les pions verrouillés (`Lo`) de la grille plate.
+ */
+export function getLockedPions(
+  flatGrid: UneCase[] | null | undefined
+): UneCase[] {
   if (!flatGrid || !Array.isArray(flatGrid)) return [];
   return flatGrid.filter((c) => c.etat === StateCase.Lo);
 }
 
-export function hasLockedPionInSequence(sequence: UneCase[] | null | undefined): boolean {
+/**
+ * Vérifie si une séquence contient au moins un pion verrouillé.
+ */
+export function hasLockedPionInSequence(
+  sequence: UneCase[] | null | undefined
+): boolean {
   if (!sequence || !Array.isArray(sequence)) return false;
   return sequence.some((c) => c.etat === StateCase.Lo);
 }
 
+/**
+ * Vérifie si la case de départ (index 110) est couverte (Pla, Choi ou Lo).
+ */
 export const isStartCaseCovered = (
   flatGrid: UneCase[] | null | undefined
 ): boolean => {
@@ -378,6 +466,8 @@ export const isStartCaseCovered = (
 // ============================================================
 
 /**
+ * Calcule le résultat d'une combinaison et la note associée.
+ *
  * Kotlin :
  * ```
  * g.notedbase = if (g.nbreatind == g.result) 5.0 else -(abs(g.result - g.nbreatind))
@@ -467,43 +557,4 @@ export function calculateGameResult(
 
   game.notedjeu = game.notedbase + game.bonus;
   return game;
-}
-
-export function collectSequence(
-  grid: UneCase[][],
-  startCase: UneCase,
-  direction: Sens
-): { sequence: UneCase[]; hasLoPion: boolean } {
-  const sequence: UneCase[] = [];
-  let hasLoPion = false;
-
-  // Forward : partir de startCase, avancer tant que la case suivante n'est pas Cre/vide.
-  let current: UneCase | null = startCase;
-  while (current && current.txt !== '' && current.etat !== StateCase.Cre) {
-    sequence.push(current);
-    if (current.etat === StateCase.Lo) hasLoPion = true;
-    const next = getNextCase(grid, current, direction);
-    if (!next) break;
-    if (next.etat === StateCase.Cre || next.txt === '') break;
-    current = next;
-  }
-
-  // Backward : partir de la case opposée, avancer tant que la case courante n'est pas Cre/vide.
-  const opposite: Record<Sens, Sens> = {
-    [Sens.Up]: Sens.Down,
-    [Sens.Down]: Sens.Up,
-    [Sens.Left]: Sens.Right,
-    [Sens.Right]: Sens.Left,
-  };
-  let prev = getNextCase(grid, startCase, opposite[direction]);
-  while (prev && prev.txt !== '' && prev.etat !== StateCase.Cre) {
-    sequence.unshift(prev);
-    if (prev.etat === StateCase.Lo) hasLoPion = true;
-    const next = getNextCase(grid, prev, opposite[direction]);
-    if (!next) break;
-    if (next.etat === StateCase.Cre || next.txt === '') break;
-    prev = next;
-  }
-
-  return { sequence, hasLoPion };
 }

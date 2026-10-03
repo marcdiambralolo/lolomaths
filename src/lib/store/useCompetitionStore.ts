@@ -36,15 +36,18 @@ interface CompetitionState {
   gameResults: (GameResult | null)[];
   niveau: Dtfil;
   cnbjeu: number;
+  nombredejeu: number;
   scoreTotal: number;
   directionsValid: DirectionsValid;
+  isMatchOver: boolean;
 
   initGame: (
     numbersTxt: string[],
     operatorsTxt: string[],
     niveau?: Dtfil,
     numeromat?: string,
-    listecaseRef?: string[]
+    listecaseRef?: string[],
+    nombredejeu?: number
   ) => void;
   nextJeu: () => void;
   handleCaseClick: (targetCase: UneCase) => void;
@@ -122,6 +125,15 @@ function clearSelections(
   return { grid: nextGrid, pions: nextPions };
 }
 
+/**
+ * Vérifie s'il reste des pions utilisables dans le rack courant.
+ * Un pion est utilisable s'il est `Pla` (non posé) — donc il reste
+ * au moins un pion disponible.
+ */
+function hasRemainingPionsInRack(pions: UneCase[]): boolean {
+  return pions.some((p) => p.etat === StateCase.Pla);
+}
+
 // ============================================================
 // Store
 // ============================================================
@@ -139,9 +151,11 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   gameResults: [null, null, null, null],
   niveau: Dtfil.Sen,
   cnbjeu: 0,
+  nombredejeu: 20,
   scoreTotal: 0,
   directionsValid: { left: false, right: false, up: false, down: false },
   lastConfirmedResult: null,
+  isMatchOver: false,
 
   // ============================================================
   // INITIALISATION
@@ -151,7 +165,8 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
     operatorsTxt,
     niveau = Dtfil.Sen,
     numeromat = '12345',
-    listecaseRef
+    listecaseRef,
+    nombredejeu = 20
   ) => {
     const grid = createInitialGrid(numeromat, listecaseRef);
 
@@ -183,10 +198,12 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       rackIndex: 0,
       niveau,
       cnbjeu: 0,
+      nombredejeu,
       scoreTotal: 0,
       gameResults: [null, null, null, null],
       lastConfirmedResult: null,
       directionsValid: { left: false, right: false, up: false, down: false },
+      isMatchOver: false,
     });
   },
 
@@ -197,6 +214,7 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       rackIndex,
       grid,
       cnbjeu,
+      nombredejeu,
     } = get();
 
     const nextIndex = rackIndex + 1;
@@ -216,6 +234,12 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       )
     );
 
+    const nextCnbjeu = cnbjeu + 1;
+
+    // Fin de match si on a atteint le nombre de jeux OU plus de pions dispo
+    const noMorePions = !hasRemainingPionsInRack(pions);
+    const matchOver = nextCnbjeu >= nombredejeu || noMorePions;
+
     set({
       grid: nextGrid,
       flatGrid: nextGrid.flat(),
@@ -223,9 +247,10 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       operators,
       pions,
       rackIndex: nextIndex,
-      cnbjeu: cnbjeu + 1,
+      cnbjeu: nextCnbjeu,
       gameResults: [null, null, null, null],
       directionsValid: { left: false, right: false, up: false, down: false },
+      isMatchOver: matchOver,
     });
   },
 
@@ -233,7 +258,10 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   // INTERACTION
   // ============================================================
   handleCaseClick: (targetCase: UneCase) => {
-    const { pions, grid, flatGrid } = get();
+    const { pions, grid, flatGrid, isMatchOver } = get();
+
+    // Bloque toute interaction si le match est terminé
+    if (isMatchOver) return;
 
     const selectedPionInRack = pions.find((p) => p.etat === StateCase.Choi);
     const selectedCaseOnGrid = flatGrid.find(
@@ -452,7 +480,15 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   // CALCUL DES SCORES
   // ============================================================
   calculateScores: () => {
-    const { grid, flatGrid, niveau, cnbjeu } = get();
+    const { grid, flatGrid, niveau, cnbjeu, isMatchOver } = get();
+
+    if (isMatchOver) {
+      set({
+        directionsValid: { left: false, right: false, up: false, down: false },
+        gameResults: [null, null, null, null],
+      });
+      return;
+    }
 
     const emptyResults: (GameResult | null)[] = [null, null, null, null];
     const emptyDirections = {
@@ -486,7 +522,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       down: false,
     };
 
-    // Ordre : Up=0, Down=1, Left=2, Right=3
     const directions = [
       { sens: Sens.Up, index: 0, key: 'up' as const },
       { sens: Sens.Down, index: 1, key: 'down' as const },
@@ -510,14 +545,8 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
 
       if (!validation.valid) return;
 
-      // Trier la séquence (fidèle à `trita` Kotlin) : par indi (horizontal) ou indj (vertical)
       const sorted = sortSequence(sequence, sens);
 
-      // Trouver la case cible = la case Cre au-delà du bord de la séquence, dans la direction
-      // Up    → au-dessus de sorted[0]
-      // Down  → en dessous de sorted[last]
-      // Left  → à gauche de sorted[0]
-      // Right → à droite de sorted[last]
       const edgeCase =
         sens === Sens.Up || sens === Sens.Left
           ? sorted[0]
@@ -547,7 +576,9 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   // VALIDATION DU CALCUL
   // ============================================================
   confirmCalculation: (resultIndex: number) => {
-    const { grid, gameResults, scoreTotal } = get();
+    const { grid, gameResults, scoreTotal, isMatchOver } = get();
+
+    if (isMatchOver) return;
 
     const selectedResult = gameResults[resultIndex];
     if (!selectedResult) return;
@@ -580,7 +611,7 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   // RESET COMPLET
   // ============================================================
   resetToInitialState: () => {
-    const { numeromat } = get();
+    const { numeromat, nombredejeu } = get();
     const grid = createInitialGrid(numeromat);
     set({
       grid,
@@ -592,10 +623,12 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       preGeneratedOperators: [],
       rackIndex: 0,
       cnbjeu: 0,
+      nombredejeu,
       scoreTotal: 0,
       gameResults: [null, null, null, null],
       lastConfirmedResult: null,
       directionsValid: { left: false, right: false, up: false, down: false },
+      isMatchOver: false,
     });
   },
 }));

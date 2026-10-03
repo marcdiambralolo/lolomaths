@@ -1,3 +1,5 @@
+import type { ReactNode, ElementType } from 'react';
+
 // ============================================================
 // TYPES GÉNÉRIQUES / UTILITAIRES
 // ============================================================
@@ -247,6 +249,8 @@ export interface LearningConfiguration {
   createdAt?: Date;
   updatedAt?: Date;
   themeId?: number;
+  nombredejeu?: number;
+  isMatchOver?: boolean;
 }
 
 // ============================================================
@@ -382,7 +386,7 @@ export interface ReportMetric {
   label: string;
   value: string | number;
   change: number;
-  icon: React.ReactNode;
+  icon: ReactNode;
   color: string;
   subLabel?: string;
 }
@@ -743,26 +747,26 @@ export const MAIN_MENU_ITEMS: MainMenuItem[] = [
 ];
 
 export interface FeatureItem {
-  icon: React.ElementType;
+  icon: ElementType;
   title: string;
   desc: string;
 }
 
 export interface PillItem {
-  icon: React.ElementType;
+  icon: ElementType;
   title: string;
   desc: string;
   tooltip?: string;
 }
 
 export interface StepItem {
-  icon: React.ElementType;
+  icon: ElementType;
   title: string;
   desc: string;
 }
 
 export interface TipItem {
-  icon: React.ElementType;
+  icon: ElementType;
   title: string;
   desc: string;
   color: 'purple' | 'indigo';
