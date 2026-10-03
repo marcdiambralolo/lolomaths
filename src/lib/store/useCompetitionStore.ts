@@ -7,9 +7,13 @@ import {
   isOperateur,
   isStartCaseCovered,
   isValidSequence,
-  validateCombination
+  radlist,
+  tpencadre,
+  validateCombination,
 } from '@/components/lolomaths/game/competitionEngine';
-import { Dtfil, GameResult, Sens, StateCase, UneCase } from '../interfaces';
+import { Dtfil, GameResult, Sens, StateCase, UneCase } from '@/lib/interfaces';
+// Import différé pour éviter la dépendance circulaire
+import { getNextCase } from '@/components/lolomaths/game/competitionEngine';
 
 interface DirectionsValid {
   left: boolean;
@@ -24,15 +28,16 @@ interface CompetitionState {
   flatGrid: UneCase[];
   numbers: UneCase[];
   operators: UneCase[];
-  pions: UneCase[]; // Tirage actif du rack (10 pions max : 6 nombres, 4 opérateurs)
-  stockNumbers: string[]; // Réserve globale de nombres restants
-  stockOperators: string[]; // Réserve globale d'opérateurs restants
+  lastConfirmedResult: GameResult | null;
+  pions: UneCase[]; // Tirage actif (10 pions : 6 nombres + 4 opérateurs)
+  preGeneratedNumbers: string[][]; // Paquets de 6 nombres pré-générés
+  preGeneratedOperators: string[][]; // Paquets de 4 opérateurs pré-générés
+  rackIndex: number; // Index du paquet courant
   gameResults: GameResult[];
   niveau: Dtfil;
   cnbjeu: number;
   scoreTotal: number;
   directionsValid: DirectionsValid;
-  hasUsedMultiplicationOrDivision: boolean;
 
   // Actions
   initGame: (
@@ -42,7 +47,7 @@ interface CompetitionState {
     numeromat?: string,
     listecaseRef?: string[]
   ) => void;
-  nextJeu: (newNumbersTxt: string[], newOperatorsTxt: string[]) => void;
+  nextJeu: () => void;
   handleCaseClick: (targetCase: UneCase) => void;
   resetPions: () => void;
   calculateScores: () => void;
@@ -50,48 +55,41 @@ interface CompetitionState {
   resetToInitialState: () => void;
 }
 
+// ============================================================
+// Helpers internes
+// ============================================================
+
 /**
- * Générateur pseudo-aléatoire déterministe (Mulberry32)
+ * Transposition de `chalespions` Kotlin :
+ * découpe `pnf` en paquets de 6 et `pno` en paquets de 4.
  */
-function createPRNG(seedString: string) {
-  let seed = 0;
-  for (let i = 0; i < seedString.length; i++) {
-    seed = (seed << 5) - seed + seedString.charCodeAt(i);
-    seed |= 0;
+function splitIntoRacks(
+  numbers: string[],
+  operators: string[]
+): { numbersRacks: string[][]; operatorsRacks: string[][] } {
+  const numbersRacks: string[][] = [];
+  const operatorsRacks: string[][] = [];
+
+  const numCopy = [...numbers];
+  while (numCopy.length > 0) {
+    numbersRacks.push(numCopy.splice(0, 6));
+  }
+  const opCopy = [...operators];
+  while (opCopy.length > 0) {
+    operatorsRacks.push(opCopy.splice(0, 4));
   }
 
-  return function () {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+  return { numbersRacks, operatorsRacks };
 }
 
 /**
- * Mélange déterministe Fisher-Yates
+ * Construit les `UneCase` pions à partir d'un paquet de nombres et d'opérateurs.
  */
-function shuffleDeterministic<T>(array: T[], seedString: string): T[] {
-  const result = [...array];
-  const random = createPRNG(seedString);
-
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-
-  return result;
-}
-
-// Fonction de tirage des 10 pions depuis le stock
-const drawRackFromStock = (stockNum: string[], stockOp: string[]) => {
-  const currentNumTxt = stockNum.slice(0, 6);
-  const remainingNum = stockNum.slice(6);
-
-  const currentOpTxt = stockOp.slice(0, 4);
-  const remainingOp = stockOp.slice(4);
-
-  const numbers: UneCase[] = currentNumTxt.map((txt, index) => ({
+function buildPionsFromRack(
+  numbersTxt: string[],
+  operatorsTxt: string[]
+): { numbers: UneCase[]; operators: UneCase[]; pions: UneCase[] } {
+  const numbers: UneCase[] = numbersTxt.map((txt, index) => ({
     ncase: index,
     indi: 0,
     indj: 0,
@@ -99,10 +97,10 @@ const drawRackFromStock = (stockNum: string[], stockOp: string[]) => {
     itxt: txt,
     etat: StateCase.Pla,
     tca: 2,
-    placep: index
+    placep: index,
   }));
 
-  const operators: UneCase[] = currentOpTxt.map((txt, index) => ({
+  const operators: UneCase[] = operatorsTxt.map((txt, index) => ({
     ncase: index,
     indi: 0,
     indj: 0,
@@ -110,17 +108,33 @@ const drawRackFromStock = (stockNum: string[], stockOp: string[]) => {
     itxt: txt,
     etat: StateCase.Pla,
     tca: 3,
-    placep: currentNumTxt.length + index
+    placep: numbersTxt.length + index,
   }));
 
-  return {
-    numbers,
-    operators,
-    pions: [...numbers, ...operators],
-    remainingNum,
-    remainingOp
-  };
-};
+  return { numbers, operators, pions: [...numbers, ...operators] };
+}
+
+/**
+ * Désélectionne tous les pions et remet les cases `Choi` à `Pla`.
+ */
+function clearSelections(
+  grid: UneCase[][],
+  pions: UneCase[]
+): { grid: UneCase[][]; pions: UneCase[] } {
+  const nextGrid = grid.map((row) =>
+    row.map((cell) =>
+      cell.etat === StateCase.Choi ? { ...cell, etat: StateCase.Pla } : cell
+    )
+  );
+  const nextPions = pions.map((p) =>
+    p.etat === StateCase.Choi ? { ...p, etat: StateCase.Pla } : p
+  );
+  return { grid: nextGrid, pions: nextPions };
+}
+
+// ============================================================
+// Store
+// ============================================================
 
 export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   numeromat: '',
@@ -129,26 +143,44 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   numbers: [],
   operators: [],
   pions: [],
-  stockNumbers: [],
-  stockOperators: [],
+  preGeneratedNumbers: [],
+  preGeneratedOperators: [],
+  rackIndex: 0,
   gameResults: [],
   niveau: Dtfil.Sen,
   cnbjeu: 0,
   scoreTotal: 0,
   directionsValid: { left: false, right: false, up: false, down: false },
-  hasUsedMultiplicationOrDivision: false,
+  lastConfirmedResult: null,
 
-  initGame: (numbersTxt, operatorsTxt, niveau = Dtfil.Sen, numeromat = '12345', listecaseRef) => {
+  // ============================================================
+  // INITIALISATION
+  // ============================================================
+  initGame: (
+    numbersTxt,
+    operatorsTxt,
+    niveau = Dtfil.Sen,
+    numeromat = '12345',
+    listecaseRef
+  ) => {
     const grid = createInitialGrid(numeromat, listecaseRef);
     const flatGrid = grid.flat();
 
-    // Mélange déterministe des listes initiales basé sur numeromat
-    const shuffledNumbers = shuffleDeterministic(numbersTxt, `${numeromat}_num`);
-    const shuffledOperators = shuffleDeterministic(operatorsTxt, `${numeromat}_op`);
+    // Tirages pré-générés (fidèle à `chalespions` + `radlist`)
+    const shuffledNumbers = radlist(numbersTxt, numeromat);
+    const shuffledOperators = radlist(operatorsTxt, numeromat);
 
-    const { numbers, operators, pions, remainingNum, remainingOp } = drawRackFromStock(
+    const { numbersRacks, operatorsRacks } = splitIntoRacks(
       shuffledNumbers,
       shuffledOperators
+    );
+
+    const firstNumbers = numbersRacks[0] ?? [];
+    const firstOperators = operatorsRacks[0] ?? [];
+
+    const { numbers, operators, pions } = buildPionsFromRack(
+      firstNumbers,
+      firstOperators
     );
 
     set({
@@ -158,160 +190,231 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       numbers,
       operators,
       pions,
-      stockNumbers: remainingNum,
-      stockOperators: remainingOp,
+      preGeneratedNumbers: numbersRacks,
+      preGeneratedOperators: operatorsRacks,
+      rackIndex: 0,
       niveau,
       cnbjeu: 0,
       scoreTotal: 0,
       gameResults: [],
+      lastConfirmedResult: null,
       directionsValid: { left: false, right: false, up: false, down: false },
-      hasUsedMultiplicationOrDivision: false
     });
   },
 
-  nextJeu: (newNumbersTxt, newOperatorsTxt) => {
-    const { numbers, operators, pions, remainingNum, remainingOp } = drawRackFromStock(
-      newNumbersTxt,
-      newOperatorsTxt
+  nextJeu: () => {
+    const {
+      preGeneratedNumbers,
+      preGeneratedOperators,
+      rackIndex,
+      grid,
+      cnbjeu,
+    } = get();
+
+    const nextIndex = rackIndex + 1;
+    const nextNumbers = preGeneratedNumbers[nextIndex] ?? [];
+    const nextOperators = preGeneratedOperators[nextIndex] ?? [];
+
+    const { numbers, operators, pions } = buildPionsFromRack(
+      nextNumbers,
+      nextOperators
     );
 
-    set((state) => ({
+    // On garde les cases Lo, on remet tout le reste à Cre
+    const nextGrid = grid.map((row) =>
+      row.map((cell) =>
+        cell.etat === StateCase.Lo
+          ? cell
+          : { ...cell, txt: cell.itxt, etat: StateCase.Cre, placep: undefined }
+      )
+    );
+
+    set({
+      grid: nextGrid,
+      flatGrid: nextGrid.flat(),
       numbers,
       operators,
       pions,
-      stockNumbers: remainingNum,
-      stockOperators: remainingOp,
-      cnbjeu: state.cnbjeu + 1,
+      rackIndex: nextIndex,
+      cnbjeu: cnbjeu + 1,
       gameResults: [],
-      directionsValid: { left: false, right: false, up: false, down: false }
-    }));
+      directionsValid: { left: false, right: false, up: false, down: false },
+    });
   },
 
+  // ============================================================
+  // INTERACTION (transposition de `deplacemen` / `choisirp` / `selectcase` / `depla` / `echa`)
+  // ============================================================
   handleCaseClick: (targetCase: UneCase) => {
-    const { pions, grid, flatGrid } = get();
+    const { pions, grid, flatGrid, cnbjeu } = get();
 
     const selectedPionInRack = pions.find((p) => p.etat === StateCase.Choi);
     const selectedCaseOnGrid = flatGrid.find(
-      (c) => c.etat === StateCase.Choi && c.ncase !== targetCase.ncase
+      (c) => c.etat === StateCase.Choi && c.tca === 1
     );
 
-    // 1. CLIC SUR LE RACK / PORTE-PIONS (tca === 2 ou 3)
+    // ---------- 1. CLIC SUR LE RACK (tca === 2 ou 3) → `choisirp` ----------
     if (targetCase.tca === 2 || targetCase.tca === 3) {
-      if (selectedCaseOnGrid && selectedCaseOnGrid.etat !== StateCase.Lo) {
+      // Cas : une case du plateau est sélectionnée → `ramepion` (retour au rack)
+      if (selectedCaseOnGrid) {
+        const pionOfCase = pions.find(
+          (p) => p.placep === selectedCaseOnGrid.placep
+        );
         const nextGrid = grid.map((row) =>
-          row.map((cell) => {
-            if (cell.ncase === selectedCaseOnGrid.ncase) {
-              return { ...cell, txt: cell.itxt, etat: StateCase.Cre, placep: undefined };
-            }
-            return cell;
-          })
+          row.map((cell) =>
+            cell.ncase === selectedCaseOnGrid.ncase
+              ? { ...cell, txt: cell.itxt, etat: StateCase.Cre, placep: undefined }
+              : cell
+          )
         );
-
         const nextPions = pions.map((p) =>
-          p.placep === selectedCaseOnGrid.placep ? { ...p, etat: StateCase.Pla } : p
+          p.placep === pionOfCase?.placep
+            ? { ...p, etat: StateCase.Pla }
+            : p.etat === StateCase.Choi
+            ? { ...p, etat: StateCase.Pla }
+            : p
         );
 
-        set({ grid: nextGrid, flatGrid: nextGrid.flat(), pions: nextPions });
+        set({
+          grid: nextGrid,
+          flatGrid: nextGrid.flat(),
+          pions: nextPions,
+        });
         get().calculateScores();
         return;
       }
 
-      if (targetCase.etat === StateCase.Cre) return;
+      // Cas : clic sur un pion du rack
+      if (targetCase.etat === StateCase.Cre) return; // pion déjà utilisé
 
       if (targetCase.etat === StateCase.Pla || targetCase.etat === StateCase.Choi) {
-        const nextGrid = grid.map((row) =>
-          row.map((cell) => (cell.etat === StateCase.Choi ? { ...cell, etat: StateCase.Pla } : cell))
-        );
-
+        // Désélectionne les autres pions, sélectionne celui-ci
         const nextPions = pions.map((p) => {
           if (p.placep === targetCase.placep) {
-            return { ...p, etat: p.etat === StateCase.Choi ? StateCase.Pla : StateCase.Choi };
+            return { ...p, etat: StateCase.Choi };
           }
           return p.etat === StateCase.Choi ? { ...p, etat: StateCase.Pla } : p;
         });
 
-        set({ grid: nextGrid, flatGrid: nextGrid.flat(), pions: nextPions });
+        // Désélectionne les cases du plateau
+        const nextGrid = grid.map((row) =>
+          row.map((cell) =>
+            cell.etat === StateCase.Choi ? { ...cell, etat: StateCase.Pla } : cell
+          )
+        );
+
+        set({
+          grid: nextGrid,
+          flatGrid: nextGrid.flat(),
+          pions: nextPions,
+        });
       }
       return;
     }
 
-    // 2. CLIC SUR LA GRILLE DU PLATEAU (tca === 1)
+    // ---------- 2. CLIC SUR LE PLATEAU (tca === 1) → `deplacemen` ----------
     if (targetCase.tca === 1) {
       if (targetCase.etat === StateCase.Lo) return;
 
-      if (targetCase.etat === StateCase.Cre && selectedPionInRack) {
-        const nextGrid = grid.map((row) =>
-          row.map((cell) => {
-            if (cell.ncase === targetCase.ncase) {
-              return {
-                ...cell,
-                txt: selectedPionInRack.txt,
-                etat: StateCase.Pla,
-                placep: selectedPionInRack.placep
-              };
-            }
-            return cell;
-          })
+      // --- Cas `Cre` : pose d'un pion ---
+      if (targetCase.etat === StateCase.Cre) {
+        // a) Un pion du rack est sélectionné → `echa`
+        if (selectedPionInRack) {
+          const nextGrid = grid.map((row) =>
+            row.map((cell) => {
+              if (cell.ncase === targetCase.ncase) {
+                return {
+                  ...cell,
+                  txt: selectedPionInRack.txt,
+                  etat: StateCase.Choi,
+                  placep: selectedPionInRack.placep,
+                };
+              }
+              return cell;
+            })
+          );
+          const nextPions = pions.map((p) =>
+            p.placep === selectedPionInRack.placep
+              ? { ...p, etat: StateCase.Cre }
+              : p
+          );
+
+          set({
+            grid: nextGrid,
+            flatGrid: nextGrid.flat(),
+            pions: nextPions,
+          });
+          get().calculateScores();
+          return;
+        }
+
+        // b) Une case du plateau est sélectionnée → `depla`
+        if (selectedCaseOnGrid) {
+          const nextGrid = grid.map((row) =>
+            row.map((cell) => {
+              if (cell.ncase === selectedCaseOnGrid.ncase) {
+                return {
+                  ...cell,
+                  txt: cell.itxt,
+                  etat: StateCase.Cre,
+                  placep: undefined,
+                };
+              }
+              if (cell.ncase === targetCase.ncase) {
+                return {
+                  ...cell,
+                  txt: selectedCaseOnGrid.txt,
+                  etat: StateCase.Pla,
+                  placep: selectedCaseOnGrid.placep,
+                };
+              }
+              return cell;
+            })
+          );
+          set({
+            grid: nextGrid,
+            flatGrid: nextGrid.flat(),
+          });
+          get().calculateScores();
+          return;
+        }
+        return;
+      }
+
+      // --- Cas `Pla` / `Choi` : sélection d'une case (`selectcase`) ---
+      if (
+        targetCase.etat === StateCase.Pla ||
+        targetCase.etat === StateCase.Choi
+      ) {
+        const cleared = clearSelections(grid, pions);
+        const nextGrid = cleared.grid.map((row) =>
+          row.map((cell) =>
+            cell.ncase === targetCase.ncase
+              ? { ...cell, etat: StateCase.Choi }
+              : cell
+          )
+        );
+        const nextPions = cleared.pions.map((p) =>
+          p.etat === StateCase.Choi ? { ...p, etat: StateCase.Pla } : p
         );
 
-        const nextPions = pions.map((p) => {
-          if (p.placep === selectedPionInRack.placep) {
-            return { ...p, etat: StateCase.Cre };
-          }
-          return p.etat === StateCase.Choi ? { ...p, etat: StateCase.Pla } : p;
+        set({
+          grid: nextGrid,
+          flatGrid: nextGrid.flat(),
+          pions: nextPions,
         });
-
-        set({ grid: nextGrid, flatGrid: nextGrid.flat(), pions: nextPions });
-        get().calculateScores();
-        return;
-      }
-
-      if (targetCase.etat === StateCase.Cre && selectedCaseOnGrid) {
-        const nextGrid = grid.map((row) =>
-          row.map((cell) => {
-            if (cell.ncase === selectedCaseOnGrid.ncase) {
-              return { ...cell, txt: cell.itxt, etat: StateCase.Cre, placep: undefined };
-            }
-            if (cell.ncase === targetCase.ncase) {
-              return {
-                ...cell,
-                txt: selectedCaseOnGrid.txt,
-                etat: StateCase.Pla,
-                placep: selectedCaseOnGrid.placep
-              };
-            }
-            return cell;
-          })
-        );
-
-        set({ grid: nextGrid, flatGrid: nextGrid.flat() });
-        get().calculateScores();
-        return;
-      }
-
-      if (targetCase.etat === StateCase.Pla || targetCase.etat === StateCase.Choi) {
-        const nextPions = pions.map((p) => ({
-          ...p,
-          etat: p.etat === StateCase.Choi ? StateCase.Pla : p.etat
-        }));
-
-        const nextGrid = grid.map((row) =>
-          row.map((cell) => {
-            if (cell.ncase === targetCase.ncase) {
-              return { ...cell, etat: cell.etat === StateCase.Choi ? StateCase.Pla : StateCase.Choi };
-            }
-            return cell.etat === StateCase.Choi ? { ...cell, etat: StateCase.Pla } : cell;
-          })
-        );
-
-        set({ grid: nextGrid, flatGrid: nextGrid.flat(), pions: nextPions });
       }
     }
   },
 
+  // ============================================================
+  // RESET DU TOUR (fidèle à `chrgpions`)
+  // ============================================================
   resetPions: () => {
-    const { grid, pions } = get();
+    const { grid, pions, preGeneratedNumbers, preGeneratedOperators, rackIndex } =
+      get();
 
+    // On remet les cases non `Lo` à `Cre`, on garde les `Lo`
     const nextGrid = grid.map((row) =>
       row.map((cell) =>
         cell.etat !== StateCase.Lo
@@ -320,101 +423,133 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       )
     );
 
-    const nextPions = pions.map((p) => ({ ...p, etat: StateCase.Pla }));
+    // On recharge le rack courant depuis les tirages pré-générés
+    const currentNumbers = preGeneratedNumbers[rackIndex] ?? [];
+    const currentOperators = preGeneratedOperators[rackIndex] ?? [];
+    const { numbers, operators, pions: nextPions } = buildPionsFromRack(
+      currentNumbers,
+      currentOperators
+    );
 
     set({
       grid: nextGrid,
       flatGrid: nextGrid.flat(),
+      numbers,
+      operators,
       pions: nextPions,
-      numbers: nextPions.filter((p) => p.tca === 2),
-      operators: nextPions.filter((p) => p.tca === 3),
+      gameResults: [],
       directionsValid: { left: false, right: false, up: false, down: false },
-      gameResults: []
     });
   },
 
+  // ============================================================
+  // CALCUL DES SCORES (fidèle à `calculons` + `valideresult`)
+  // ============================================================
   calculateScores: () => {
-    const { grid, flatGrid, niveau, cnbjeu, hasUsedMultiplicationOrDivision } = get();
+    const { grid, flatGrid, niveau, cnbjeu } = get();
 
     if (!isStartCaseCovered(flatGrid)) {
-      set({ directionsValid: { left: false, right: false, up: false, down: false }, gameResults: [] });
+      set({
+        directionsValid: { left: false, right: false, up: false, down: false },
+        gameResults: [],
+      });
       return;
     }
 
     const placedOnGrid = getPlacedPions(flatGrid);
     if (placedOnGrid.length === 0) {
-      set({ directionsValid: { left: false, right: false, up: false, down: false }, gameResults: [] });
+      set({
+        directionsValid: { left: false, right: false, up: false, down: false },
+        gameResults: [],
+      });
+      return;
+    }
+
+    // Vérification préalable : tous les opérateurs posés doivent être encadrés
+    if (tpencadre(grid)) {
+      set({
+        directionsValid: { left: false, right: false, up: false, down: false },
+        gameResults: [],
+      });
       return;
     }
 
     const results: GameResult[] = [];
-    const directionsValid = { left: false, right: false, up: false, down: false };
+    const directionsValid = {
+      left: false,
+      right: false,
+      up: false,
+      down: false,
+    };
     const directions = [Sens.Up, Sens.Down, Sens.Left, Sens.Right];
 
+    // On part du premier pion posé (fidèle à `pions.first { it.place }`)
+    const firstPlaced = placedOnGrid[0];
+
     directions.forEach((dir) => {
-      const firstPlaced = placedOnGrid[0];
       const { sequence } = collectSequence(grid, firstPlaced, dir);
 
       if (!isValidSequence(sequence)) return;
 
-      const validation = validateCombination(sequence, placedOnGrid, cnbjeu, grid);
+      const validation = validateCombination(
+        sequence,
+        placedOnGrid,
+        cnbjeu,
+        grid
+      );
 
-      if (validation.valid) {
-        const boutCase = sequence[sequence.length - 1];
+      if (!validation.valid) return;
 
-        if (boutCase && !isOperateur(boutCase.txt)) {
-          const sequenceWithoutBout = sequence.slice(0, -1);
+      // La case suivant la fin de la séquence doit être vide/inoccupée
+      const lastInSeq = sequence[sequence.length - 1];
+      const nextAfterSeq = getNextCase(grid, lastInSeq, dir);
+      if (!nextAfterSeq) return;
+      if (nextAfterSeq.etat !== StateCase.Cre || nextAfterSeq.txt !== '') return;
 
-          // Calcule le résultat du coup (égalité, supérieur ou inférieur). Le coup est systématiquement valide.
-          const gameRes = calculateGameResult(
-            boutCase,
-            sequenceWithoutBout,
-            placedOnGrid,
-            niveau,
-            hasUsedMultiplicationOrDivision
-          );
+      // La case cible (dernier élément) ne doit pas être un opérateur
+      if (isOperateur(lastInSeq.txt)) return;
 
-          results.push(gameRes);
+      // Séquence sans la case cible (la case cible = "bout")
+      const sequenceWithoutBout = sequence.slice(0, -1);
 
-          switch (dir) {
-            case Sens.Left:
-              directionsValid.left = true;
-              break;
-            case Sens.Right:
-              directionsValid.right = true;
-              break;
-            case Sens.Up:
-              directionsValid.up = true;
-              break;
-            case Sens.Down:
-              directionsValid.down = true;
-              break;
-          }
-        }
+      const gameRes = calculateGameResult(
+        lastInSeq,
+        sequenceWithoutBout,
+        placedOnGrid,
+        niveau
+      );
+
+      results.push(gameRes);
+
+      switch (dir) {
+        case Sens.Left:
+          directionsValid.left = true;
+          break;
+        case Sens.Right:
+          directionsValid.right = true;
+          break;
+        case Sens.Up:
+          directionsValid.up = true;
+          break;
+        case Sens.Down:
+          directionsValid.down = true;
+          break;
       }
     });
 
     set({ gameResults: results, directionsValid });
   },
 
+  // ============================================================
+  // VALIDATION DU CALCUL (fidèle à `calc(w)`)
+  // ============================================================
   confirmCalculation: (resultIndex: number) => {
-    const {
-      grid,
-      gameResults,
-      scoreTotal,
-      cnbjeu,
-      stockNumbers,
-      stockOperators,
-      hasUsedMultiplicationOrDivision
-    } = get();
+    const { grid, gameResults, scoreTotal, cnbjeu } = get();
 
     const selectedResult = gameResults[resultIndex];
     if (!selectedResult) return;
 
-    const hasMulOrDiv =
-      selectedResult.combine.includes('*') || selectedResult.combine.includes('/');
-    const nextHasUsedMulDiv = hasUsedMultiplicationOrDivision || hasMulOrDiv;
-
+    // Tous les pions posés passent en `Lo`
     const nextGrid = grid.map((row) =>
       row.map((cell) =>
         cell.etat === StateCase.Pla || cell.etat === StateCase.Choi
@@ -423,55 +558,39 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       )
     );
 
-    const { numbers, operators, pions, remainingNum, remainingOp } = drawRackFromStock(
-      stockNumbers,
-      stockOperators
-    );
-
     set({
       grid: nextGrid,
       flatGrid: nextGrid.flat(),
-      pions,
-      numbers,
-      operators,
-      stockNumbers: remainingNum,
-      stockOperators: remainingOp,
       scoreTotal: scoreTotal + selectedResult.notedjeu,
-      cnbjeu: cnbjeu + 1,
+        lastConfirmedResult: selectedResult, 
       gameResults: [],
       directionsValid: { left: false, right: false, up: false, down: false },
-      hasUsedMultiplicationOrDivision: nextHasUsedMulDiv
     });
+
+    // Passage au jeu suivant (fidèle à `calc` → `radscore` → `lojeu` / `chrgpions`)
+    get().nextJeu();
   },
 
+  // ============================================================
+  // RESET COMPLET
+  // ============================================================
   resetToInitialState: () => {
-    const { numeromat, stockNumbers, stockOperators, pions } = get();
+    const { numeromat } = get();
     const grid = createInitialGrid(numeromat);
-
-    const allNumbersTxt = [...pions.filter((p) => p.tca === 2).map((p) => p.txt), ...stockNumbers];
-    const allOperatorsTxt = [...pions.filter((p) => p.tca === 3).map((p) => p.txt), ...stockOperators];
-
-    const shuffledNumbers = shuffleDeterministic(allNumbersTxt, `${numeromat}_num`);
-    const shuffledOperators = shuffleDeterministic(allOperatorsTxt, `${numeromat}_op`);
-
-    const { numbers, operators, pions: newPions, remainingNum, remainingOp } = drawRackFromStock(
-      shuffledNumbers,
-      shuffledOperators
-    );
-
     set({
       grid,
       flatGrid: grid.flat(),
-      pions: newPions,
-      numbers,
-      operators,
-      stockNumbers: remainingNum,
-      stockOperators: remainingOp,
+      numbers: [],
+      operators: [],
+      pions: [],
+      preGeneratedNumbers: [],
+      preGeneratedOperators: [],
+      rackIndex: 0,
       cnbjeu: 0,
       scoreTotal: 0,
       gameResults: [],
       directionsValid: { left: false, right: false, up: false, down: false },
-      hasUsedMultiplicationOrDivision: false
     });
-  }
+  },
 }));
+

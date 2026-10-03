@@ -1,5 +1,5 @@
-import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import React from 'react';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 
 interface MatchSummaryScreenProps {
   isTimeUp: boolean;
@@ -7,13 +7,17 @@ interface MatchSummaryScreenProps {
   onShowDetails: () => void;
 }
 
-export const MatchSummaryScreen: React.FC<MatchSummaryScreenProps> = ({ 
+export const MatchSummaryScreen: React.FC<MatchSummaryScreenProps> = ({
   isTimeUp,
   onRestart,
   onShowDetails,
 }) => {
-    const store = useCompetitionStore();
-  const averageScore = store.cnbjeu > 0 ? (store.scoreTotal / store.cnbjeu).toFixed(1) : '0';
+  // Sélecteurs ciblés (évite les re-renders inutiles)
+  const scoreTotal = useCompetitionStore((state) => state.scoreTotal);
+  const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
+
+  const averageScore =
+    cnbjeu > 0 ? (scoreTotal / cnbjeu).toFixed(1) : '0';
 
   return (
     <div className="p-6 flex flex-col gap-6 text-center shadow-2xl max-w-lg mx-auto my-auto">
@@ -28,15 +32,19 @@ export const MatchSummaryScreen: React.FC<MatchSummaryScreenProps> = ({
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
           <span className="text-xs text-slate-500 block">Score Final</span>
-          <span className="text-2xl font-black text-emerald-400">{store.scoreTotal} pts</span>
+          <span className="text-2xl font-black text-emerald-400">
+            {scoreTotal} pts
+          </span>
         </div>
         <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
           <span className="text-xs text-slate-500 block">Jeux Joués</span>
-          <span className="text-2xl font-black text-sky-400">{store.cnbjeu}</span>
+          <span className="text-2xl font-black text-sky-400">{cnbjeu}</span>
         </div>
         <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 col-span-2">
           <span className="text-xs text-slate-500 block">Moyenne par jeu</span>
-          <span className="text-xl font-black text-amber-400">{averageScore} pts</span>
+          <span className="text-xl font-black text-amber-400">
+            {averageScore} pts
+          </span>
         </div>
       </div>
 

@@ -18,6 +18,7 @@ export const CompetitionScreen: React.FC = React.memo(() => {
     chrono,
     showResultZone,
     selectedDirectionIndex,
+    directionsValid,
     helpMessages,
     showHelp,
     gameState,
@@ -31,15 +32,23 @@ export const CompetitionScreen: React.FC = React.memo(() => {
     handleShowDetails,
   } = useCompetitionGame();
 
-  // Fermeture optimisée de la boîte de dialogue
   const handleCloseDialog = useCallback(() => {
     setSelectedDirectionIndex(null);
   }, [setSelectedDirectionIndex]);
 
-  // Calcul mémorisé de l'état d'ouverture du dialogue
   const isDialogOpen = useMemo(
     () => selectedDirectionIndex !== null && selectedGameResult !== undefined,
     [selectedDirectionIndex, selectedGameResult]
+  );
+
+  // Affiche les flèches directionnelles UNIQUEMENT si au moins une direction est valide
+  const hasAnyValidDirection = useMemo(
+    () =>
+      directionsValid.left ||
+      directionsValid.right ||
+      directionsValid.up ||
+      directionsValid.down,
+    [directionsValid]
   );
 
   if (showResultZone) {
@@ -61,7 +70,7 @@ export const CompetitionScreen: React.FC = React.memo(() => {
         <OplaGrid />
         <TileRack />
 
-        {gameState.isStartCovered && (
+        {gameState.isStartCovered && hasAnyValidDirection && (
           <DirectionActions onSelectDirection={setSelectedDirectionIndex} />
         )}
 
@@ -77,7 +86,6 @@ export const CompetitionScreen: React.FC = React.memo(() => {
         <HelpToggle checked={showHelp} onChange={setShowHelp} />
       </section>
 
-      {/* Boîte de dialogue de confirmation du coup */}
       <Fdialog
         isOpen={isDialogOpen}
         gameResult={selectedGameResult ?? null}

@@ -1,44 +1,39 @@
-import { useCompetitionStore } from "@/lib/store/useCompetitionStore";
-import { useEffect, useRef, useState } from "react";
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 
 export interface GameHistoryItem {
-    score: number;
-    combination: string;
+  score: number;
+  combination: string;
 }
 
 export const useGameHistory = () => {
-    const store = useCompetitionStore();
-    const [gameHistory, setGameHistory] = useState<GameHistoryItem[]>([]);
+  const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
+  const lastConfirmedResult = useCompetitionStore(
+    (state) => state.lastConfirmedResult
+  );
 
-    const processedGamesRef = useRef(0);
+  const [gameHistory, setGameHistory] = useState<GameHistoryItem[]>([]);
+  const processedGamesRef = useRef(0);
 
-    useEffect(() => {
-        const currentGameCount = store.cnbjeu;
+  useEffect(() => {
+    if (!lastConfirmedResult) return;
 
-        if (
-            currentGameCount <= processedGamesRef.current ||
-            store.gameResults.length === 0
-        ) {
-            return;
-        }
+    // On enregistre le résultat seulement quand cnbjeu a été incrémenté
+    // (c.-à-d. après que `confirmCalculation` a poussé le résultat)
+    if (cnbjeu <= processedGamesRef.current) return;
 
-        const lastResult =
-            store.gameResults[store.gameResults.length - 1];
+    setGameHistory((prev) => [
+      ...prev,
+      {
+        score: lastConfirmedResult.notedjeu,
+        combination: lastConfirmedResult.combine || 'N/A',
+      },
+    ]);
 
-        if (!lastResult) {
-            return;
-        }
+    processedGamesRef.current = cnbjeu;
+  }, [cnbjeu, lastConfirmedResult]);
 
-        setGameHistory((previousHistory) => [
-            ...previousHistory,
-            {
-                score: lastResult.notedjeu,
-                combination: lastResult.combine || "N/A",
-            },
-        ]);
-
-        processedGamesRef.current = currentGameCount;
-    }, [store.cnbjeu, store.gameResults]);
-
-    return { gameHistory };
+  return { gameHistory };
 };

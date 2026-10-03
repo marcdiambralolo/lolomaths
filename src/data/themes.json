@@ -1,0 +1,91 @@
+[
+  {
+    "nom": "becouefin",
+    "numero": 0,
+    "coulfondcase": "#000000",
+    "coulfondcaseverouille": "#ae0cc0",
+    "coulfondpionplace": "#c53902",
+    "coulfondcasedepart": "#3F51B5",
+    "coulfondcaseselectionne": "#11A144",
+    "coulbordurecase": "#ffffff",
+    "coultextecase": "#FD010D",
+    "coulfondpionnormal": "#3F51B5",
+    "coulfondpionover": "#FD010D",
+    "coultextepion": "#FD010D"
+  },
+  {
+    "nom": "dimbokro",
+    "numero": 1,
+    "coulfondcase": "#800000",
+    "coulfondcaseverouille": "#0080FF",
+    "coulfondpionplace": "#62C400",
+    "coulfondcasedepart": "#FD010D",
+    "coulfondcaseselectionne": "#00FFFF",
+    "coulbordurecase": "#808080",
+    "coultextecase": "#FD010D",
+    "coulfondpionnormal": "#0080FF",
+    "coulfondpionover": "#FD010D",
+    "coultextepion": "#FD010D"
+  },
+  {
+    "nom": "abidjan",
+    "numero": 2,
+    "coulfondcase": "#0000FF",
+    "coulfondcaseverouille": "#ae0cc0",
+    "coulfondpionplace": "#FF00FF",
+    "coulfondcasedepart": "#FD010D",
+    "coulfondcaseselectionne": "#11A144",
+    "coulbordurecase": "#FFFFFF",
+    "coultextecase": "#FFFFFF",
+    "coulfondpionnormal": "#FF8040",
+    "coulfondpionover": "#00FFFF",
+    "coultextepion": "#FFFFFF"
+  },
+  {
+    "nom": "yamoussokro",
+    "numero": 3,
+    "coulfondcase": "#000000",
+    "coulfondcaseverouille": "#ae0cc0",
+    "coulfondpionplace": "#00C400",
+    "coulfondcasedepart": "#FD010D",
+    "coulfondcaseselectionne": "#11A144",
+    "coulbordurecase": "#808080",
+    "coultextecase": "#FD010D",
+    "coulfondpionnormal": "#E97D07",
+    "coulfondpionover": "#80FFFF",
+    "coultextepion": "#FD010D"
+  },
+  {
+    "nom": "dabou",
+    "numero": 4,
+    "coulfondcase": "#000000",
+    "coulfondcaseverouille": "#ae0cc0",
+    "coulfondpionplace": "#c53902",
+    "coulfondcasedepart": "#FD010D",
+    "coulfondcaseselectionne": "#11A144",
+    "coulbordurecase": "#ffffff",
+    "coultextecase": "#FD010D",
+    "coulfondpionnormal": "#3F51B5",
+    "coulfondpionover": "#FD010D",
+    "coultextepion": "#FD010D"
+  },
+  {
+    "nom": "akoupe",
+    "numero": 5,
+    "coulfondcase": "#B30000",
+    "coulfondcaseverouille": "#0000FF",
+    "coulfondpionplace": "#c53902",
+    "coulfondcasedepart": "#FD010D",
+    "coulfondcaseselectionne": "#11A144",
+    "coulbordurecase": "#808080",
+    "coultextecase": "#FFFFFF",
+    "coulfondpionnormal": "#808080",
+    "coulfondpionover": "#80FFFF",
+    "coultextepion": "#FFFFFF"
+  }
+]
+
+
+
+
+

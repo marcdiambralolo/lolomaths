@@ -1,5 +1,11 @@
+// ============================================================
+// TYPES GÉNÉRIQUES / UTILITAIRES
+// ============================================================
+
 export type DateLike = Date | string | number | null | undefined;
 export type ConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
+export type LearningConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
+export type ToastType = 'success' | 'error' | 'info';
 
 export interface StatusConfigItem {
   color: string;
@@ -9,6 +15,19 @@ export interface StatusConfigItem {
   icon: string;
   label: string;
 }
+
+export interface FormErrors {
+  [key: string]: string;
+}
+
+export interface Stats {
+  totalTransactions: number;
+  totalSpent: number;
+}
+
+// ============================================================
+// OFFRES / PAIEMENTS / TRANSACTIONS
+// ============================================================
 
 export interface Offering {
   createdAt?: string | Date;
@@ -38,13 +57,10 @@ export interface WalletOffering {
   price: number;
 }
 
-export interface FormErrors {
-  [key: string]: string;
-}
-
-export interface Stats {
-  totalTransactions: number;
-  totalSpent: number;
+export interface OfferingDetails {
+  _id: string;
+  name: string;
+  price: number;
 }
 
 export interface TransactionItem {
@@ -54,13 +70,7 @@ export interface TransactionItem {
   unitPrice?: number;
   totalPrice?: number;
   name?: string;
-  category?: any;
-}
-
-export interface OfferingDetails {
-  _id: string;
-  name: string;
-  price: number;
+  category?: unknown;
 }
 
 export interface Payment {
@@ -73,6 +83,64 @@ export interface Payment {
   customerPhone: string;
   createdAt: string;
   completedAt?: string;
+}
+
+export interface Transaction {
+  offeringId: unknown;
+  _id: string;
+  transactionId: string;
+  paymentToken: string;
+  status: string;
+  totalAmount: number;
+  paymentMethod: string;
+  completedAt: string;
+  items: TransactionItem[];
+  createdAt: string;
+  updatedAt: string;
+  type?: 'purchase' | 'consumption' | 'refund';
+  metadata?: Record<string, unknown>;
+}
+
+// ============================================================
+// UTILISATEURS / RÔLES / PERMISSIONS
+// ============================================================
+
+export enum Role {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+  GUEST = 'GUEST',
+}
+
+export enum Permission {
+  CREATE_USER = 'CREATE_USER',
+  READ_USER = 'READ_USER',
+  READ_ANY_USER = 'READ_ANY_USER',
+  UPDATE_USER = 'UPDATE_USER',
+  UPDATE_ANY_USER = 'UPDATE_ANY_USER',
+  DELETE_USER = 'DELETE_USER',
+  DELETE_ANY_USER = 'DELETE_ANY_USER',
+  CREATE_CONSULTATION = 'CREATE_CONSULTATION',
+  READ_CONSULTATION = 'READ_CONSULTATION',
+  READ_ANY_CONSULTATION = 'READ_ANY_CONSULTATION',
+  UPDATE_CONSULTATION = 'UPDATE_CONSULTATION',
+  UPDATE_ANY_CONSULTATION = 'UPDATE_ANY_CONSULTATION',
+  DELETE_CONSULTATION = 'DELETE_CONSULTATION',
+  ASSIGN_CONSULTANT = 'ASSIGN_CONSULTANT',
+  COMPLETE_CONSULTATION = 'COMPLETE_CONSULTATION',
+  CREATE_SERVICE = 'CREATE_SERVICE',
+  READ_SERVICE = 'READ_SERVICE',
+  UPDATE_SERVICE = 'UPDATE_SERVICE',
+  DELETE_SERVICE = 'DELETE_SERVICE',
+  CREATE_PAYMENT = 'CREATE_PAYMENT',
+  READ_PAYMENT = 'READ_PAYMENT',
+  READ_ANY_PAYMENT = 'READ_ANY_PAYMENT',
+  REFUND_PAYMENT = 'REFUND_PAYMENT',
+  VIEW_ANALYTICS = 'VIEW_ANALYTICS',
+  VIEW_LOGS = 'VIEW_LOGS',
+  MANAGE_ROLES = 'MANAGE_ROLES',
+  MANAGE_PERMISSIONS = 'MANAGE_PERMISSIONS',
+  SYSTEM_CONFIG = 'SYSTEM_CONFIG',
 }
 
 export interface User {
@@ -113,6 +181,23 @@ export interface User {
   [key: string]: unknown;
 }
 
+export interface FormData {
+  month?: string;
+  year?: string;
+  day?: string;
+  secretCode: string;
+  nom: string;
+  prenoms: string;
+  dateNaissance: string;
+  country: string;
+  phone?: string;
+  gender?: string;
+}
+
+// ============================================================
+// CONSULTATIONS / GAME CONFIG / LEARNING CONFIG
+// ============================================================
+
 export interface Consultation {
   _id: string;
   userId: string;
@@ -131,63 +216,10 @@ export interface Consultation {
   updatedAt: string;
   timeSpent: string;
   idjeu: string | GameConfiguration;
-  edition: any;
+  edition: unknown;
+  id?: string;
   nombredevues: number;
   [key: string]: unknown;
-}
-
-export enum Role {
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  ADMIN = 'ADMIN',
-  USER = 'USER',
-  GUEST = 'GUEST'
-}
-
-export enum Permission {
-  CREATE_USER = 'CREATE_USER',
-  READ_USER = 'READ_USER',
-  READ_ANY_USER = 'READ_ANY_USER',
-  UPDATE_USER = 'UPDATE_USER',
-  UPDATE_ANY_USER = 'UPDATE_ANY_USER',
-  DELETE_USER = 'DELETE_USER',
-  DELETE_ANY_USER = 'DELETE_ANY_USER',
-  CREATE_CONSULTATION = 'CREATE_CONSULTATION',
-  READ_CONSULTATION = 'READ_CONSULTATION',
-  READ_ANY_CONSULTATION = 'READ_ANY_CONSULTATION',
-  UPDATE_CONSULTATION = 'UPDATE_CONSULTATION',
-  UPDATE_ANY_CONSULTATION = 'UPDATE_ANY_CONSULTATION',
-  DELETE_CONSULTATION = 'DELETE_CONSULTATION',
-  ASSIGN_CONSULTANT = 'ASSIGN_CONSULTANT',
-  COMPLETE_CONSULTATION = 'COMPLETE_CONSULTATION',
-  CREATE_SERVICE = 'CREATE_SERVICE',
-  READ_SERVICE = 'READ_SERVICE',
-  UPDATE_SERVICE = 'UPDATE_SERVICE',
-  DELETE_SERVICE = 'DELETE_SERVICE',
-  CREATE_PAYMENT = 'CREATE_PAYMENT',
-  READ_PAYMENT = 'READ_PAYMENT',
-  READ_ANY_PAYMENT = 'READ_ANY_PAYMENT',
-  REFUND_PAYMENT = 'REFUND_PAYMENT',
-  VIEW_ANALYTICS = 'VIEW_ANALYTICS',
-  VIEW_LOGS = 'VIEW_LOGS',
-  MANAGE_ROLES = 'MANAGE_ROLES',
-  MANAGE_PERMISSIONS = 'MANAGE_PERMISSIONS',
-  SYSTEM_CONFIG = 'SYSTEM_CONFIG'
-}
-
-export interface Transaction {
-  offeringId: any;
-  _id: string;
-  transactionId: string;
-  paymentToken: string;
-  status: string;
-  totalAmount: number;
-  paymentMethod: string;
-  completedAt: string;
-  items: TransactionItem[];
-  createdAt: string;
-  updatedAt: string;
-  type?: 'purchase' | 'consumption' | 'refund';
-  metadata?: Record<string, unknown>;
 }
 
 export interface GameConfiguration {
@@ -196,7 +228,7 @@ export interface GameConfiguration {
   startgameDate: Date;
   endgameDate: Date;
   isActive: boolean;
-  status: 'pending' | 'active' | 'ended' | 'cancelled';
+  status: ConfigStatus;
 }
 
 export interface LearningConfiguration {
@@ -211,13 +243,15 @@ export interface LearningConfiguration {
   tpsglobal?: number;
   pieces?: string[];
   isActive: boolean;
-  status: 'pending' | 'active' | 'ended' | 'cancelled';
+  status: LearningConfigStatus;
   createdAt?: Date;
   updatedAt?: Date;
+  themeId?: number;
 }
 
-export type LearningConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
-export type ToastType = 'success' | 'error' | 'info';
+// ============================================================
+// WINNERS / STATISTIQUES
+// ============================================================
 
 export interface LastEndedGame {
   id: string;
@@ -227,19 +261,6 @@ export interface LastEndedGame {
   endgameDate: string;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface FormData {
-  month?: string;
-  year?: string;
-  day?: string;
-  secretCode: string;
-  nom: string;
-  prenoms: string;
-  dateNaissance: string;
-  country: string;
-  phone?: string;
-  gender?: string;
 }
 
 export interface Winner {
@@ -353,6 +374,10 @@ export interface EditionInfo {
   winningCombination: string | null;
 }
 
+// ============================================================
+// UI / REPORTING
+// ============================================================
+
 export interface ReportMetric {
   label: string;
   value: string | number;
@@ -366,23 +391,6 @@ export interface DateRange {
   value: string;
   label: string;
   icon?: string;
-}
-
-export interface Case {
-  numordrep?: number;
-  tpsglobal?: number;
-  txt?: string;
-  itxt?: string;
-  etati?: "Cre" | "Choi" | "Lo" | "Win";
-  isbou?: boolean;
-  onClick?: () => void;
-  isSelected?: boolean;
-  id?: number;
-  isLocked?: boolean;
-  size?: string;
-  place?: boolean;
-  index?: number;
-  mode?: boolean;
 }
 
 export interface TimeLeft {
@@ -416,7 +424,7 @@ export interface MatchInfo {
 }
 
 export interface CompetitionInfo {
-  niveau: any;
+  niveau: unknown;
   id: string;
   datedebut: string;
   datefin: string;
@@ -438,7 +446,12 @@ export interface GameCompletionState {
 }
 
 export interface GameState {
-  status: 'no_competition' | 'not_started' | 'active' | 'results_available' | 'ended_no_proclamation';
+  status:
+    | 'no_competition'
+    | 'not_started'
+    | 'active'
+    | 'results_available'
+    | 'ended_no_proclamation';
   canUserPlay: boolean;
   showGameFinishedBanner: boolean;
   countdown: number | null;
@@ -459,53 +472,159 @@ export interface TournamentSummary {
   totalScore?: number | 'xxx';
 }
 
+// ============================================================
+// ENUMS JEU
+// ============================================================
+
 export enum Direction {
   HORIZONTAL = 'HORIZONTAL',
   VERTICAL = 'VERTICAL',
 }
 
 export enum DifficultyLevel {
-  MINIME = 'MINIME', // Min
-  CADET = 'CADET',   // Cad
-  JUNIOR = 'JUNIOR', // Jun
-  SENIOR = 'SENIOR', // Sen
+  MINIME = 'MINIME',
+  CADET = 'CADET',
+  JUNIOR = 'JUNIOR',
+  SENIOR = 'SENIOR',
 }
 
 export enum CellState {
-  EMPTY = 'EMPTY',       // Cre (Creux / Vide)
-  LOCKED = 'LOCKED',     // Lo
-  PLACED = 'PLACED',     // Pla
-  SELECTED = 'SELECTED', // Choi
+  EMPTY = 'EMPTY',
+  LOCKED = 'LOCKED',
+  PLACED = 'PLACED',
+  SELECTED = 'SELECTED',
+}
+
+export enum MovementSense {
+  UP = 'UP',
+  DOWN = 'DOWN',
+  LEFT = 'LEFT',
+  RIGHT = 'RIGHT',
+}
+
+export type SensoryDirection = 'Up' | 'Down' | 'Left' | 'Right';
+
+// ============================================================
+// MODÈLES DE JEU (Kotlin → TS)
+// ============================================================
+
+export enum StateCase {
+  Cre = 'Cre',
+  Pla = 'Pla',
+  Choi = 'Choi',
+  Lo = 'Lo',
+}
+
+export enum Sens {
+  Up = 'Up',
+  Down = 'Down',
+  Left = 'Left',
+  Right = 'Right',
+}
+
+export enum Direc {
+  Hor = 'Hor',
+  Ver = 'Ver',
+}
+
+export enum Dtfil {
+  Min = 0,
+  Cad = 1,
+  Jun = 2,
+  Sen = 3,
+}
+
+export interface UneCase {
+  ncase: number;
+  indi: number; // Colonne (0..12)
+  indj: number; // Ligne (0..16)
+  txt: string;
+  itxt: string;
+  etat: StateCase;
+  tca: 1 | 2 | 3; // 1 = Case Plateau, 2 = Pion Chiffre, 3 = Pion Opérateur
+  placep?: number;
+  isbou?: boolean;
+}
+
+export interface GameResult {
+  nbreatind: number;
+  result: number;
+  notedbase: number;
+  bonus: number;
+  notedjeu: number;
+  combine: string;
+  targetCase: UneCase;
 }
 
 export interface GameScore {
-  baseScore: number;     // notedebase
-  result: number;        // result
-  gameScore: number;     // notedjeu
-  targetNumber: number;  // nbreatind
-  bonus: number;         // bonus
-  combination?: string;  // combine
+  baseScore: number; // notedebase
+  result: number; // result
+  gameScore: number; // notedjeu
+  targetNumber: number; // nbreatind
+  bonus: number; // bonus
+  combination?: string; // combine
 }
 
 export interface GameMatrix {
-  name: string;          // nom
-  cells: string[];       // cases
-  numbers: string[];     // nbre
-  operators: string[];   // oper
+  name: string; // nom
+  cells: string[]; // cases
+  numbers: string[]; // nbre
+  operators: string[]; // oper
 }
 
+// ============================================================
+// THÈMES
+// ============================================================
+
+export interface BoardTheme {
+  id: number; // numero
+  name: string; // nom
+  cellBgColor: string; // coulfondcase
+  lockedCellBgColor: string; // coulfondcaseverouille
+  placedPawnBgColor: string; // coulfondpionplace
+  startCellBgColor: string; // coulfondcasedepart
+  selectedCellBgColor: string; // coulfondcaseselectionne
+  cellBorderColor: string; // coulbordurecase
+  normalPawnBgColor: string; // coulfondpionnormal
+  hoverPawnBgColor: string; // coulfondpionover
+}
+
+export function parseTheme(rawJson: Record<string, unknown>): BoardTheme {
+  const getStringColor = (key: string, fallback: string) =>
+    typeof rawJson[key] === 'string' && rawJson[key]
+      ? (rawJson[key] as string)
+      : fallback;
+
+  return {
+    id: typeof rawJson.numero === 'number' ? rawJson.numero : 0,
+    name: typeof rawJson.nom === 'string' ? rawJson.nom : 'Thème par défaut',
+    cellBgColor: getStringColor('coulfondcase', '#ffffff'),
+    lockedCellBgColor: getStringColor('coulfondcaseverouille', '#9ca3af'),
+    placedPawnBgColor: getStringColor('coulfondpionplace', '#22c55e'),
+    startCellBgColor: getStringColor('coulfondcasedepart', '#eab308'),
+    selectedCellBgColor: getStringColor('coulfondcaseselectionne', '#3b82f6'),
+    cellBorderColor: getStringColor('coulbordurecase', '#cbd5e1'),
+    normalPawnBgColor: getStringColor('coulfondpionnormal', '#f8fafc'),
+    hoverPawnBgColor: getStringColor('coulfondpionover', '#6366f1'),
+  };
+}
+
+// ============================================================
+// TOURNOIS / MATCHS
+// ============================================================
+
 export interface MatchModel {
-  id: string;             // idpartie (MongoDB ObjectId sous forme de string)
-  tournamentId: string;   // idtournoi
-  orderIndex: number;     // numordrep
-  isGameOver: boolean;    // isgameover
-  userId?: string;        // iduser
-  partId?: string;        // idpart
-  tourId?: string;        // idtour
-  matchNumber?: string;   // numeromatch
-  startedAt: Date;        // datedebut
-  endedAt?: Date;         // datefin
-  score?: string;         // score
+  id: string; // idpartie
+  tournamentId: string; // idtournoi
+  orderIndex: number; // numordrep
+  isGameOver: boolean; // isgameover
+  userId?: string; // iduser
+  partId?: string; // idpart
+  tourId?: string; // idtour
+  matchNumber?: string; // numeromatch
+  startedAt: Date; // datedebut
+  endedAt?: Date; // datefin
+  score?: string; // score
 }
 
 export function createMatch(
@@ -524,60 +643,22 @@ export function createMatch(
   };
 }
 
-export enum MovementSense {
-  UP = 'UP',
-  DOWN = 'DOWN',
-  LEFT = 'LEFT',
-  RIGHT = 'RIGHT',
-}
-
-export interface BoardTheme {
-  id: number;                          // numero
-  name: string;                        // nom
-  cellBgColor: string;                 // coulfondcase
-  lockedCellBgColor: string;           // coulfondcaseverouille
-  placedPawnBgColor: string;           // coulfondpionplace
-  startCellBgColor: string;            // coulfondcasedepart
-  selectedCellBgColor: string;         // coulfondcaseselectionne
-  cellBorderColor: string;             // coulbordurecase
-  normalPawnBgColor: string;           // coulfondpionnormal
-  hoverPawnBgColor: string;            // coulfondpionover
-}
-
-export function parseTheme(rawJson: Record<string, unknown>): BoardTheme {
-  const getStringColor = (key: string, fallback: string) =>
-    typeof rawJson[key] === 'string' && rawJson[key] ? (rawJson[key] as string) : fallback;
-
-  return {
-    id: typeof rawJson.numero === 'number' ? rawJson.numero : 0,
-    name: typeof rawJson.nom === 'string' ? rawJson.nom : 'Thème par défaut',
-    cellBgColor: getStringColor('coulfondcase', '#ffffff'),
-    lockedCellBgColor: getStringColor('coulfondcaseverouille', '#9ca3af'),
-    placedPawnBgColor: getStringColor('coulfondpionplace', '#22c55e'),
-    startCellBgColor: getStringColor('coulfondcasedepart', '#eab308'),
-    selectedCellBgColor: getStringColor('coulfondcaseselectionne', '#3b82f6'),
-    cellBorderColor: getStringColor('coulbordurecase', '#cbd5e1'),
-    normalPawnBgColor: getStringColor('coulfondpionnormal', '#f8fafc'),
-    hoverPawnBgColor: getStringColor('coulfondpionover', '#6366f1'),
-  };
-}
-
 export interface TournamentModel {
-  id: string;               // idtournoi (MongoDB _id)
-  playerName: string;       // nomjoueur (max 20 caractères)
+  id: string; // idtournoi
+  playerName: string; // nomjoueur
   tournamentNumber: string; // numtournoi
-  matchTimeLimit: string;   // tempsmatch ("-1" ou minutes)
-  isGlobalTime: boolean;    // tpsglobal (true = 0/global, false = 1/par match)
-  level: DifficultyLevel;   // niveau
-  colorThemeId: number;     // couleurs
-  gamesPerMatch: number;    // nombredejeu
-  totalMatches: number;     // nbmatch
-  isGameOver: boolean;      // isgameover
-  startedAt: Date;          // datedebut
-  endedAt?: Date;           // datefin
-  tourId?: string;          // idtour
-  userId?: string;          // iduser
-  score?: string;           // score
+  matchTimeLimit: string; // tempsmatch
+  isGlobalTime: boolean; // tpsglobal
+  level: DifficultyLevel; // niveau
+  colorThemeId: number; // couleurs
+  gamesPerMatch: number; // nombredejeu
+  totalMatches: number; // nbmatch
+  isGameOver: boolean; // isgameover
+  startedAt: Date; // datedebut
+  endedAt?: Date; // datefin
+  tourId?: string; // idtour
+  userId?: string; // iduser
+  score?: string; // score
 }
 
 export interface CreateTournamentDto {
@@ -591,7 +672,9 @@ export interface CreateTournamentDto {
   totalMatches: number;
 }
 
-export function createTournament(dto: CreateTournamentDto): Omit<TournamentModel, 'id'> {
+export function createTournament(
+  dto: CreateTournamentDto
+): Omit<TournamentModel, 'id'> {
   return {
     playerName: dto.playerName.slice(0, 20),
     tournamentNumber: dto.tournamentNumber,
@@ -607,15 +690,15 @@ export function createTournament(dto: CreateTournamentDto): Omit<TournamentModel
 }
 
 export interface TournamentFormState {
-  playerName: string;          // njoueur
-  tournamentNumber: string;    // numetour
-  matchesCount: number;        // nbrdmat
-  timeLimit: string;           // stpdjeu (ex: "5", "10", "15")
-  gamesPerMatch: number;       // spnbjeu
-  isGlobalTime: boolean;       // globalrb / perkchrb
-  themeId: number;             // sptheme
-  matrixLevelIndex: number;    // spniv
-  customMatchNumbers: string[];// Numéros de matchs saisis manuellement si besoin
+  playerName: string; // njoueur
+  tournamentNumber: string; // numetour
+  matchesCount: number; // nbrdmat
+  timeLimit: string; // stpdjeu
+  gamesPerMatch: number; // spnbjeu
+  isGlobalTime: boolean; // globalrb / perkchrb
+  themeId: number; // sptheme
+  matrixLevelIndex: number; // spniv
+  customMatchNumbers: string[];
 }
 
 export const DEFAULT_FORM_STATE: TournamentFormState = {
@@ -630,16 +713,19 @@ export const DEFAULT_FORM_STATE: TournamentFormState = {
   customMatchNumbers: [],
 };
 
+// ============================================================
+// MENU / UI DIVERS
+// ============================================================
+
 export interface MainMenuItem {
   id: 'nouveau' | 'scores' | 'aide';
   title: string;
   description: string;
   href: string;
-  icon: string; // Nom d'icône ou chemin SVG
+  icon: string;
 }
 
 export const MAIN_MENU_ITEMS: MainMenuItem[] = [
-  
   {
     id: 'aide',
     title: 'Aide',
@@ -655,78 +741,6 @@ export const MAIN_MENU_ITEMS: MainMenuItem[] = [
     icon: 'chart-bar',
   },
 ];
-
-export type SensoryDirection = 'Up' | 'Down' | 'Left' | 'Right';
-
-export interface UneCase {
-  ncase: number;
-  indi: number; // Colonne (0..12)
-  indj: number; // Ligne (0..16)
-  txt: string;
-  itxt: string;
-  etat: StateCase;
-  tca: 1 | 2 | 3; // 1 = Plateau, 2 = Pion Chiffre, 3 = Pion Opérateur
-  isbou?: boolean;
-}
-
-export interface GameResult {
-  nbreatind: number;
-  result: number;
-  notedbase: number;
-  bonus: number;
-  notedjeu: number;
-  combine: string;
-  targetCase: UneCase;
-}
-
-export enum StateCase {
-  Cre = 'Cre', // Vide / Disponible
-  Pla = 'Pla', // Pion placé
-  Choi = 'Choi', // Sélectionné
-  Lo = 'Lo'    // Verrouillé (valide des tours précédents)
-}
-
-export enum Sens {
-  Up = 'Up',
-  Down = 'Down',
-  Left = 'Left',
-  Right = 'Right'
-}
-
-export enum Direc {
-  Hor = 'Hor',
-  Ver = 'Ver'
-}
-
-export enum Dtfil {
-  Min = 0,
-  Cad = 1,
-  Jun = 2,
-  Sen = 3
-}
-
-export interface UneCase {
-  ncase: number;
-  indi: number; // Colonne (0..12)
-  indj: number; // Ligne (0..16)
-  txt: string;
-  itxt: string;
-  etat: StateCase;
-  tca: 1 | 2 | 3; // 1: Case Plateau, 2: Pion Chiffre, 3: Pion Opérateur
-  placep?: number;
-  isbou?: boolean;
-}
-
-export interface GameResult {
-  nbreatind: number;
-  result: number;
-  notedbase: number;
-  bonus: number;
-  notedjeu: number;
-  combine: string;
-  targetCase: UneCase;
-}
-
 
 export interface FeatureItem {
   icon: React.ElementType;
@@ -751,7 +765,7 @@ export interface TipItem {
   icon: React.ElementType;
   title: string;
   desc: string;
-  color: "purple" | "indigo";
+  color: 'purple' | 'indigo';
 }
 
 export type CityItem = {
@@ -761,3 +775,15 @@ export type CityItem = {
   countryCode?: string;
   region?: string;
 };
+
+export interface Case {
+  ncase: number;
+  indi: number;
+  indj: number;
+  txt: string;
+  itxt: string;
+  etat: StateCase;
+  tca: 1 | 2 | 3;
+  placep?: number;
+  isbou?: boolean;
+}

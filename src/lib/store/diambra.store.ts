@@ -100,7 +100,7 @@ const compressCompetition = (competition: CompetitionInfo): StoredCompetition =>
     timeSpent: competition.timeSpent || 0,
     displayName: competition.displayName,
     isValidated: competition.isValidated,
-    niveau: competition.niveau,
+    niveau: 0,
     matchInfo: competition.matchInfo.map(match => ({
         id: match.id,
         isgameover: match.isgameover,
@@ -131,7 +131,7 @@ const decompressCompetition = (stored: StoredCompetition): CompetitionInfo => ({
         timeSpent: match.timeSpent,
         matchNumber: match.matchNumber || 0,
         score: match.score || 0,
-        niveau: match.niveau,
+        niveau: match.niveau || 0,
         numeromatch: match.numeromatch || '',
         datedebut: match.datedebut || null,
         datefin: match.datefin || null,

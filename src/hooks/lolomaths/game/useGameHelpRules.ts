@@ -1,42 +1,79 @@
+'use client';
+
 import { useMemo } from 'react';
-import { StateCase } from '@/lib/interfaces';
+import { UneCase } from '@/lib/interfaces';
 
 interface HelpContext {
   isStartCovered: boolean;
-  placedPions: any[];
+  placedPions: UneCase[];
   isFirstGame: boolean;
   hasLockedPion: boolean;
   hasAvailablePions: boolean;
-  directionsValid: { left: boolean; right: boolean; up: boolean; down: boolean };
-  hasUsedMultiplicationOrDivision: boolean;
+  directionsValid: {
+    left: boolean;
+    right: boolean;
+    up: boolean;
+    down: boolean;
+  };
 }
 
-export const useGameHelpRules = (ctx: HelpContext): string[] => {
+export const useGameHelpRules = ({
+  isStartCovered,
+  placedPions,
+  isFirstGame,
+  hasLockedPion,
+  hasAvailablePions,
+  directionsValid,
+}: HelpContext): string[] => {
   return useMemo(() => {
     const messages: string[] = [];
+    const placedCount = placedPions.length;
 
-    if (!ctx.isStartCovered) {
-      messages.push('🎯 Placez un pion sur la case de départ (★) pour commencer');
+    if (!isStartCovered) {
+      messages.push(
+        '🎯 Placez un pion sur la case de départ (★) pour commencer'
+      );
     }
-    if (ctx.isStartCovered && ctx.placedPions.length === 0) {
-      messages.push('🧩 Sélectionnez un pion dans le porte-pions et placez-le sur le plateau');
+
+    if (isStartCovered && placedCount === 0) {
+      messages.push(
+        '🧩 Sélectionnez un pion dans le porte-pions et placez-le sur le plateau'
+      );
     }
-    if (ctx.placedPions.length > 0 && ctx.placedPions.length < 3) {
-      messages.push('📐 Une combinaison valide doit contenir au moins 3 pions (nombre-opérateur-nombre)');
+
+    if (placedCount > 0 && placedCount < 3) {
+      messages.push(
+        '📐 Une combinaison valide doit contenir au moins 3 pions (nombre-opérateur-nombre)'
+      );
     }
-    if (ctx.placedPions.length > 0 && !ctx.isFirstGame && !ctx.hasLockedPion) {
-      messages.push('🔗 Vous devez utiliser au moins un pion verrouillé  pour l\'enchaînement');
+
+    if (placedCount > 0 && !isFirstGame && !hasLockedPion) {
+      messages.push(
+        "🔗 Vous devez utiliser au moins un pion verrouillé pour l'enchaînement"
+      );
     }
-    if (ctx.hasAvailablePions && ctx.isStartCovered && ctx.placedPions.length >= 3) {
-      const hasValidDirection = Object.values(ctx.directionsValid).some(Boolean);
+
+    if (hasAvailablePions && isStartCovered && placedCount >= 3) {
+      const hasValidDirection =
+        directionsValid.left ||
+        directionsValid.right ||
+        directionsValid.up ||
+        directionsValid.down;
+
       if (!hasValidDirection) {
-        messages.push('⚠️ La combinaison actuelle n\'est pas valide. Vérifiez l\'alternance et la fermeture.');
+        messages.push(
+          "⚠️ La combinaison actuelle n'est pas valide. Vérifiez l'alternance et la fermeture."
+        );
       }
-    }
-    if (ctx.hasUsedMultiplicationOrDivision) {
-      messages.push('✅ Bonus "× ou ÷" déjà utilisé pour ce match');
     }
 
     return messages;
-  }, [ctx]);
+  }, [
+    isStartCovered,
+    placedPions,
+    isFirstGame,
+    hasLockedPion,
+    hasAvailablePions,
+    directionsValid,
+  ]);
 };

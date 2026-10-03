@@ -83,7 +83,7 @@ export function useConsultationsListPage() {
   }, [editions]);
 
   const getGamesCountByEdition = useCallback((editionId: string) => {
-    return consultations.filter(c => c.edition?.id === editionId).length;
+    return consultations.length;
   }, [consultations]);
 
   const gamesCount = consultations.length;
