@@ -93,7 +93,7 @@ const ConsultationCard = memo(
                             <Eye className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
                             <div className="flex flex-col min-w-0">
                                 <span className="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 leading-none">
-                                    Vues
+                                    Points
                                 </span>
                                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate mt-0.5">
                                     {nombredevues}

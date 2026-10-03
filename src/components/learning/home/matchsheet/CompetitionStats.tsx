@@ -84,7 +84,7 @@ const CompetitionStats = memo(function CompetitionStats({
                 />           
                 {punChangeCount !== undefined && (
                     <InfoRow
-                        label="Nombre de vues"
+                        label="Nombre de Points"
                         value={punChangeCount}
                         icon={<BarChart3 className="w-3.5 h-3.5" />}
                     />

@@ -14,6 +14,11 @@ interface GridCellProps {
   onClick: (cell: UneCase) => void;
 }
 
+// Couleur jaune 100% pour la bordure de la case cible
+const TARGET_BORDER_COLOR = '#FFFF00';
+const TARGET_BORDER_WIDTH = '2px';
+const DEFAULT_BORDER_WIDTH = '1px';
+
 const GridCellBase: React.FC<GridCellProps> = ({
   cell,
   rowIndex,
@@ -22,6 +27,7 @@ const GridCellBase: React.FC<GridCellProps> = ({
   onClick,
 }) => {
   const isStart = cell.ncase === START_CASE_INDEX;
+  const isTarget = cell.isTarget === true;
 
   const content = useMemo(() => {
     if (cell.txt !== '') return cell.txt;
@@ -30,51 +36,56 @@ const GridCellBase: React.FC<GridCellProps> = ({
   }, [cell.txt, cell.itxt]);
 
   const cellStyle = useMemo<React.CSSProperties>(() => {
+    const baseStyle: React.CSSProperties = {};
+
     if (cell.etat === StateCase.Lo) {
-      return {
+      Object.assign(baseStyle, {
         backgroundColor: theme.lockedCellBgColor,
         color: '#ffffff',
-        borderColor: theme.cellBorderColor,
         fontWeight: 700,
         cursor: 'not-allowed',
-      };
-    }
-    if (cell.etat === StateCase.Choi) {
-      return {
+      });
+    } else if (cell.etat === StateCase.Choi) {
+      Object.assign(baseStyle, {
         backgroundColor: theme.selectedCellBgColor,
         color: '#ffffff',
-        borderColor: theme.cellBorderColor,
         fontWeight: 800,
         cursor: 'pointer',
-      };
-    }
-    if (cell.etat === StateCase.Pla) {
-      return {
+      });
+    } else if (cell.etat === StateCase.Pla) {
+      Object.assign(baseStyle, {
         backgroundColor: theme.placedPawnBgColor,
         color: '#ffffff',
-        borderColor: theme.cellBorderColor,
         fontWeight: 800,
         cursor: 'pointer',
-      };
-    }
-    if (isStart) {
-      return {
+      });
+    } else if (isStart) {
+      Object.assign(baseStyle, {
         backgroundColor: theme.startCellBgColor,
         color: '#ffffff',
-        borderColor: theme.cellBorderColor,
         fontWeight: 700,
         cursor: 'pointer',
-      };
+      });
+    } else {
+      const isOp = isOperateur(content);
+      Object.assign(baseStyle, {
+        backgroundColor: theme.cellBgColor,
+        color: isOp ? '#FD010D' : '#ffffff',
+        fontWeight: isOp ? 700 : 500,
+        cursor: 'pointer',
+      });
     }
-    const isOp = isOperateur(content);
-    return {
-      backgroundColor: theme.cellBgColor,
-      color: isOp ? '#FD010D' : '#ffffff',
-      borderColor: theme.cellBorderColor,
-      fontWeight: isOp ? 700 : 500,
-      cursor: 'pointer',
-    };
-  }, [cell.etat, content, isStart, theme]);
+
+    // Bordure : jaune 100% et 2px si case cible, sinon bordure du thème
+    baseStyle.borderColor = isTarget
+      ? TARGET_BORDER_COLOR
+      : theme.cellBorderColor;
+    baseStyle.borderWidth = isTarget
+      ? TARGET_BORDER_WIDTH
+      : DEFAULT_BORDER_WIDTH;
+
+    return baseStyle;
+  }, [cell.etat, content, isStart, isTarget, theme]);
 
   const handleClick = useCallback(() => {
     onClick(cell);
@@ -96,24 +107,19 @@ const GridCellBase: React.FC<GridCellProps> = ({
         ...cellStyle,
         fontSize: 'clamp(8px, 1.4vw, 14px)',
         fontFamily: 'monospace',
-        borderWidth: '1px',
       }}
-      title={`Case (${colIndex}, ${rowIndex}) - ID: ${cell.ncase} - Valeur: ${content || 'vide'}`}
-      aria-label={`Case ${cell.ncase}, valeur ${content || 'vide'}, état ${cell.etat}`}
+      title={`Case (${colIndex}, ${rowIndex}) - ID: ${cell.ncase} - Valeur: ${content || 'vide'}${isTarget ? ' — Cible' : ''}`}
+      aria-label={`Case ${cell.ncase}, valeur ${content || 'vide'}, état ${cell.etat}${isTarget ? ', cible' : ''}`}
       data-row={rowIndex}
       data-col={colIndex}
       data-state={cell.etat}
+      data-target={isTarget ? 'true' : undefined}
     >
       {content}
     </div>
   );
 };
 
-/**
- * Comparateur personnalisé pour éviter les re-renders inutiles :
- * on ne compare QUE les propriétés réellement utilisées par le rendu.
- * Un `cell` recréé (via `{ ...cell }`) avec les mêmes valeurs ne re-render pas.
- */
 const GridCell = memo(GridCellBase, (prev, next) => {
   return (
     prev.cell.ncase === next.cell.ncase &&
@@ -121,6 +127,7 @@ const GridCell = memo(GridCellBase, (prev, next) => {
     prev.cell.itxt === next.cell.itxt &&
     prev.cell.etat === next.cell.etat &&
     prev.cell.placep === next.cell.placep &&
+    prev.cell.isTarget === next.cell.isTarget &&
     prev.theme === next.theme &&
     prev.onClick === next.onClick &&
     prev.rowIndex === next.rowIndex &&

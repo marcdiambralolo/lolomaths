@@ -548,6 +548,7 @@ export interface UneCase {
   tca: 1 | 2 | 3; // 1 = Case Plateau, 2 = Pion Chiffre, 3 = Pion Opérateur
   placep?: number;
   isbou?: boolean;
+  isTarget?: boolean; // ← AJOUT : case cible (nombre à atteindre)
 }
 
 export interface GameResult {

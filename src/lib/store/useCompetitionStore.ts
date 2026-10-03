@@ -127,11 +127,18 @@ function clearSelections(
 
 /**
  * Vérifie s'il reste des pions utilisables dans le rack courant.
- * Un pion est utilisable s'il est `Pla` (non posé) — donc il reste
- * au moins un pion disponible.
  */
 function hasRemainingPionsInRack(pions: UneCase[]): boolean {
   return pions.some((p) => p.etat === StateCase.Pla);
+}
+
+/**
+ * Retire le marqueur `isTarget` de toutes les cases d'une grille.
+ */
+function clearTargets(grid: UneCase[][]): UneCase[][] {
+  return grid.map((row) =>
+    row.map((cell) => (cell.isTarget ? { ...cell, isTarget: false } : cell))
+  );
 }
 
 // ============================================================
@@ -236,7 +243,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
 
     const nextCnbjeu = cnbjeu + 1;
 
-    // Fin de match si on a atteint le nombre de jeux OU plus de pions dispo
     const noMorePions = !hasRemainingPionsInRack(pions);
     const matchOver = nextCnbjeu >= nombredejeu || noMorePions;
 
@@ -260,7 +266,6 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   handleCaseClick: (targetCase: UneCase) => {
     const { pions, grid, flatGrid, isMatchOver } = get();
 
-    // Bloque toute interaction si le match est terminé
     if (isMatchOver) return;
 
     const selectedPionInRack = pions.find((p) => p.etat === StateCase.Choi);
@@ -281,11 +286,13 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
               : p;
           });
 
-          const nextGrid = grid.map((row) =>
-            row.map((cell) =>
-              cell.etat === StateCase.Choi
-                ? { ...cell, etat: StateCase.Pla }
-                : cell
+          const nextGrid = clearTargets(
+            grid.map((row) =>
+              row.map((cell) =>
+                cell.etat === StateCase.Choi
+                  ? { ...cell, etat: StateCase.Pla }
+                  : cell
+              )
             )
           );
 
@@ -306,16 +313,18 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
               (p) => p.placep === selectedCaseOnGrid.placep
             );
 
-            const nextGrid = grid.map((row) =>
-              row.map((cell) =>
-                cell.ncase === selectedCaseOnGrid.ncase
-                  ? {
-                      ...cell,
-                      txt: cell.itxt,
-                      etat: StateCase.Cre,
-                      placep: undefined,
-                    }
-                  : cell
+            const nextGrid = clearTargets(
+              grid.map((row) =>
+                row.map((cell) =>
+                  cell.ncase === selectedCaseOnGrid.ncase
+                    ? {
+                        ...cell,
+                        txt: cell.itxt,
+                        etat: StateCase.Cre,
+                        placep: undefined,
+                      }
+                    : cell
+                )
               )
             );
 
@@ -350,18 +359,20 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       if (targetCase.etat === StateCase.Cre) {
         // Pose d'un pion depuis le rack
         if (selectedPionInRack) {
-          const nextGrid = grid.map((row) =>
-            row.map((cell) => {
-              if (cell.ncase === targetCase.ncase) {
-                return {
-                  ...cell,
-                  txt: selectedPionInRack.txt,
-                  etat: StateCase.Pla,
-                  placep: selectedPionInRack.placep,
-                };
-              }
-              return cell;
-            })
+          const nextGrid = clearTargets(
+            grid.map((row) =>
+              row.map((cell) => {
+                if (cell.ncase === targetCase.ncase) {
+                  return {
+                    ...cell,
+                    txt: selectedPionInRack.txt,
+                    etat: StateCase.Pla,
+                    placep: selectedPionInRack.placep,
+                  };
+                }
+                return cell;
+              })
+            )
           );
           const nextPions = pions.map((p) =>
             p.placep === selectedPionInRack.placep
@@ -380,26 +391,28 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
 
         // Déplacement d'un pion déjà présent sur la grille
         if (selectedCaseOnGrid) {
-          const nextGrid = grid.map((row) =>
-            row.map((cell) => {
-              if (cell.ncase === selectedCaseOnGrid.ncase) {
-                return {
-                  ...cell,
-                  txt: cell.itxt,
-                  etat: StateCase.Cre,
-                  placep: undefined,
-                };
-              }
-              if (cell.ncase === targetCase.ncase) {
-                return {
-                  ...cell,
-                  txt: selectedCaseOnGrid.txt,
-                  etat: StateCase.Pla,
-                  placep: selectedCaseOnGrid.placep,
-                };
-              }
-              return cell;
-            })
+          const nextGrid = clearTargets(
+            grid.map((row) =>
+              row.map((cell) => {
+                if (cell.ncase === selectedCaseOnGrid.ncase) {
+                  return {
+                    ...cell,
+                    txt: cell.itxt,
+                    etat: StateCase.Cre,
+                    placep: undefined,
+                  };
+                }
+                if (cell.ncase === targetCase.ncase) {
+                  return {
+                    ...cell,
+                    txt: selectedCaseOnGrid.txt,
+                    etat: StateCase.Pla,
+                    placep: selectedCaseOnGrid.placep,
+                  };
+                }
+                return cell;
+              })
+            )
           );
           set({
             grid: nextGrid,
@@ -419,14 +432,16 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
         const cleared = clearSelections(grid, pions);
         const isAlreadySelected = targetCase.etat === StateCase.Choi;
 
-        const nextGrid = cleared.grid.map((row) =>
-          row.map((cell) =>
-            cell.ncase === targetCase.ncase
-              ? {
-                  ...cell,
-                  etat: isAlreadySelected ? StateCase.Pla : StateCase.Choi,
-                }
-              : cell
+        const nextGrid = clearTargets(
+          cleared.grid.map((row) =>
+            row.map((cell) =>
+              cell.ncase === targetCase.ncase
+                ? {
+                    ...cell,
+                    etat: isAlreadySelected ? StateCase.Pla : StateCase.Choi,
+                  }
+                : cell
+            )
           )
         );
 
@@ -453,7 +468,13 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
     const nextGrid = grid.map((row) =>
       row.map((cell) =>
         cell.etat !== StateCase.Lo
-          ? { ...cell, txt: cell.itxt, etat: StateCase.Cre, placep: undefined }
+          ? {
+              ...cell,
+              txt: cell.itxt,
+              etat: StateCase.Cre,
+              placep: undefined,
+              isTarget: false,
+            }
           : cell
       )
     );
@@ -482,8 +503,14 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
   calculateScores: () => {
     const { grid, flatGrid, niveau, cnbjeu, isMatchOver } = get();
 
+    // On repart d'une grille sans marqueurs isTarget
+    const baseGrid = clearTargets(grid);
+    const baseFlatGrid = baseGrid.flat();
+
     if (isMatchOver) {
       set({
+        grid: baseGrid,
+        flatGrid: baseFlatGrid,
         directionsValid: { left: false, right: false, up: false, down: false },
         gameResults: [null, null, null, null],
       });
@@ -498,19 +525,34 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       down: false,
     };
 
-    if (!isStartCaseCovered(flatGrid)) {
-      set({ directionsValid: emptyDirections, gameResults: emptyResults });
+    if (!isStartCaseCovered(baseFlatGrid)) {
+      set({
+        grid: baseGrid,
+        flatGrid: baseFlatGrid,
+        directionsValid: emptyDirections,
+        gameResults: emptyResults,
+      });
       return;
     }
 
-    const placedOnGrid = getPlacedPions(flatGrid);
+    const placedOnGrid = getPlacedPions(baseFlatGrid);
     if (placedOnGrid.length === 0) {
-      set({ directionsValid: emptyDirections, gameResults: emptyResults });
+      set({
+        grid: baseGrid,
+        flatGrid: baseFlatGrid,
+        directionsValid: emptyDirections,
+        gameResults: emptyResults,
+      });
       return;
     }
 
-    if (tpencadre(grid)) {
-      set({ directionsValid: emptyDirections, gameResults: emptyResults });
+    if (tpencadre(baseGrid)) {
+      set({
+        grid: baseGrid,
+        flatGrid: baseFlatGrid,
+        directionsValid: emptyDirections,
+        gameResults: emptyResults,
+      });
       return;
     }
 
@@ -531,8 +573,13 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
 
     const firstPlaced = placedOnGrid[0];
 
+    // On clone la grille base pour y marquer les cibles
+    const targetGrid: UneCase[][] = baseGrid.map((row) =>
+      row.map((cell) => ({ ...cell }))
+    );
+
     directions.forEach(({ sens, index, key }) => {
-      const { sequence } = collectSequence(grid, firstPlaced, sens);
+      const { sequence } = collectSequence(baseGrid, firstPlaced, sens);
 
       if (!isValidSequence(sequence)) return;
 
@@ -540,7 +587,7 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
         sequence,
         placedOnGrid,
         cnbjeu,
-        grid
+        baseGrid
       );
 
       if (!validation.valid) return;
@@ -552,11 +599,20 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
           ? sorted[0]
           : sorted[sorted.length - 1];
 
-      const targetCase = getNextCase(grid, edgeCase, sens);
+      const targetCase = getNextCase(baseGrid, edgeCase, sens);
       if (!targetCase) return;
       if (targetCase.etat !== StateCase.Cre) return;
       if (isOperateur(targetCase.txt)) return;
       if (targetCase.txt === '') return;
+
+      // Marquer la case cible dans la grille clonée
+      const targetRow = targetGrid[targetCase.indj];
+      if (targetRow) {
+        targetRow[targetCase.indi] = {
+          ...targetRow[targetCase.indi],
+          isTarget: true,
+        };
+      }
 
       const gameRes = calculateGameResult(
         targetCase,
@@ -569,7 +625,12 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       directionsValid[key] = true;
     });
 
-    set({ gameResults: results, directionsValid });
+    set({
+      grid: targetGrid,
+      flatGrid: targetGrid.flat(),
+      gameResults: results,
+      directionsValid,
+    });
   },
 
   // ============================================================
@@ -586,8 +647,8 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
     const nextGrid = grid.map((row) =>
       row.map((cell) =>
         cell.etat === StateCase.Pla || cell.etat === StateCase.Choi
-          ? { ...cell, etat: StateCase.Lo }
-          : cell
+          ? { ...cell, etat: StateCase.Lo, isTarget: false }
+          : { ...cell, isTarget: false }
       )
     );
 

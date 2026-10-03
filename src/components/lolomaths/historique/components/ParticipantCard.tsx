@@ -72,7 +72,7 @@ const ParticipantCard = ({
                             </span>
                             <span className="inline-flex items-center gap-1">
                                 <Eye className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                                {winner.nombredevues ?? 0} vues
+                                {winner.nombredevues ?? 0} Points
                             </span>
 
                             {winner.country && (
