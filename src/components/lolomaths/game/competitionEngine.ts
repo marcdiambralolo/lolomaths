@@ -323,49 +323,7 @@ export function validateCombination(
 // 5. COLLECTE DE SÉQUENCE
 // ============================================================
 
-/**
- * Transposition stricte de `cpver` / `cphor` Kotlin :
- * - collecte depuis la case du pion posé
- * - arrêt quand la case suivante est `Cre` ou vide (txt === '')
- */
-export function collectSequence(
-  grid: UneCase[][],
-  startCase: UneCase,
-  direction: Sens
-): { sequence: UneCase[]; hasLoPion: boolean } {
-  const sequence: UneCase[] = [];
-  let hasLoPion = false;
-
-  // Forward
-  let current: UneCase | null = startCase;
-  while (current && current.txt !== '') {
-    sequence.push(current);
-    if (current.etat === StateCase.Lo) hasLoPion = true;
-    const next = getNextCase(grid, current, direction);
-    if (!next) break;
-    if (next.etat === StateCase.Cre || next.txt === '') break;
-    current = next;
-  }
-
-  // Backward
-  const opposite: Record<Sens, Sens> = {
-    [Sens.Up]: Sens.Down,
-    [Sens.Down]: Sens.Up,
-    [Sens.Left]: Sens.Right,
-    [Sens.Right]: Sens.Left,
-  };
-  let prev = getNextCase(grid, startCase, opposite[direction]);
-  while (prev && prev.txt !== '') {
-    sequence.unshift(prev);
-    if (prev.etat === StateCase.Lo) hasLoPion = true;
-    const next = getNextCase(grid, prev, opposite[direction]);
-    if (!next) break;
-    if (next.etat === StateCase.Cre || next.txt === '') break;
-    prev = next;
-  }
-
-  return { sequence, hasLoPion };
-}
+ 
 
 export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
   const isHorizontal = direction === Sens.Left || direction === Sens.Right;
@@ -509,4 +467,43 @@ export function calculateGameResult(
 
   game.notedjeu = game.notedbase + game.bonus;
   return game;
+}
+
+export function collectSequence(
+  grid: UneCase[][],
+  startCase: UneCase,
+  direction: Sens
+): { sequence: UneCase[]; hasLoPion: boolean } {
+  const sequence: UneCase[] = [];
+  let hasLoPion = false;
+
+  // Forward : partir de startCase, avancer tant que la case suivante n'est pas Cre/vide.
+  let current: UneCase | null = startCase;
+  while (current && current.txt !== '' && current.etat !== StateCase.Cre) {
+    sequence.push(current);
+    if (current.etat === StateCase.Lo) hasLoPion = true;
+    const next = getNextCase(grid, current, direction);
+    if (!next) break;
+    if (next.etat === StateCase.Cre || next.txt === '') break;
+    current = next;
+  }
+
+  // Backward : partir de la case opposée, avancer tant que la case courante n'est pas Cre/vide.
+  const opposite: Record<Sens, Sens> = {
+    [Sens.Up]: Sens.Down,
+    [Sens.Down]: Sens.Up,
+    [Sens.Left]: Sens.Right,
+    [Sens.Right]: Sens.Left,
+  };
+  let prev = getNextCase(grid, startCase, opposite[direction]);
+  while (prev && prev.txt !== '' && prev.etat !== StateCase.Cre) {
+    sequence.unshift(prev);
+    if (prev.etat === StateCase.Lo) hasLoPion = true;
+    const next = getNextCase(grid, prev, opposite[direction]);
+    if (!next) break;
+    if (next.etat === StateCase.Cre || next.txt === '') break;
+    prev = next;
+  }
+
+  return { sequence, hasLoPion };
 }

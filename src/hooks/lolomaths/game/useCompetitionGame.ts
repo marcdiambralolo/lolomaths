@@ -239,7 +239,7 @@ export const useCompetitionGame = () => {
   const selectedGameResult = useMemo(
     () =>
       selectedDirectionIndex !== null
-        ? gameResults[selectedDirectionIndex]
+        ? gameResults[selectedDirectionIndex] ?? null
         : null,
     [selectedDirectionIndex, gameResults]
   );

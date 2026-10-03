@@ -37,7 +37,7 @@ export const CompetitionScreen: React.FC = React.memo(() => {
   }, [setSelectedDirectionIndex]);
 
   const isDialogOpen = useMemo(
-    () => selectedDirectionIndex !== null && selectedGameResult !== undefined,
+    () => selectedDirectionIndex !== null && selectedGameResult !== null,
     [selectedDirectionIndex, selectedGameResult]
   );
 
