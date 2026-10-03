@@ -171,7 +171,7 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
     numbersTxt,
     operatorsTxt,
     niveau = Dtfil.Sen,
-    numeromat = '12345',
+    numeromat = '123456789',
     listecaseRef,
     nombredejeu = 20
   ) => {
@@ -318,11 +318,11 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
                 row.map((cell) =>
                   cell.ncase === selectedCaseOnGrid.ncase
                     ? {
-                        ...cell,
-                        txt: cell.itxt,
-                        etat: StateCase.Cre,
-                        placep: undefined,
-                      }
+                      ...cell,
+                      txt: cell.itxt,
+                      etat: StateCase.Cre,
+                      placep: undefined,
+                    }
                     : cell
                 )
               )
@@ -332,8 +332,8 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
               p.placep === pionOfCase?.placep
                 ? { ...p, etat: StateCase.Pla }
                 : p.etat === StateCase.Choi
-                ? { ...p, etat: StateCase.Pla }
-                : p
+                  ? { ...p, etat: StateCase.Pla }
+                  : p
             );
 
             set({
@@ -437,9 +437,9 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
             row.map((cell) =>
               cell.ncase === targetCase.ncase
                 ? {
-                    ...cell,
-                    etat: isAlreadySelected ? StateCase.Pla : StateCase.Choi,
-                  }
+                  ...cell,
+                  etat: isAlreadySelected ? StateCase.Pla : StateCase.Choi,
+                }
                 : cell
             )
           )
@@ -469,12 +469,12 @@ export const useCompetitionStore = create<CompetitionState>((set, get) => ({
       row.map((cell) =>
         cell.etat !== StateCase.Lo
           ? {
-              ...cell,
-              txt: cell.itxt,
-              etat: StateCase.Cre,
-              placep: undefined,
-              isTarget: false,
-            }
+            ...cell,
+            txt: cell.itxt,
+            etat: StateCase.Cre,
+            placep: undefined,
+            isTarget: false,
+          }
           : cell
       )
     );

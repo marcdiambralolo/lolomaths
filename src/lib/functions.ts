@@ -49,10 +49,6 @@ export function cleanText(s: unknown) {
   return String(s ?? "").replace(/\s+/g, " ").trim();
 }
 
-export function getId(x: { _id?: unknown; id?: unknown } | null | undefined): string {
-  return String(x?._id ?? x?.id ?? "");
-}
-
 export function hashString(input: string): number {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {

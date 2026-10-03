@@ -130,7 +130,7 @@ export function useSlide4SectionDoors() {
       if (response.data.success && response.data.user) {
         updateUser(response.data.user);
         if (retour === "learning") {
-          router.push(`/star/learning`);
+          router.push(`/star/playlolomaths`);
         } else
           if (monjeu) {
             router.push(`/star/choix/${monjeu}`);

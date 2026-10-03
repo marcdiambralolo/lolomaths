@@ -134,7 +134,7 @@ export function useTermsSections(): TermsSection[] {
       content: (
         <p>
           Nous nous réservons le droit de suspendre ou résilier un compte en cas de violation
-          flagrante de ces conditions.
+          flagrante de ces conditions d'utilisation.
         </p>
       ),
     },

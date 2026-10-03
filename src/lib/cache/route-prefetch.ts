@@ -107,7 +107,6 @@ export function prefetchRouteData(
   return pending;
 }
 
-
 export function prefetchAdminUserDetail(queryClient: QueryClient, userId: string): Promise<void> {
   const normalizedId = userId.trim();
   if (!normalizedId) {

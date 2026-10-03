@@ -1,9 +1,5 @@
 import type { ReactNode, ElementType } from 'react';
 
-// ============================================================
-// TYPES GÉNÉRIQUES / UTILITAIRES
-// ============================================================
-
 export type DateLike = Date | string | number | null | undefined;
 export type ConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
 export type LearningConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
@@ -303,7 +299,6 @@ export interface StatisticsData {
   totalConsultations: number;
   totalParticipants: number;
   uniqueParticipants: number;
-  winningCombination: string;
   successRate: {
     exact: number;
     disordered: number;
@@ -451,11 +446,11 @@ export interface GameCompletionState {
 
 export interface GameState {
   status:
-    | 'no_competition'
-    | 'not_started'
-    | 'active'
-    | 'results_available'
-    | 'ended_no_proclamation';
+  | 'no_competition'
+  | 'not_started'
+  | 'active'
+  | 'results_available'
+  | 'ended_no_proclamation';
   canUserPlay: boolean;
   showGameFinishedBanner: boolean;
   countdown: number | null;
@@ -632,22 +627,6 @@ export interface MatchModel {
   score?: string; // score
 }
 
-export function createMatch(
-  tournamentId: string,
-  orderIndex: number,
-  matchNumber: string,
-  tourId?: string
-): Omit<MatchModel, 'id'> {
-  return {
-    tournamentId,
-    orderIndex,
-    matchNumber,
-    tourId,
-    isGameOver: false,
-    startedAt: new Date(),
-  };
-}
-
 export interface TournamentModel {
   id: string; // idtournoi
   playerName: string; // nomjoueur
@@ -675,23 +654,6 @@ export interface CreateTournamentDto {
   colorThemeId: number;
   gamesPerMatch: number;
   totalMatches: number;
-}
-
-export function createTournament(
-  dto: CreateTournamentDto
-): Omit<TournamentModel, 'id'> {
-  return {
-    playerName: dto.playerName.slice(0, 20),
-    tournamentNumber: dto.tournamentNumber,
-    matchTimeLimit: dto.matchTimeLimit,
-    isGlobalTime: dto.isGlobalTime,
-    level: dto.level,
-    colorThemeId: dto.colorThemeId,
-    gamesPerMatch: dto.gamesPerMatch,
-    totalMatches: dto.totalMatches,
-    isGameOver: false,
-    startedAt: new Date(),
-  };
 }
 
 export interface TournamentFormState {
@@ -780,15 +742,3 @@ export type CityItem = {
   countryCode?: string;
   region?: string;
 };
-
-export interface Case {
-  ncase: number;
-  indi: number;
-  indj: number;
-  txt: string;
-  itxt: string;
-  etat: StateCase;
-  tca: 1 | 2 | 3;
-  placep?: number;
-  isbou?: boolean;
-}

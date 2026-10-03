@@ -85,7 +85,6 @@ export const useCompetitionGame = () => {
   const flatGrid = useMemo(() => grid.flat(), [grid]);
   const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
   const nombredejeu = useCompetitionStore((state) => state.nombredejeu);
-  const scoreTotal = useCompetitionStore((state) => state.scoreTotal);
   const directionsValid = useCompetitionStore((state) => state.directionsValid);
   const gameResults = useCompetitionStore((state) => state.gameResults);
   const isMatchOver = useCompetitionStore((state) => state.isMatchOver);
@@ -191,26 +190,6 @@ export const useCompetitionGame = () => {
     setSelectedDirectionIndex(null);
   }, [selectedDirectionIndex, confirmCalculation]);
 
-  const handleRestartMatch = useCallback(() => {
-    setShowResultZone(false);
-    setSelectedDirectionIndex(null);
-
-    useCompetitionStore.getState().resetToInitialState();
-
-    const duration = initializeGameSession();
-    resetAndStartChrono(duration);
-  }, [initializeGameSession, resetAndStartChrono]);
-
-  const handleShowDetails = useCallback(() => {
-    const average = cnbjeu > 0 ? (scoreTotal / cnbjeu).toFixed(1) : '0';
-    alert(
-      `Détails du match:\n` +
-        `Score: ${scoreTotal} pts\n` +
-        `Jeux: ${cnbjeu}/${nombredejeu}\n` +
-        `Moyenne: ${average} pts`
-    );
-  }, [scoreTotal, cnbjeu, nombredejeu]);
-
   const helpMessages = useGameHelpRules({
     isStartCovered: gameState.isStartCovered,
     placedPions: gameState.placedPions,
@@ -234,8 +213,26 @@ export const useCompetitionGame = () => {
     [selectedDirectionIndex, gameResults]
   );
 
+  const handleCloseDialog = useCallback(() => {
+    setSelectedDirectionIndex(null);
+  }, [setSelectedDirectionIndex]);
+
+  const isDialogOpen = useMemo(
+    () => selectedDirectionIndex !== null && selectedGameResult !== null,
+    [selectedDirectionIndex, selectedGameResult]
+  );
+
+  // Affiche les flèches directionnelles UNIQUEMENT si au moins une direction est valide
+  const hasAnyValidDirection = useMemo(
+    () =>
+      directionsValid.left ||
+      directionsValid.right ||
+      directionsValid.up ||
+      directionsValid.down,
+    [directionsValid]
+  );
+
   return {
-    chrono,
     showResultZone,
     selectedDirectionIndex,
     directionsValid,
@@ -246,11 +243,12 @@ export const useCompetitionGame = () => {
     selectedGameResult,
     isMatchOver,
     nombredejeu,
+    hasAnyValidDirection,
+    isDialogOpen,
+    handleCloseDialog,
     setSelectedDirectionIndex,
     setShowHelp,
     handleResetRound,
     handleAcceptCalculation,
-    handleRestartMatch,
-    handleShowDetails,
   };
 };

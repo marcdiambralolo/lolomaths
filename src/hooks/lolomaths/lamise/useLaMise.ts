@@ -113,8 +113,9 @@ export function useLaMise() {
                     queryKey: [QUERY_KEYS.WALLET_UNUSED_OFFERINGS],
                 }),
             ]);
- router.push(`/star/play?retour=learning&monjeu=${monidjeu}`);
-           
+
+            router.push(`/star/play?retour=learning&monjeu=${monidjeu}`);
+
         },
     });
 

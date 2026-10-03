@@ -1,50 +1,5 @@
 import { toSafeDate } from "./configUtils";
-import { MATCH_TYPES } from "./constantes";
 import { DateLike } from "./interface";
- 
-
-export const caldure = (dateFin: string, dateDebut: string) => {
-  const diff = new Date(dateFin).getTime() - new Date(dateDebut).getTime();
-  return Math.floor(diff / 1000) + " sec";
-};
- 
-let cachedLetterPairs: string[] | null = null;
-
-export const generateLetterPairs = (): string[] => {
-  if (cachedLetterPairs) return cachedLetterPairs;
-
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  cachedLetterPairs = alphabet
-    .split("")
-    .flatMap((a) => alphabet.split("").map((b) => a + b));
-
-  return cachedLetterPairs;
-};
-
- 
-
-export const formatDate = (isoString: string): string => {
-  const date = new Date(isoString);
-  if (isNaN(date.getTime())) return "00/00/0000 à 00h:00mn:00s";
-
-  const datePart = date.toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-
-  const timePart = date.toLocaleTimeString("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-
-  return `${datePart} à ${timePart}`;
-};
-
-export const choix = (tpsglobale: number): string =>
-  ({ 0: "Nombre", 1: "Couleur", 2: "Image", 3: "Lettre" }[tpsglobale] || "Global");
 
 export const niveauOptions = Array.from({ length: 9 }, (_, i) => i + 2);
 
@@ -52,17 +7,7 @@ export const optionOptions = [
   { value: 0, label: 'Manuel' },
   { value: 1, label: 'Automatique' }
 ]; 
-
-  
-
-export const formatDuration = (seconds?: number): string => {
-  if (!seconds) return '0s';
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}m ${remainingSeconds}s`;
-};
-
+ 
 export function formatDateFR(value: DateLike): string {
   const date = toSafeDate(value, new Date());
   if (!isValidDate(date)) return '';
@@ -78,12 +23,6 @@ export function formatDateFR(value: DateLike): string {
 export function isValidDate(value: unknown): value is Date {
   return value instanceof Date && !Number.isNaN(value.getTime());
 }
-
-
-export const getMatchType = (tpsglobal?: number): string => {
-  if (tpsglobal === undefined) return 'Inconnu';
-  return MATCH_TYPES[tpsglobal] ?? 'Inconnu';
-};
 
 export const calculateDuration = (startDate: string, endDate: string): string => {
   const start = new Date(startDate).getTime();
@@ -215,5 +154,4 @@ export const formatToHMS = (totalSeconds: number): string => {
     parts.push(`${seconds.toString().padStart(2, '0')}s`);
 
     return parts.join(' ');
-};
- 
+}; 

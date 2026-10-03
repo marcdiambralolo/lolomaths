@@ -80,7 +80,7 @@ interface MonEtoileStore {
     resetGameState: () => void;
     resetAll: () => void;
 }
- 
+
 const sortByDateDesc = (a: CompetitionInfo, b: CompetitionInfo): number => {
     return new Date(b.datedebut).getTime() - new Date(a.datedebut).getTime();
 };
@@ -229,7 +229,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
                 return { currentMatchInfo: newMatches };
             }),
 
-            clearCurrentMatchInfo: () => set({ currentMatchInfo: [] }), 
+            clearCurrentMatchInfo: () => set({ currentMatchInfo: [] }),
 
             addCompetition: (competition) => {
                 set(state => {
@@ -306,7 +306,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
                     ),
                     competitionsVersion: state.competitionsVersion + 1
                 }));
-            }, 
+            },
 
             incrementGameSequenceCounter: () =>
                 set((state) => ({
@@ -316,7 +316,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
             resetGameSequenceCounter: () =>
                 set({ gameSequenceCounter: 0 }),
 
-            getGameSequenceCounter: () => get().gameSequenceCounter, 
+            getGameSequenceCounter: () => get().gameSequenceCounter,
             setIdEditionencours: (id: any) => set({ idEditionencours: id }),
             setAfficheBanana: (value) => set({ afficheBanana: value }),
             setAfficheStat: (value) => set({ afficheStat: value }),
@@ -325,8 +325,8 @@ export const useDiambraStore = create<MonEtoileStore>()(
             setJeuAcommencer: (value) => set({ jeuAcommencer: value }),
             setJeuenattente: (value) => set({ jeuenattente: value }),
             setLejeu: (value) => set({ lejeu: value }),
-            setLamise: (value) => set({ lamise: value }), 
-            setGameStarted: (value) => set({ gameStarted: value }), 
+            setLamise: (value) => set({ lamise: value }),
+            setGameStarted: (value) => set({ gameStarted: value }),
             setCurrentConsultationId: (id) => set({ currentConsultationId: id }),
 
             resetGameState: () => set({
@@ -374,7 +374,7 @@ export const useDiambraStore = create<MonEtoileStore>()(
                 }
                 if (state) {
                     state.currentMatchInfo = state.currentMatchInfo || [];
-                     if (state.gameSequenceCounter === undefined) {
+                    if (state.gameSequenceCounter === undefined) {
                         state.gameSequenceCounter = 0;
                     }
                     if (state.idEditionencours === undefined) {

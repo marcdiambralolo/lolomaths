@@ -4,17 +4,8 @@ import React, { useMemo } from 'react';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { useGameHistory } from '@/hooks/lolomaths/game/useGameHistory';
 
-interface MatchSummaryScreenProps {
-  isTimeUp: boolean;
-  onRestart: () => void;
-  onShowDetails: () => void;
-}
 
-export const MatchSummaryScreen: React.FC<MatchSummaryScreenProps> = ({
-  isTimeUp,
-  onRestart,
-  onShowDetails,
-}) => {
+export const MatchSummaryScreen: React.FC = () => {
   const scoreTotal = useCompetitionStore((state) => state.scoreTotal);
   const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
   const nombredejeu = useCompetitionStore((state) => state.nombredejeu);
@@ -31,9 +22,7 @@ export const MatchSummaryScreen: React.FC<MatchSummaryScreenProps> = ({
       <h3 className="text-2xl font-black text-amber-400">🏆 Match Terminé !</h3>
 
       <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-slate-300 text-sm">
-        {isTimeUp
-          ? '⏰ Temps écoulé ! Bravo pour votre participation.'
-          : '✅ Match validé avec succès !'}
+       ✅ Match validé avec succès !
       </div>
 
       {/* Statistiques globales */}
@@ -104,13 +93,13 @@ export const MatchSummaryScreen: React.FC<MatchSummaryScreenProps> = ({
 
       <div className="flex flex-col gap-2">
         <button
-          onClick={onRestart}
+           
           className="py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-2xl transition-all shadow-lg hover:scale-105 active:scale-95"
         >
           🔄 RECOMMENCER UN MATCH
         </button>
         <button
-          onClick={onShowDetails}
+        
           className="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-all text-sm"
         >
           📊 Voir les détails

@@ -1,7 +1,8 @@
 "use client";
-
-import React, { useCallback, useMemo } from "react";
 import { useCompetitionGame } from "@/hooks/lolomaths/game/useCompetitionGame";
+import React from "react";
+import HorlogeMise from "../choix/components/HorlogeMise";
+import FooterSection from "../commons/FooterSection";
 import { Fdialog } from "./Fdialog";
 import { OplaGrid } from "./OplaGrid";
 import { TileRack } from "./TileRack";
@@ -11,55 +12,14 @@ import { GameHistoryList } from "./components/GameHistoryList";
 import { GameScoreBoard } from "./components/GameScoreBoard";
 import { HelpMessagesView } from "./components/HelpMessagesView";
 import HelpToggle from "./components/HelpToggle";
-import { MatchSummaryScreen } from "./components/MatchSummaryScreen";
 
 export const CompetitionScreen: React.FC = React.memo(() => {
   const {
-    chrono,
-    showResultZone,
-    selectedDirectionIndex,
-    directionsValid,
-    helpMessages,
-    showHelp,
-    gameState,
-    hasPlacedPions,
-    selectedGameResult,
-    handleResetRound,
-    setShowHelp,
-    handleAcceptCalculation,
+    helpMessages, showHelp, gameState, hasPlacedPions, selectedGameResult,
+    hasAnyValidDirection, isDialogOpen,
+    handleCloseDialog, handleResetRound, setShowHelp, handleAcceptCalculation,
     setSelectedDirectionIndex,
-    handleRestartMatch,
-    handleShowDetails,
   } = useCompetitionGame();
-
-  const handleCloseDialog = useCallback(() => {
-    setSelectedDirectionIndex(null);
-  }, [setSelectedDirectionIndex]);
-
-  const isDialogOpen = useMemo(
-    () => selectedDirectionIndex !== null && selectedGameResult !== null,
-    [selectedDirectionIndex, selectedGameResult]
-  );
-
-  // Affiche les flèches directionnelles UNIQUEMENT si au moins une direction est valide
-  const hasAnyValidDirection = useMemo(
-    () =>
-      directionsValid.left ||
-      directionsValid.right ||
-      directionsValid.up ||
-      directionsValid.down,
-    [directionsValid]
-  );
-
-  if (showResultZone) {
-    return (
-      <MatchSummaryScreen
-        isTimeUp={chrono.isFinished}
-        onRestart={handleRestartMatch}
-        onShowDetails={handleShowDetails}
-      />
-    );
-  }
 
   return (
     <main
@@ -75,7 +35,6 @@ export const CompetitionScreen: React.FC = React.memo(() => {
         )}
 
         <GameHeaderControls
-          formattedTime={chrono.formattedTime}
           hasPlacedPions={hasPlacedPions}
           onResetRound={handleResetRound}
         />
@@ -84,6 +43,8 @@ export const CompetitionScreen: React.FC = React.memo(() => {
         <GameScoreBoard />
         <GameHistoryList />
         <HelpToggle checked={showHelp} onChange={setShowHelp} />
+        <HorlogeMise />
+        <FooterSection />
       </section>
 
       <Fdialog
@@ -94,6 +55,4 @@ export const CompetitionScreen: React.FC = React.memo(() => {
       />
     </main>
   );
-});
-
-CompetitionScreen.displayName = "CompetitionScreen";
+}); 

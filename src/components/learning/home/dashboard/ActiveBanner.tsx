@@ -67,7 +67,7 @@ const ActiveBanner = ({
     }
 
     return (
-        <div className="w-full rounded-3xl bg-gradient-to-br from-yellow-600 to-red-400 p-3 mb-6 shadow-xl">
+        <div className="w-full rounded-3xl bg-gradient-to-br from-green-600 to-green-500 p-3 mb-6 shadow-xl">
             <div className="flex flex-col items-center gap-3">
                 <div className="flex items-center gap-3">
                     <div className="rounded-full bg-white/20 p-2">
@@ -83,7 +83,7 @@ const ActiveBanner = ({
                 </div>
 
                 {showButton && countdown !== 0 && (
-                    <GlowButton onClick={demarrerJeu} variant="success" size="lg">
+                    <GlowButton onClick={demarrerJeu} variant="secondary" size="lg">
                         JOUER MAINTENANT
                     </GlowButton>
                 )}

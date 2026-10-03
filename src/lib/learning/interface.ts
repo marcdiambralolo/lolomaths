@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Case, MatchInfo } from "../interfaces";
+import { MatchInfo } from "../interfaces";
 
 export type DateLike = Date | string | number | null | undefined;
 
@@ -31,8 +31,6 @@ export interface LearningStatsPayload {
 
 export interface GameState {
     tpsglobal: number;
-    casesdujeuencours: Case[];
-    casesinitiales: Case[];
     pieces: string[];
     datedebut: string;
     start: boolean;

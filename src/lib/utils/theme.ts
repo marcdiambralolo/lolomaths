@@ -1,6 +1,4 @@
-import { StateCase } from "../interfaces";
-
- 
+import { StateCase } from "../interfaces"; 
 
 export interface CaseStyleProps {
   etat: StateCase;
