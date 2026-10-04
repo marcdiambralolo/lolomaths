@@ -1,6 +1,6 @@
 import { api } from '@/lib/api/client';
 import { LearningConfiguration } from '@/lib/interfaces';
-import { useDiambraStore } from '@/lib/store/diambra.store';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from 'react';
 
@@ -9,7 +9,7 @@ const RETRY_ATTEMPTS = 2;
 const REFRESH_CONFIG_INTERVAL = 1 * 1000;
 
 export function useGameConfig() {
-  const { setGameConfig } = useDiambraStore();
+  const { setGameConfig } = useCompetitionStore();
 
   const {
     data: gameConfig = null,

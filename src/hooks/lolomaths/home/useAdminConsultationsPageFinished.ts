@@ -1,21 +1,20 @@
 'use client';
-import { useDiambraStore } from '@/lib/store/diambra.store';
+import { api } from '@/lib/api/client';
+import { LearningConfiguration } from '@/lib/interfaces';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from 'react';
 import { useGameActions } from './useGameActions';
 import { useGameStatus } from './useGameStatus';
 import { useGameTimers } from './useGameTimers';
 import { useLastEndedGame } from './useLastEndedGame';
-import { api } from '@/lib/api/client';
-import { LearningConfiguration } from '@/lib/interfaces';
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from 'react';
 
 const QUERY_STALE_TIME = 1000;
 const RETRY_ATTEMPTS = 2;
 const REFRESH_CONFIG_INTERVAL = 5000; 
 
 export function useAdminConsultationsPageFinished() {
-  const setGameConfig = useDiambraStore((state) => state.setGameConfig);
-  const afficheChoix = useDiambraStore((state) => state.afficheChoix);
+  const setGameConfig = useCompetitionStore((state) => state.setGameConfig);
   
 
   const { data: gameConfig = null, isLoading } = useQuery<LearningConfiguration | null>({
@@ -49,8 +48,6 @@ export function useAdminConsultationsPageFinished() {
 
   const { completeGameCleanup, demarrerJeu } = useGameActions(gameConfig);
 
-  const showBandeauButton = !!(gameState.canUserPlay && !afficheChoix  );
-
   return useMemo(() => ({
     demarrerJeu,
     completeGameCleanup,
@@ -60,7 +57,6 @@ export function useAdminConsultationsPageFinished() {
     isLoading: isLastEndedLoading || isLoading,
     lastEndedGame,
     gameState,
-    showBandeauButton,
   }), [
     demarrerJeu,
     completeGameCleanup,
@@ -70,6 +66,5 @@ export function useAdminConsultationsPageFinished() {
     isLastEndedLoading,
     isLoading,
     lastEndedGame,
-    showBandeauButton
   ]);
 }

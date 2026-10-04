@@ -17,18 +17,12 @@ export interface UseCellStyleResult {
 
 /**
  * Hook qui calcule le contenu et le style d'une cellule du plateau.
- *
- * Mémoïse le style en fonction de :
- *  - l'état de la cellule
- *  - son contenu (txt / itxt)
- *  - son statut de case cible
- *  - le thème
  */
 export function useCellStyle(cell: UneCase, theme: BoardTheme): UseCellStyleResult {
   const isStart = isStartCell(cell);
   const isTarget = cell.isTarget === true;
 
-  const content = useMemo(() => computeCellContent(cell), [cell]);
+  const content = useMemo(() => computeCellContent(cell), [cell.etat, cell.txt, cell.itxt]);
 
   const style = useMemo<React.CSSProperties>(
     () =>
@@ -37,7 +31,7 @@ export function useCellStyle(cell: UneCase, theme: BoardTheme): UseCellStyleResu
         fontSize: CELL_FONT_SIZE,
         fontFamily: CELL_FONT_FAMILY,
       }) as React.CSSProperties,
-    [cell, theme, isStart, isTarget, content]
+    [cell.etat, cell.txt, cell.itxt, cell.ncase, cell.isTarget, theme, isStart, isTarget, content]
   );
 
   return { content, isStart, isTarget, style };

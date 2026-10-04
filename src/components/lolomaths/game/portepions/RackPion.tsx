@@ -6,7 +6,7 @@ import {
   getRackPionAriaLabel,
   getRackPionTitle,
 } from './rackStyles';
-import { useRackPionStyle } from '../useRackPionStyle';
+import { useRackPionStyle } from './useRackPionStyle';
 
 // ============================================================
 // TYPES
@@ -19,7 +19,7 @@ export interface RackPionProps {
 }
 
 // ============================================================
-// COMPOSANT DE BASE (exporté pour tests)
+// COMPOSANT DE BASE
 // ============================================================
 
 export const RackPionBase: React.FC<RackPionProps> = ({

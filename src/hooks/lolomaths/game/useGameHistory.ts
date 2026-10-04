@@ -1,7 +1,7 @@
 'use client';
 
+import { useGameStore } from '@/lib/store/useGameStore';
 import { useEffect, useRef, useState } from 'react';
-import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 
 export interface GameHistoryItem {
   score: number;
@@ -9,8 +9,8 @@ export interface GameHistoryItem {
 }
 
 export const useGameHistory = () => {
-  const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
-  const lastConfirmedResult = useCompetitionStore(
+  const cnbjeu = useGameStore((state) => state.cnbjeu);
+  const lastConfirmedResult = useGameStore(
     (state) => state.lastConfirmedResult
   );
 

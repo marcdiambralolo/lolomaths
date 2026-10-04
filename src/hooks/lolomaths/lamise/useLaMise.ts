@@ -4,8 +4,8 @@ import { walletService } from '@/lib/api/services/wallet.service';
 import { QUERY_KEYS, queryClient } from '@/lib/cache/queryClient';
 import type { OfferingAlternative, WalletOffering } from '@/lib/interfaces';
 import { MISE_INITIALE } from '@/lib/learning/constantes';
-import { useDiambraStore } from '@/lib/store/diambra.store';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
+ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useTransition } from 'react';
 
@@ -44,7 +44,7 @@ export function useLaMise() {
 
     const [isPendingNavigation, startNavigationTransition] = useTransition();
 
-    const { gameConfig, setCurrentConsultationId, } = useDiambraStore();
+    const { gameConfig, setCurrentConsultationId, } = useCompetitionStore();
 
     const monidjeu = gameConfig?._id ?? gameConfig?.id ?? '';
 

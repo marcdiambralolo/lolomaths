@@ -17,7 +17,7 @@ export interface GridCellProps {
 }
 
 // ============================================================
-// COMPOSANT DE BASE (exporté pour les tests)
+// COMPOSANT DE BASE
 // ============================================================
 
 export const GridCellBase: React.FC<GridCellProps> = ({
@@ -94,13 +94,6 @@ GridCellBase.displayName = 'GridCellBase';
 // COMPARATEUR MEMO
 // ============================================================
 
-/**
- * Comparateur personnalisé pour `memo`.
- * Retourne `true` si les props sont ÉGALES (pas de re-render).
- *
- * On compare champ par champ pour éviter les re-renders inutiles
- * quand la référence de la cellule change mais pas son contenu.
- */
 function arePropsEqual(prev: GridCellProps, next: GridCellProps): boolean {
   const a = prev.cell;
   const b = next.cell;

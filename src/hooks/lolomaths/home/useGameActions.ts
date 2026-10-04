@@ -1,5 +1,6 @@
-import { useDiambraStore } from '@/lib/store/diambra.store';
 import { CompetitionInfo } from '@/lib/interfaces';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
+import { useUIStore } from '@/lib/store/useUIStore';
 import { useCallback, useRef, useTransition } from 'react';
 
 export function useGameActions(gameConfig: any) {
@@ -7,15 +8,19 @@ export function useGameActions(gameConfig: any) {
   const hasRedirectedRef = useRef(false);
 
   const {
-    gameIsFinished, afficheChoix,  competitions,
-    setGameIsFinished, setAfficheChoix,  resetGameState,
-  } = useDiambraStore();
+    gameIsFinished,  competitions,
+    setGameIsFinished,  
+  } = useCompetitionStore();
+
+ const {
+    setAfficheChoix,  afficheChoix, 
+  } = useUIStore();
+  
 
   const completeGameCleanup = useCallback(() => {
     if (gameIsFinished) setGameIsFinished(false);
     if (afficheChoix) setAfficheChoix(false);
-    if (resetGameState) resetGameState();
-  }, [gameIsFinished, afficheChoix,   setGameIsFinished, setAfficheChoix,resetGameState]);
+  }, [gameIsFinished, afficheChoix,   setGameIsFinished, setAfficheChoix]);
 
   const demarrerJeu = useCallback(() => {
     if (hasRedirectedRef.current) return;

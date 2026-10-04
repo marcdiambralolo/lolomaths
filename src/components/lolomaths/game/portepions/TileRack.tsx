@@ -5,17 +5,17 @@ import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { TypeCase, UneCase } from '@/lib/interfaces';
 import { useBoardTheme } from '@/lib/theme/useBoardTheme';
 import { RackPion } from './RackPion';
+import { useGameStore } from '@/lib/store/useGameStore';
 
 // ============================================================
-// COMPOSANT
+// COMPOSANT : TileRack (Rack de 6 Nombres x 4 Opérateurs)
 // ============================================================
 
 export const TileRack: React.FC = memo(() => {
-  const pions = useCompetitionStore((state) => state.pions);
-  const handleCaseClick = useCompetitionStore((state) => state.handleCaseClick);
+  const pions = useGameStore((state) => state.pions);
+  const handleCaseClick = useGameStore((state) => state.handleCaseClick);
   const theme = useBoardTheme();
 
-  // ✅ On sépare chiffres et opérateurs via TypeCase (plus de 2/3 magiques)
   const numbers = useMemo(
     () => pions.filter((p) => p.tca === TypeCase.PionChiffre),
     [pions]
@@ -25,7 +25,6 @@ export const TileRack: React.FC = memo(() => {
     [pions]
   );
 
-  // ✅ On stabilise le callback pour éviter de re-render tous les pions
   const onPionClick = useCallback(
     (pion: UneCase) => handleCaseClick(pion),
     [handleCaseClick]
@@ -41,8 +40,8 @@ export const TileRack: React.FC = memo(() => {
         </div>
       ) : (
         <>
-          {/* ---------- RANGÉE DES NOMBRES ---------- */}
-          <div className="grid grid-cols-6 gap-1.5 min-h-[44px] items-center bg-slate-950/50 p-1 rounded-xl border border-slate-800/50">
+          {/* ---------- RANGÉE DES NOMBRES (6 COLONNES) ---------- */}
+          <div className="grid grid-cols-6 gap-1.5 min-h-[44px] items-center bg-slate-950/50 p-1 rounded-xl border border-slate-800/50 justify-items-center">
             {numbers.length > 0 ? (
               numbers.map((pion) => (
                 <RackPion
@@ -59,8 +58,8 @@ export const TileRack: React.FC = memo(() => {
             )}
           </div>
 
-          {/* ---------- RANGÉE DES OPÉRATEURS ---------- */}
-          <div className="grid grid-cols-4 gap-1.5 min-h-[44px] items-center bg-slate-950/50 p-1.5 rounded-xl border border-slate-800/50">
+          {/* ---------- RANGÉE DES OPÉRATEURS (4 COLONNES) ---------- */}
+          <div className="grid grid-cols-4 gap-1.5 min-h-[44px] items-center bg-slate-950/50 p-1.5 rounded-xl border border-slate-800/50 justify-items-center">
             {operators.length > 0 ? (
               operators.map((pion) => (
                 <RackPion

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 function SplashLogo() {
-
     return (
         <motion.div
             initial={{ scale: 0.85, opacity: 0, y: 20 }}
@@ -110,7 +109,8 @@ function SplashImageCard({ splashImage }: { splashImage: string }) {
                     fill
                     priority
                     className="object-contain"
-                    sizes="100vw"
+                    // ✅ Taille réelle : min(100vw, 896px) car le parent a max-w-4xl
+                    sizes="(max-width: 896px) 100vw, 896px"
                 />
             </motion.div>
         </motion.div>

@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
+import { useGameStore } from '@/lib/store/useGameStore';
 
 interface DirectionActionsProps {
   onSelectDirection: (resultIndex: number) => void;
@@ -19,8 +20,8 @@ const DIRECTION_CONFIG = [
 export const DirectionActions: React.FC<DirectionActionsProps> = ({
   onSelectDirection,
 }) => {
-  const directionsValid = useCompetitionStore((state) => state.directionsValid);
-  const gameResults = useCompetitionStore((state) => state.gameResults);
+  const directionsValid = useGameStore((state) => state.directionsValid);
+  const gameResults = useGameStore((state) => state.gameResults);
 
   // `gameResults` est un tableau de 4 éléments indexé par direction :
   //   [0] = Up, [1] = Down, [2] = Left, [3] = Right.
@@ -51,10 +52,11 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
       aria-label="Directions valides"
     >
       {activeDirections.map((item) => {
+        const formattedScore = typeof item.score === 'number' ? item.score.toFixed(2) : '0.00';
         const scoreLabel =
           item.score >= 0
-            ? `+${item.score.toFixed(1)}`
-            : item.score.toFixed(1);
+            ? `+${formattedScore}`
+            : formattedScore;
 
         return (
           <button

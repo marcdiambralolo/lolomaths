@@ -1,8 +1,8 @@
 'use client';
 import { useAuthStore } from '@/lib/store/auth.store';
-import { useDiambraStore } from '@/lib/store/diambra.store';
-import { clearPersistedQueryCache, queryClient } from './queryClient';
+ import { clearPersistedQueryCache, queryClient } from './queryClient';
 import { clearIndexedDbCache } from './indexedDB';
+import { useCompetitionStore } from '../store/useCompetitionStore';
 
 const PRESERVED_LOCAL_STORAGE_KEYS = new Set(['diambra-theme']);
 
@@ -37,7 +37,7 @@ export async function clearClientApplicationState() {
   useAuthStore.getState().logout();
 
   try {
-    useDiambraStore.persist.clearStorage();
+    useCompetitionStore.persist.clearStorage();
   } catch {
     // noop
   }

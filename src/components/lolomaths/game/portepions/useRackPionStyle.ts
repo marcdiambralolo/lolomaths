@@ -4,7 +4,7 @@ import {
   computeRackPionStyle,
   isRackPionSelected,
   isRackPionUsed,
-} from './portepions/rackStyles';
+} from './rackStyles';
 
 export interface UseRackPionStyleResult {
   isSelected: boolean;
@@ -29,7 +29,7 @@ export function useRackPionStyle(
 
   const style = useMemo(
     () => computeRackPionStyle({ pion, theme, isSelected, isUsed }),
-    [pion, theme, isSelected, isUsed]
+    [pion.etat, pion.tca, pion.placep, theme, isSelected, isUsed]
   );
 
   return { isSelected, isUsed, style };

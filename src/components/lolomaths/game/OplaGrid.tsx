@@ -6,30 +6,37 @@ import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { useBoardTheme } from '@/lib/theme/useBoardTheme';
 import { GridCell } from './GridCell';
 import { GRID_COLS, GRID_ROWS } from './competitionEngine';
+import { useHistoryStore } from '@/lib/store/useHistoryStore';
+import { useGameStore } from '@/lib/store/useGameStore';
 
 // ============================================================
-// COMPOSANT
+// COMPOSANT : OplaGrid (Plateau 17 lignes x 13 colonnes)
 // ============================================================
 
 export const OplaGrid: React.FC = memo(() => {
-  const grid = useCompetitionStore((state) => state.grid);
-  const handleCaseClick = useCompetitionStore((state) => state.handleCaseClick);
+  const grid = useGameStore ((state) => state.grid);
+  const handleCaseClick = useGameStore((state) => state.handleCaseClick);
   const theme = useBoardTheme();
 
-  // On stabilise la référence de `handleCaseClick` pour éviter
-  // que les 221 cellules se re-rendent inutilement.
+  // Stabilisation de la fonction de clic pour optimiser les performances de rendu des 221 cases (17 x 13)
   const onCellClick = useCallback(
-    (cell: UneCase) => handleCaseClick(cell),
+    (cell: UneCase) => {
+      handleCaseClick(cell);
+    },
     [handleCaseClick]
   );
+
+  if (!grid || grid.length === 0) {
+    return null;
+  }
 
   return (
     <div
       id="opla"
-      className="w-full bg-slate-950 p-1.5 rounded-xl border border-slate-800 shadow-2xl"
+      className="w-full mx-auto max-w-full bg-slate-950 p-1.5 rounded-xl border border-slate-800 shadow-2xl overflow-hidden select-none"
     >
       <div
-        className="w-full grid gap-px"
+        className="w-full grid"
         role="grid"
         aria-label="Plateau de jeu Lolomaths"
         style={{
@@ -39,13 +46,13 @@ export const OplaGrid: React.FC = memo(() => {
           aspectRatio: `${GRID_COLS} / ${GRID_ROWS}`,
         }}
       >
-        {grid.map((row, j) =>
-          row.map((cell, i) => (
+        {grid.map((row, rowIndex) =>
+          row.map((cell, colIndex) => (
             <GridCell
-              key={`case-${j}-${i}`}
+              key={`cell-${cell.indj ?? rowIndex}-${cell.indi ?? colIndex}`}
               cell={cell}
-              rowIndex={j}
-              colIndex={i}
+              rowIndex={rowIndex}
+              colIndex={colIndex}
               theme={theme}
               onClick={onCellClick}
             />

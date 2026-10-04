@@ -403,43 +403,72 @@ export interface TimeLeft {
   seconds: number;
 }
 
+// ============================================================
+// MATCHS / COMPÉTITIONS (harmonisé Lolomaths)
+// ============================================================
+
+/**
+ * Un match (partie) dans une compétition.
+ * Équivalent Kotlin : une ligne de la table `partie`.
+ */
+export interface MatchInfo {
+  id?: string;                     // idpartie
+  tournamentId?: string;           // idtournoi
+  matchNumber?: number;            // numordrep
+  numeromatch?: string;            // numeromatch
+  score?: number;                  // score du match
+  isgameover?: boolean;            // isgameover
+  niveau?: number;                 // Dtfil (0..3)
+  timeSpent?: number;              // temps écoulé (secondes)
+  datedebut?: string | null;       // datedebut
+  datefin?: string | null;         // datefin
+  /** Liste des jeux joués dans ce match (rempli côté client). */
+  jeux?: GameRecord[];
+}
+
+/**
+ * Résultat simplifié d'un match (utilisé pour l'affichage).
+ */
 export interface MatchResult {
   matchNumber: number;
-  type: string;
   score: number;
   timeSpent?: number;
-  trouves?: number;
-  rates?: number;
 }
 
-export interface MatchInfo {
-  id?: string;
-  timeSpent?: number;
-  matchNumber?: number;
-  competitionId?: string;
-  score?: number;
-  entite?: number;
-  niveau?: number;
-  numeromatch?: string;
-  isgameover?: boolean;
-  datedebut?: string | null;
-  datefin?: string | null;
-}
-
+/**
+ * Une compétition complète.
+ * Équivalent Kotlin : une ligne de la table `tournoi`.
+ */
 export interface CompetitionInfo {
-  niveau: unknown;
-  id: string;
-  datedebut: string;
-  datefin: string;
-  idConfig: string;
+  id: string;                      // idtournoi
+  displayName: string;             // nom affiché
+  name?: string;                   // nom optionnel (fallback)
+  consultationId?: string;         // id de la consultation associée
+  idConfig?: string;               // id de la configuration
+
+  // Métadonnées du tournoi
+  nomjoueur?: string;              // nomjoueur
+  numtournoi?: string;             // numtournoi
+  niveau?: number;                 // Dtfil (0..3)
+  couleurs?: number;               // themeId
+  nombredejeu?: number;            // nombredejeu (jeux par match)
+  nbmatch?: number;                // nbmatch (nb total de matchs)
+  tempsmatch?: string;             // "-1", "5", "10"...
+  tpsglobal?: number;              // 0 ou 1
+
+  // Dates et score
+  datedebut: string;               // datedebut
+  datefin: string;                 // datefin
+  timeSpent?: number;              // temps total (secondes)
+  totalScore?: number;             // score total
+  isgameover?: boolean;            // isgameover
+
+  // Matchs
   matchInfo: MatchInfo[];
-  consultationId: string;
-  timeSpent?: number;
-  name?: string;
   matches?: MatchResult[];
-  totalScore?: number;
+
+  // État de validation
   isValidated?: boolean;
-  displayName: string;
 }
 
 export interface GameCompletionState {
@@ -624,7 +653,7 @@ export function parseTheme(rawJson: Record<string, unknown>): BoardTheme {
 }
 
 // ============================================================
-// TOURNOIS / MATCHS
+// TOURNOIS / MATCHS (modèles internes)
 // ============================================================
 
 export interface MatchModel {
@@ -756,3 +785,64 @@ export type CityItem = {
   countryCode?: string;
   region?: string;
 };
+
+// ============================================================
+// HISTORIQUE LOCAL (Lolomaths)
+// ============================================================
+
+/**
+ * Un jeu joué (un coup validé).
+ * Équivalent Kotlin : une ligne de la table `jeu`.
+ */
+export interface GameRecord {
+  id: string;                      // identifiant unique
+  matchId: string;                 // idpartie
+  tournamentId: string;            // idtournoi
+  numjeu: number;                  // cnbjeu (1, 2, 3...)
+  combinaison: string;             // "3+4*2"
+  sequencePions: string;           // "ncase1,ncase2,..." ou "ncase,txt,..."
+  cible: number;                   // nbreatind
+  resultat: number;                // result
+  notedebase: number;              // notedebase
+  bonus: number;                   // bonus
+  notejeu: number;                 // notedjeu
+  niveau: number;                  // Dtfil (0..3)
+  dateCreation: string;            // ISO
+}
+
+/**
+ * Un match (partie) dans un tournoi.
+ * Équivalent Kotlin : une ligne de la table `partie`.
+ */
+export interface MatchRecord {
+  id: string;                      // idpartie
+  tournamentId: string;            // idtournoi
+  numordrep: number;               // numordrep
+  numeromatch: string;             // numeromatch
+  score: number;                   // score total du match
+  isGameOver: boolean;             // isgameover
+  datedebut: string;               // ISO
+  datefin: string | null;          // ISO
+  jeux: GameRecord[];
+}
+
+/**
+ * Un tournoi complet.
+ * Équivalent Kotlin : une ligne de la table `tournoi`.
+ */
+export interface TournamentRecord {
+  id: string;                      // idtournoi
+  nomjoueur: string;               // nomjoueur
+  numtournoi: string;              // numtournoi
+  niveau: number;                  // Dtfil (0..3)
+  couleurs: number;                // themeId
+  nombredejeu: number;             // jeux par match
+  nbmatch: number;                 // nb total de matchs
+  tempsmatch: string;              // "-1" ou "5", "10"...
+  tpsglobal: number;               // 0 ou 1
+  isgameover: boolean;             // isgameover
+  score: number;                   // score total
+  datedebut: string;               // ISO
+  datefin: string | null;          // ISO
+  matchs: MatchRecord[];
+}

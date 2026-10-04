@@ -12,6 +12,7 @@ const WelcomeHeader = () => (
                 width={80}
                 height={80}
                 className="w-20 h-20 object-contain"
+                priority
             />
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 bg-clip-text text-transparent">
                 LOLOMATHS

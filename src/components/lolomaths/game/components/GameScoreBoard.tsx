@@ -1,12 +1,14 @@
 import React from 'react';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
+import { useGameStore } from '@/lib/store/useGameStore';
 
 export const GameScoreBoard: React.FC = () => {
-  const scoreTotal = useCompetitionStore((state) => state.scoreTotal);
-  const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
+  const scoreTotal = useGameStore((state) => state.scoreTotal);
+  const cnbjeu = useGameStore((state) => state.cnbjeu);
 
-  const averageScore =
-    cnbjeu > 0 ? (scoreTotal / cnbjeu).toFixed(1) : '0';
+  // Formatage avec deux chiffres après la virgule
+  const formattedScoreTotal = scoreTotal.toFixed(2);
+  const averageScore = cnbjeu > 0 ? (scoreTotal / cnbjeu).toFixed(2) : '0.00';
 
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -15,7 +17,7 @@ export const GameScoreBoard: React.FC = () => {
           Score Total
         </span>
         <span className="text-xl font-black text-emerald-400">
-          {scoreTotal} pts
+          {formattedScoreTotal} pts
         </span>
         {cnbjeu > 0 && (
           <span className="text-[10px] text-slate-500 block mt-1">

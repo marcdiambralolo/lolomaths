@@ -35,8 +35,10 @@ export const GameHistoryList: React.FC = () => {
       <div className="flex flex-wrap gap-1 text-[10px] text-slate-400">
         {visibleGames.map((g, idx) => {
           const realIndex = offset + idx + 1;
+          const formattedScore = typeof g.score === 'number' ? g.score.toFixed(2) : '0.00';
           const scoreLabel =
-            g.score >= 0 ? `+${g.score}` : `${g.score}`;
+            g.score >= 0 ? `+${formattedScore}` : `${formattedScore}`;
+
           return (
             <span
               key={realIndex}
@@ -48,7 +50,7 @@ export const GameHistoryList: React.FC = () => {
               }`}
               title={`Jeu ${realIndex} — ${g.combination} — ${scoreLabel} pts`}
             >
-              J{realIndex}: {g.score}pts
+              J{realIndex}: {scoreLabel}pts
             </span>
           );
         })}

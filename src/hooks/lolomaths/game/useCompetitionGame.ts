@@ -10,7 +10,8 @@ import {
 } from '@/components/lolomaths/game/competitionEngine';
 import { StateCase } from '@/lib/interfaces';
 import { useGameHelpRules } from './useGameHelpRules';
-import { useDiambraStore } from '@/lib/store/diambra.store';
+import { useGamePersistence } from './useGamePersistence';
+import { useGameStore } from '@/lib/store/useGameStore';
 
 export interface GameConfig {
   niveau: number;
@@ -81,20 +82,34 @@ export interface GameHistoryItem {
 
 export const useCompetitionGame = () => {
   const router = useRouter();
-  const { gameConfig } = useDiambraStore();
+  const { gameConfig } = useCompetitionStore();
 
-  const grid = useCompetitionStore((state) => state.grid);
+  // ============================================================
+  // 🔥 PERSISTANCE AUTOMATIQUE — sans paramètres
+  // ============================================================
+  useGamePersistence();
+
+  const grid = useGameStore((state) => state.grid);
   const flatGrid = useMemo(() => grid.flat(), [grid]);
-  const cnbjeu = useCompetitionStore((state) => state.cnbjeu);
-  const nombredejeu = useCompetitionStore((state) => state.nombredejeu);
-  const directionsValid = useCompetitionStore((state) => state.directionsValid);
-  const gameResults = useCompetitionStore((state) => state.gameResults);
-  const isMatchOver = useCompetitionStore((state) => state.isMatchOver);
+  const cnbjeu = useGameStore((state) => state.cnbjeu);
+  const nombredejeu = useGameStore((state) => state.nombredejeu);
+  const directionsValid = useGameStore((state) => state.directionsValid);
+  const gameResults = useGameStore((state) => state.gameResults);
+  const isMatchOver = useGameStore((state) => state.isMatchOver);
+  const pions = useGameStore((state) => state.pions);
 
-  const initGame = useCompetitionStore((state) => state.initGame);
-  const resetPions = useCompetitionStore((state) => state.resetPions);
-  const confirmCalculation = useCompetitionStore(
+  const initGame = useGameStore((state) => state.initGame);
+  const resetPions = useGameStore((state) => state.resetPions);
+  const confirmCalculation = useGameStore(
     (state) => state.confirmCalculation
+  );
+
+  // ============================================================
+  // ✅ DÉTECTION "PLUS DE PIONS DISPONIBLES DANS LE RACK"
+  // ============================================================
+  const hasPionsInRack = useMemo(
+    () => pions.some((p) => p.etat === StateCase.Pla),
+    [pions]
   );
 
   const [selectedDirectionIndex, setSelectedDirectionIndex] = useState<
@@ -106,9 +121,7 @@ export const useCompetitionGame = () => {
     initialSeconds: 300,
     autoStart: true,
     onTimeUp: () => {
-      // ⏱️ Temps écoulé → on déclenche la fin de match
-      //    (la navigation sera gérée par l'effet ci-dessous)
-      useCompetitionStore.setState({ isMatchOver: true });
+      useGameStore.setState({ isMatchOver: true });
     },
   });
 
@@ -161,20 +174,37 @@ export const useCompetitionGame = () => {
   }, []);
 
   // ============================================================
-  // 🎯 NAVIGATION VERS /resultat QUAND LE MATCH EST TERMINÉ
+  // ✅ FIN DE MATCH SI PLUS DE PIONS DANS LE RACK
   // ============================================================
   useEffect(() => {
-    if (isMatchOver && !hasNavigatedRef.current) {
-      hasNavigatedRef.current = true;
-      pauseChrono();
+    if (isMatchOver) return;
+    if (cnbjeu === 0) return;
+    if (hasPionsInRack) return;
 
-      // Petit délai pour laisser le state se propager (optionnel)
-      const timeout = setTimeout(() => {
-        router.push('/star/resultat');
-      }, 300);
+    pauseChrono();
+    useGameStore.setState({ isMatchOver: true });
+  }, [hasPionsInRack, cnbjeu, isMatchOver, pauseChrono]);
 
-      return () => clearTimeout(timeout);
-    }
+  // ============================================================
+  // ✅ REDIRECTION VERS /star/resultat
+  //    (avec reset du ref pour React Strict Mode)
+  // ============================================================
+  useEffect(() => {
+    if (!isMatchOver) return;
+    if (hasNavigatedRef.current) return;
+
+    hasNavigatedRef.current = true;
+    pauseChrono();
+
+    const timeout = setTimeout(() => {
+      router.push('/star/resultat');
+    }, 300);
+
+    return () => {
+      clearTimeout(timeout);
+      // ✅ Reset du flag : permet la ré-exécution en Strict Mode
+      hasNavigatedRef.current = false;
+    };
   }, [isMatchOver, pauseChrono, router]);
 
   const gameState = useMemo(() => {

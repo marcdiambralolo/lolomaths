@@ -1,10 +1,11 @@
 "use client";
-import { useCompetitionGame } from "@/hooks/lolomaths/game/useCompetitionGame";
+
 import React from "react";
+import { useCompetitionGame } from "@/hooks/lolomaths/game/useCompetitionGame";
 import HorlogeMise from "../choix/components/HorlogeMise";
 import FooterSection from "../commons/FooterSection";
 import { Fdialog } from "./Fdialog";
-import { OplaGrid } from "./OplaGrid"; 
+import { OplaGrid } from "./OplaGrid";
 import { DirectionActions } from "./components/DirectionActions";
 import { GameHeaderControls } from "./components/GameHeaderControls";
 import { GameHistoryList } from "./components/GameHistoryList";
@@ -22,6 +23,7 @@ export const CompetitionScreen: React.FC = React.memo(() => {
     selectedGameResult,
     hasAnyValidDirection,
     isDialogOpen,
+    isMatchOver,
     handleCloseDialog,
     handleResetRound,
     setShowHelp,
@@ -31,14 +33,21 @@ export const CompetitionScreen: React.FC = React.memo(() => {
 
   return (
     <main
-      className="w-full max-w-md mx-auto mt-2 flex flex-col select-none"
+      className="w-full max-w-md mx-auto mt-2 flex flex-col select-none px-2"
       aria-label="Écran de compétition"
     >
       <section id="zcom" className="flex flex-col gap-3">
         <OplaGrid />
         <TileRack />
 
-        {gameState.isStartCovered && hasAnyValidDirection && (
+        {/* ✅ Message quand le match est terminé */}
+        {isMatchOver && (
+          <div className="bg-amber-500 text-slate-950 text-center text-sm font-bold py-2 px-3 rounded-xl shadow-lg">
+            🏁 Match terminé — redirection en cours…
+          </div>
+        )}
+
+        {!isMatchOver && gameState.isStartCovered && hasAnyValidDirection && (
           <DirectionActions onSelectDirection={setSelectedDirectionIndex} />
         )}
 
@@ -64,3 +73,5 @@ export const CompetitionScreen: React.FC = React.memo(() => {
     </main>
   );
 });
+
+CompetitionScreen.displayName = "CompetitionScreen";

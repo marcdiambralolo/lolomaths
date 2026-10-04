@@ -72,9 +72,6 @@ export class JavaRandom {
 
 /**
  * Mélange déterministe d'une liste — transposition stricte de `radlist` Kotlin.
- *
- * ⚠️ Lève une erreur explicite si le mélange n'aboutit pas (au lieu de
- *    retourner une liste incomplète silencieusement).
  */
 export function radlist(list: string[], seed: number | string): string[] {
   if (!list || list.length === 0) return [];
@@ -90,9 +87,7 @@ export function radlist(list: string[], seed: number | string): string[] {
 
   while (lra.length < list.length) {
     if (++iterations > maxIterations) {
-      throw new Error(
-        `[radlist] Impossible de mélanger la liste (seed=${numericSeed}, taille=${list.length}).`
-      );
+      break;
     }
 
     const compteur = Math.round(rng.nextDouble() * (list.length - 1));
@@ -102,6 +97,13 @@ export function radlist(list: string[], seed: number | string): string[] {
 
     use[compteur] = true;
     lra.push(list[compteur]);
+  }
+
+  // Completer la liste si l'algorithme a manqué des cases
+  if (lra.length < list.length) {
+    for (let i = 0; i < list.length; i++) {
+      if (!use[i]) lra.push(list[i]);
+    }
   }
 
   return lra;
@@ -140,9 +142,6 @@ export function malisteca(numeromat: string, wl: string[]): string[] {
   return lcases;
 }
 
-/**
- * Fallback non déterministe : génère un nombre aléatoire pour la grille.
- */
 export function getRandomBoardNumber(): string {
   return Math.floor(Math.random() * 640).toString();
 }
@@ -261,10 +260,17 @@ export function validateEnchainement(
   return sequence.some((c) => c.etat === StateCase.Lo);
 }
 
+/**
+ * Transposition stricte de encadre(a, b) Kotlin.
+ */
 export function encadre(a: UneCase | null, b: UneCase | null): boolean {
-  if (a === null && b === null) return true;
-  if (a === null) return b !== null && b.etat === StateCase.Cre;
-  if (b === null) return a.etat === StateCase.Cre;
+  if (a === null) {
+    if (b === null) return true;
+    return b.etat === StateCase.Cre;
+  }
+  if (b === null) {
+    return a.etat === StateCase.Cre;
+  }
   if (a.etat !== StateCase.Cre && b.etat === StateCase.Cre) return false;
   if (b.etat !== StateCase.Cre && a.etat === StateCase.Cre) return false;
   return true;
@@ -283,8 +289,8 @@ export function tpencadre(grid: UneCase[][]): boolean {
       const up = j > 0 ? grid[j - 1][i] : null;
       const down = j < GRID_ROWS - 1 ? grid[j + 1][i] : null;
 
-      if (!encadre(left, right)) return true;
-      if (!encadre(up, down)) return true;
+      if (!encadre(right, left)) return true;
+      if (!encadre(down, up)) return true;
     }
   }
   return false;
@@ -409,79 +415,51 @@ export const isStartCaseCovered = (
 };
 
 // ============================================================
-// 7. ÉVALUATEUR D'EXPRESSION SÛR
+// 7. ÉVALUATEUR DE CALCUL SEQUENTIEL (STRICTEMENT FIDÈLE À KOTLIN)
 // ============================================================
 
 /**
- * Évalue une expression arithmétique simple : nombres entiers, `+ - * /`.
- * Gère la priorité des opérations.
- * Ne gère PAS les parenthèses (le jeu n'en produit pas).
+ * Évalue une séquence d'expression de gauche à droite SANS priorité opératoire.
+ * Transposition exacte de la boucle Kotlin :
+ * res = f[0] (accumulateur)
+ * pour chaque opérateur et operande : accumulateur op operande
  */
-export function evaluateExpression(expr: string): number {
-  if (!expr) return NaN;
+export function evaluateSequentialSequence(sequence: UneCase[]): number {
+  if (!sequence || sequence.length < 3) return 0;
 
-  const tokens: (number | string)[] = [];
-  let i = 0;
-  while (i < expr.length) {
-    const c = expr[i];
-    if (c === ' ') {
-      i++;
-      continue;
-    }
-    if (/[0-9]/.test(c)) {
-      let num = '';
-      while (i < expr.length && /[0-9]/.test(expr[i])) {
-        num += expr[i];
-        i++;
-      }
-      tokens.push(parseInt(num, 10));
-      continue;
-    }
-    if ('+-*/'.includes(c)) {
-      tokens.push(c);
-      i++;
-      continue;
-    }
-    return NaN;
-  }
+  const f = [...sequence];
+  let res = parseFloat(f[0].txt) || 0;
+  f.shift();
 
-  if (tokens.length === 0) return NaN;
+  while (f.length >= 2) {
+    const operateur = f[0].txt;
+    f.shift();
+    const dividende = parseFloat(f[0].txt) || 0;
+    f.shift();
 
-  // Passe 1 : * et /
-  const pass1: (number | string)[] = [];
-  let idx = 0;
-  while (idx < tokens.length) {
-    const tok = tokens[idx];
-    if (tok === '*' || tok === '/') {
-      const left = pass1.pop();
-      const right = tokens[idx + 1];
-      if (typeof left !== 'number' || typeof right !== 'number') return NaN;
-      const res = tok === '*' ? left * right : left / right;
-      pass1.push(res);
-      idx += 2;
-    } else {
-      pass1.push(tok);
-      idx++;
+    switch (operateur) {
+      case '/':
+      case '÷':
+        if (dividende !== 0) res /= dividende;
+        break;
+      case '*':
+      case '×':
+        res *= dividende;
+        break;
+      case '+':
+        res += dividende;
+        break;
+      case '-':
+        res -= dividende;
+        break;
     }
   }
 
-  // Passe 2 : + et -
-  if (typeof pass1[0] !== 'number') return NaN;
-  let acc = pass1[0];
-  idx = 1;
-  while (idx < pass1.length) {
-    const op = pass1[idx];
-    const right = pass1[idx + 1];
-    if ((op !== '+' && op !== '-') || typeof right !== 'number') return NaN;
-    acc = op === '+' ? acc + right : acc - right;
-    idx += 2;
-  }
-
-  return acc;
+  return res;
 }
 
 // ============================================================
-// 8. CALCUL DU RÉSULTAT
+// 8. CALCUL DU RÉSULTAT DU JEU
 // ============================================================
 
 export function calculateGameResult(
@@ -505,14 +483,7 @@ export function calculateGameResult(
 
   if (!sequence || sequence.length === 0) return game;
 
-  const sanitized = sequence
-    .map((c) => c.txt)
-    .join('')
-    .replace(/×/g, '*')
-    .replace(/÷/g, '/');
-
-  const calculated = evaluateExpression(sanitized);
-  game.result = Number.isFinite(calculated) ? calculated : 0;
+  game.result = evaluateSequentialSequence(sequence);
 
   if (game.nbreatind === game.result) {
     game.notedbase = 5;

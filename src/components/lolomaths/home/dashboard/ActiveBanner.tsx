@@ -1,12 +1,12 @@
 'use client';
-import { useDiambraStore } from "@/lib/store/diambra.store";
-import { AlertCircle, History, Trophy } from "lucide-react";
+ import { AlertCircle, History, Trophy } from "lucide-react";
 import Link from 'next/link';
 import { memo, useEffect, useState } from 'react';
  import { CountdownTimer } from './CountdownTimer';
 import { GameStatsGrid } from './GameStatsGrid';
 import { Stats } from "@/hooks/cache/useStatsDataWithCache";
 import { GlowButton } from "@/components/lolomaths/commons/Boutons";
+import { useCompetitionStore } from "@/lib/store/useCompetitionStore";
 
 interface ActiveBannerProps {
     demarrerJeu: () => void;
@@ -27,7 +27,7 @@ const ActiveBanner = ({
     isTimeUp = false,
     stats
 }: ActiveBannerProps) => {
-    const { gameConfig } = useDiambraStore();
+    const { gameConfig } = useCompetitionStore();
     const [showHistory, setShowHistory] = useState(false);
 
     useEffect(() => {

@@ -1,13 +1,13 @@
 'use client';
 import { Stats } from "@/hooks/cache/useStatsDataWithCache";
 import { useFinishState } from "@/hooks/lolomaths/home/useFinishState";
-import { useDiambraStore } from "@/lib/store/diambra.store";
-import { AlertCircle, History, Trophy } from "lucide-react";
+ import { AlertCircle, History, Trophy } from "lucide-react";
 import Link from 'next/link';
 import { memo } from 'react';
  import { CountdownTimer } from './CountdownTimer';
 import { GameStatsGridPlay } from "./GameStatsGridPlay";
 import { GlowButton } from "@/components/lolomaths/commons/Boutons";
+import { useCompetitionStore } from "@/lib/store/useCompetitionStore";
 
 interface ActiveBannerProps {
     endDate: Date;
@@ -72,7 +72,7 @@ const ActiveGameContent = ({
     showBandeauButton: boolean;
     demarrerJeu: () => void;
 }) => {
-    const { gameConfig } = useDiambraStore();
+    const { gameConfig } = useCompetitionStore();
 
     return (
         <div className="w-full rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-3 mb-6 shadow-xl">

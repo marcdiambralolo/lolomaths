@@ -1,14 +1,16 @@
 'use client';
 import { memo } from 'react';
-import { useDiambraStore } from '@/lib/store/diambra.store';
+ 
 import LaMise from "../choix/LaMise";
 import FooterSection from "../commons/FooterSection";
 import HorlogeMise from '../choix/components/HorlogeMise';
 import HorlogeInit from '../home/accueil/HorlogeInit';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
+import { useUIStore } from '@/lib/store/useUIStore';
 
 const ProfilPageLearning = memo(() => {
-  const idEditionencours = useDiambraStore((state) => state.idEditionencours);
-  const gameConfig = useDiambraStore((state) => state.gameConfig);
+  const idEditionencours = useUIStore((state) => state.idEditionencours);
+  const gameConfig = useCompetitionStore((state) => state.gameConfig);
 
   const configId = gameConfig?._id || gameConfig?.id;
   const shouldShowLaMise = idEditionencours !== configId;

@@ -123,18 +123,24 @@ export const Fdialog: React.FC<FdialogProps> = ({
   const ecartAbsolu = Math.abs(gameResult.nbreatind - gameResult.result);
   const isPerfect = ecartAbsolu === 0;
 
-  // Formatage propre des nombres
-  const formattedScore = Number.isInteger(gameResult.notedjeu)
-    ? gameResult.notedjeu
-    : gameResult.notedjeu.toFixed(1);
+  // Formatage propre avec 2 chiffres après la virgule (toFixed(2))
+  const formattedScore = typeof gameResult.notedjeu === 'number'
+    ? gameResult.notedjeu.toFixed(2)
+    : '0.00';
 
-  const formattedBaseNote = Number.isInteger(gameResult.notedbase)
-    ? gameResult.notedbase
-    : gameResult.notedbase.toFixed(1);
+  const formattedResult = typeof gameResult.result === 'number'
+    ? gameResult.result.toFixed(2)
+    : '0.00';
 
-  const formattedBonus = Number.isInteger(gameResult.bonus)
-    ? gameResult.bonus
-    : gameResult.bonus.toFixed(1);
+  const formattedEcart = ecartAbsolu.toFixed(2);
+
+  const formattedBaseNote = typeof gameResult.notedbase === 'number'
+    ? gameResult.notedbase.toFixed(2)
+    : '0.00';
+
+  const formattedBonus = typeof gameResult.bonus === 'number'
+    ? gameResult.bonus.toFixed(2)
+    : '0.00';
 
   return (
     <div
@@ -188,13 +194,13 @@ export const Fdialog: React.FC<FdialogProps> = ({
 
           <ScoreRow
             label="Résultat du calcul :"
-            value={gameResult.result}
+            value={formattedResult}
             valueClassName="text-indigo-400 font-bold"
           />
 
           <ScoreRow
             label="Écart :"
-            value={ecartAbsolu}
+            value={formattedEcart}
             valueClassName={
               isPerfect
                 ? 'text-emerald-400 font-bold'

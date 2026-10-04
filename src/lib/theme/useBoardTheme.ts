@@ -13,7 +13,7 @@ const DEFAULT_THEME_ID = 0;
  * 1. localStorage.lolomaths_config.themeId
  * 2. Thème par défaut (`becouefin`, numero: 0)
  *
- * NOTE : on n'utilise pas `useDiambraStore` car `LearningConfiguration`
+ * NOTE : on n'utilise pas ` ` car `LearningConfiguration`
  * ne contient pas `themeId`. À ajouter plus tard si besoin.
  */
 export function useBoardTheme(): BoardTheme {

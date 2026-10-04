@@ -2,13 +2,14 @@
 import { useStatsDataWithCache } from '@/hooks/cache/useStatsDataWithCache';
 import { api } from '@/lib/api/client';
 import { LearningConfiguration } from '@/lib/interfaces';
-import { useDiambraStore } from '@/lib/store/diambra.store';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useTransition } from 'react';
 import { useGameStatus } from './useGameStatus';
 import { useGameTimers } from './useGameTimers';
 import { useLastEndedGame } from './useLastEndedGame';
+import { useUIStore } from '@/lib/store/useUIStore';
 
 const QUERY_STALE_TIME = 1000;
 const RETRY_ATTEMPTS = 2;
@@ -20,11 +21,10 @@ export function useHorlogeInit() {
   const pathname = usePathname();
   const [, startTransition] = useTransition();
 
-  const setGameConfig = useDiambraStore((state) => state.setGameConfig);
-  const setGameIsFinished = useDiambraStore((state) => state.setGameIsFinished);
-  const setAfficheChoix = useDiambraStore((state) => state.setAfficheChoix);
-  const resetGameState = useDiambraStore((state) => state.resetGameState);
-  const idEditionencours = useDiambraStore((state) => state.idEditionencours);
+  const setGameConfig = useCompetitionStore((state) => state.setGameConfig);
+  const setGameIsFinished = useCompetitionStore((state) => state.setGameIsFinished);
+  const setAfficheChoix = useUIStore((state) => state.setAfficheChoix);
+  const idEditionencours = useUIStore((state) => state.idEditionencours);
 
   const { stats, isLoading: isStatsLoading, error } = useStatsDataWithCache();
 
@@ -58,8 +58,7 @@ export function useHorlogeInit() {
   const completeGameCleanup = useCallback(() => {
     setGameIsFinished(false);
     setAfficheChoix(false);
-    resetGameState?.();
-  }, [setGameIsFinished, setAfficheChoix, resetGameState]);
+  }, [setGameIsFinished, setAfficheChoix, ]);
 
   const navigateToGame = useCallback((path: string, configId: string) => {
     const targetPath = `${path}?puzzle=${configId}`;
