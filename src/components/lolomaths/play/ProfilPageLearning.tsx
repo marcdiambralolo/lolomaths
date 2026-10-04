@@ -4,7 +4,7 @@ import { useDiambraStore } from '@/lib/store/diambra.store';
 import LaMise from "../choix/LaMise";
 import FooterSection from "../commons/FooterSection";
 import HorlogeMise from '../choix/components/HorlogeMise';
-import HorlogeInit from '../../learning/home/accueil/HorlogeInit';
+import HorlogeInit from '../home/accueil/HorlogeInit';
 
 const ProfilPageLearning = memo(() => {
   const idEditionencours = useDiambraStore((state) => state.idEditionencours);

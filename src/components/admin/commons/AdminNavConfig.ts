@@ -4,7 +4,7 @@ export const navItems = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard, color: 'amber' },
   { href: '/admin/game', label: 'Jeu en cours', icon: Settings, color: 'gray' },
   { href: '/admin/learning', label: 'Lolomaths', icon: FileText, color: 'green' },
-  { href: '/admin/competitions', label: 'Competitions en cours', icon: FileText, color: 'green' },
+  { href: '/admin/competitions', label: 'Competitions', icon: FileText, color: 'green' },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users, color: 'blue' },
   { href: '/admin/offrandes', label: 'Jetons', icon: Shield, color: 'cyan' },
   { href: '/admin/payments', label: 'Paiements', icon: CreditCard, color: 'ocean' },

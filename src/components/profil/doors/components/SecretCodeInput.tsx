@@ -47,7 +47,7 @@ const SecretCodeInput = memo(function SecretCodeInput({
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
             <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
                 <Info className="h-3 w-3" />
-                Code pour récupérer vos gains (4 caractères)
+                Code necessaire pour récupérer vos gains (4 caractères)
             </p>
         </div>
     );

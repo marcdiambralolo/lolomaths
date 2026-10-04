@@ -6,7 +6,6 @@ const LexiconCard: React.FC<{ item: LexiconItem }> = ({ item }) => (
         <div className="inline-block px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs mb-3 group-hover:bg-indigo-100 transition-colors">
             {item.term}
         </div>
-
         <p className="text-gray-600 text-sm leading-relaxed">{item.definition}</p>
     </div>
 );

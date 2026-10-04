@@ -1,4 +1,4 @@
-import MonProfilPageClient from '@/components/learning/historique/id/MonProfilPageClient';
+import MonProfilPageClient from '@/components/lolomaths/historique/id/MonProfilPageClient';
 
 export default function MonProfilPage() {    
   

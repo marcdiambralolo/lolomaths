@@ -4,7 +4,7 @@ import {
   computeRackPionStyle,
   isRackPionSelected,
   isRackPionUsed,
-} from './rackStyles';
+} from './portepions/rackStyles';
 
 export interface UseRackPionStyleResult {
   isSelected: boolean;

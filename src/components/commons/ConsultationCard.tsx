@@ -75,22 +75,6 @@ export default function ConsultationCard({ consultation, index, showDate = true,
                     )}
                 </div>
 
-                <div className="flex justify-center gap-1 py-2">
-                    {combinaison.split('').map((digit, i) => (
-                        <span
-                            key={i}
-                            className={cx(
-                                "w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl",
-                                "bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30",
-                                "text-gray-800 dark:text-white",
-                                "shadow-inner"
-                            )}
-                        >
-                            {digit}
-                        </span>
-                    ))}
-                </div>
-
                 <div className="flex items-center justify-between text-xs text-gray-500">
                     <div className="flex items-center gap-1">
                         <UserRound className="w-3 h-3" />

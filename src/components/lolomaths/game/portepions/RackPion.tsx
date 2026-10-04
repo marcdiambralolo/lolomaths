@@ -6,7 +6,7 @@ import {
   getRackPionAriaLabel,
   getRackPionTitle,
 } from './rackStyles';
-import { useRackPionStyle } from './useRackPionStyle';
+import { useRackPionStyle } from '../useRackPionStyle';
 
 // ============================================================
 // TYPES

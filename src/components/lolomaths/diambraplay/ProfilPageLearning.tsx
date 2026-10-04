@@ -1,8 +1,8 @@
 'use client';
 import { memo } from 'react';
 import FooterSection from "../commons/FooterSection";
-import Horloge from "../../learning/home/dashboard/Horloge";
-import FeuillesdeMatch from "../../learning/home/matchsheet/FeuillesdeMatch";
+import Horloge from "../home/dashboard/Horloge";
+import FeuillesdeMatch from "../home/matchsheet/FeuillesdeMatch";
 
 const ProfilPageLearning = memo(() => {
 

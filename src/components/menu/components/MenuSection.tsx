@@ -2,8 +2,8 @@
 import { MainMenuItem } from '@/lib/interfaces';
 import { motion } from 'framer-motion';
 import {
-    BookOpen, ChevronRight, Crown, Flame, Gamepad2,
-    Gem, Settings, Sparkles, Star, Trophy, Users, Zap,
+    BookOpen, ChevronRight, Crown, Flame, Gamepad2, Users, Zap,
+    Gem, Settings, Sparkles, Star, Trophy,
 } from 'lucide-react';
 import React from 'react';
 

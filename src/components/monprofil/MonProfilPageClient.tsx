@@ -106,7 +106,7 @@ const EditionCard = memo(({ edition, gamesCount }: EditionCardProps) => {
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs text-white/80">Édition</p>
+                  <p className="text-xs text-white/80">Competition</p>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${status.color} text-white`}>
                     {status.icon}
                     {status.text}

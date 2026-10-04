@@ -11,7 +11,6 @@ function BonusCard({ icon, title, value, color = "purple" }: { icon: React.React
                 {icon}
                 <div className="font-semibold text-sm">{title}</div>
             </div>
-
             <div className="text-2xl font-black">{value}</div>
         </div>
     );

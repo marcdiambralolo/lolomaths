@@ -76,7 +76,7 @@ const ContactCard = memo(() => (
         </div>
 
         <h3 className="text-center text-sm font-semibold text-purple-800 mb-4">
-            Une question sur le jeu ? Notre équipe est là pour vous aider
+            Une question sur le jeu ? Notre équipe est là pour vous aider.
         </h3>
 
         <div className="space-y-3">

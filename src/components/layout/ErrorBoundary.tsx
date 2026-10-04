@@ -407,7 +407,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         </div>
       );
     }
-
     return this.props.children;
   }
 }

@@ -4,14 +4,14 @@ import React from "react";
 import HorlogeMise from "../choix/components/HorlogeMise";
 import FooterSection from "../commons/FooterSection";
 import { Fdialog } from "./Fdialog";
-import { OplaGrid } from "./OplaGrid";
-import { TileRack } from "./TileRack";
+import { OplaGrid } from "./OplaGrid"; 
 import { DirectionActions } from "./components/DirectionActions";
 import { GameHeaderControls } from "./components/GameHeaderControls";
 import { GameHistoryList } from "./components/GameHistoryList";
 import { GameScoreBoard } from "./components/GameScoreBoard";
 import { HelpMessagesView } from "./components/HelpMessagesView";
 import HelpToggle from "./components/HelpToggle";
+import { TileRack } from "./portepions/TileRack";
 
 export const CompetitionScreen: React.FC = React.memo(() => {
   const {

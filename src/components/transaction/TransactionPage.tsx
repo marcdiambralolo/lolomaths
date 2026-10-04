@@ -58,7 +58,7 @@ export default function TransactionPage() {
                                 Paiement confirmé!
                             </h1>
                             <p className="text-gray-600 text-lg">
-                                Merci pour votre confiance. Votre transaction a été enregistrée.
+                                Merci pour votre confiance. Votre transaction a été enregistrée avec succes.
                             </p>
                         </motion.div>
                     )}

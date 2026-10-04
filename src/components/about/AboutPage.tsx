@@ -9,7 +9,7 @@ import Lexicon from "./components/Lexicon";
 import PageHeader from './components/PageHeader';
 import ScoringSystem from "./components/ScoringSystem";
 import StickyNav from "./components/StickyNav";
- 
+
 export default function AboutPageClient() {
   useScrollReveal();
 
