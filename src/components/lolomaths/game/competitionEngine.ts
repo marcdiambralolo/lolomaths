@@ -1,16 +1,29 @@
-import { UneCase, StateCase, Sens, Dtfil, GameResult } from '@/lib/interfaces';
+import {
+  UneCase,
+  StateCase,
+  Sens,
+  Dtfil,
+  GameResult,
+  TypeCase,
+} from '@/lib/interfaces';
 
 // ============================================================
-// CONSTANTES
+// CONSTANTES GLOBALES
 // ============================================================
 
 export const GRID_ROWS = 17;
 export const GRID_COLS = 13;
 export const START_CASE_INDEX = 110; // Case de départ centrale (Ligne 8, Col 6)
 
+/** Taille d'un rack : nombre de pions chiffres + opérateurs. */
+export const RACK_NUMBERS_COUNT = 6;
+export const RACK_OPERATORS_COUNT = 4;
+
+/** Symbole interne pour la case départ. */
+export const DEPART_SYMBOL = 'depart';
+
 /**
  * Set des opérateurs reconnus. Inclut les variantes Unicode `×` et `÷`.
- * Utilisé pour `isOperateur` (O(1) lookup).
  */
 const OPERATORS_SET: ReadonlySet<string> = new Set([
   '+',
@@ -60,17 +73,8 @@ export class JavaRandom {
 /**
  * Mélange déterministe d'une liste — transposition stricte de `radlist` Kotlin.
  *
- * Kotlin :
- * ```
- * while (lra.size < list.size) while (true) {
- *     val compteur = (ln.nextDouble() * (list.size - 1)).roundToLong().toInt()
- *     if (use[compteur]) break
- *     if (compteur != list.size) {
- *         use[compteur] = true
- *         lra.add(list[compteur])
- *     }
- * }
- * ```
+ * ⚠️ Lève une erreur explicite si le mélange n'aboutit pas (au lieu de
+ *    retourner une liste incomplète silencieusement).
  */
 export function radlist(list: string[], seed: number | string): string[] {
   if (!list || list.length === 0) return [];
@@ -81,20 +85,30 @@ export function radlist(list: string[], seed: number | string): string[] {
   const lra: string[] = [];
   const use = new Array<boolean>(list.length).fill(false);
 
-  let safety = 0;
+  const maxIterations = list.length * 1000;
+  let iterations = 0;
+
   while (lra.length < list.length) {
-    const compteur = Math.round(rng.nextDouble() * (list.length - 1));
-    if (compteur >= 0 && compteur < list.length && !use[compteur]) {
-      use[compteur] = true;
-      lra.push(list[compteur]);
+    if (++iterations > maxIterations) {
+      throw new Error(
+        `[radlist] Impossible de mélanger la liste (seed=${numericSeed}, taille=${list.length}).`
+      );
     }
-    if (++safety > list.length * 100) break; // sécurité anti-boucle infinie
+
+    const compteur = Math.round(rng.nextDouble() * (list.length - 1));
+
+    if (compteur < 0 || compteur >= list.length) continue;
+    if (use[compteur]) continue;
+
+    use[compteur] = true;
+    lra.push(list[compteur]);
   }
+
   return lra;
 }
 
 /**
- * Distribution du rack à partir d'un pool — utilisée pour les tirages successifs.
+ * Distribution du rack à partir d'un pool.
  */
 export function generateInitialRack(
   fullPool: string[],
@@ -109,17 +123,15 @@ export function generateInitialRack(
 }
 
 // ============================================================
-// 2. CONSTRUCTION DE LA GRILLE — transposition de `malisteca` Kotlin
+// 2. CONSTRUCTION DE LA GRILLE
 // ============================================================
 
 /**
- * Transposition stricte de `malisteca(numeromat, wl)` Kotlin :
- * - mélange déterministe de `wl` avec seed = numeromat
- * - échange de la case `depart` avec l'index 110
+ * Transposition stricte de `malisteca(numeromat, wl)` Kotlin.
  */
 export function malisteca(numeromat: string, wl: string[]): string[] {
   const lcases = radlist(wl, numeromat);
-  const indp = lcases.indexOf('depart');
+  const indp = lcases.indexOf(DEPART_SYMBOL);
   if (indp !== -1 && indp !== START_CASE_INDEX) {
     const tdep = lcases[START_CASE_INDEX];
     lcases[START_CASE_INDEX] = lcases[indp];
@@ -130,16 +142,13 @@ export function malisteca(numeromat: string, wl: string[]): string[] {
 
 /**
  * Fallback non déterministe : génère un nombre aléatoire pour la grille.
- * Utilisé uniquement si aucune matrice n'est fournie.
  */
 export function getRandomBoardNumber(): string {
   return Math.floor(Math.random() * 640).toString();
 }
 
 /**
- * Crée la grille initiale (17 × 13) à partir de la matrice fournie.
- * - Si `numeromat` et `listecaseRef` sont fournis, utilise `malisteca`.
- * - Sinon, remplit avec `getRandomBoardNumber` (fallback).
+ * Crée la grille initiale (17 × 13).
  */
 export function createInitialGrid(
   numeromat?: string,
@@ -155,7 +164,7 @@ export function createInitialGrid(
     lcases = malisteca(numeromat, listecaseRef);
   } else {
     for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
-      lcases.push(i === START_CASE_INDEX ? 'depart' : getRandomBoardNumber());
+      lcases.push(i === START_CASE_INDEX ? DEPART_SYMBOL : getRandomBoardNumber());
     }
   }
 
@@ -169,10 +178,10 @@ export function createInitialGrid(
         ncase: count,
         indi: i,
         indj: j,
-        txt: val === 'depart' ? '' : val,
-        itxt: val === 'depart' ? '' : val,
+        txt: val === DEPART_SYMBOL ? '' : val,
+        itxt: val === DEPART_SYMBOL ? '' : val,
         etat: StateCase.Cre,
-        tca: 1,
+        tca: TypeCase.Plateau,
       });
       count++;
     }
@@ -185,9 +194,6 @@ export function createInitialGrid(
 // 3. NAVIGATION SUR LA GRILLE
 // ============================================================
 
-/**
- * Retourne la case adjacente dans la direction donnée, ou `null` si hors grille.
- */
 export function getNextCase(
   grid: UneCase[][],
   current: UneCase,
@@ -209,21 +215,13 @@ export function getNextCase(
 }
 
 // ============================================================
-// 4. VALIDATIONS (transposition Kotlin)
+// 4. VALIDATIONS
 // ============================================================
 
-/**
- * Vérifie que deux cases sont du même type (opérateur vs non-opérateur).
-
- */
 export function sontDeMemeType(a: UneCase, b: UneCase): boolean {
   return isOperateur(a.txt) === isOperateur(b.txt);
 }
 
-/**
- * Vérifie l'alternance d'une séquence : commence et finit par un nombre,
- * alterne nombre / opérateur.
- */
 export function validateAlternance(sequence: UneCase[]): boolean {
   if (!sequence || sequence.length < 3) return false;
   if (isOperateur(sequence[0].txt)) return false;
@@ -235,10 +233,6 @@ export function validateAlternance(sequence: UneCase[]): boolean {
   return true;
 }
 
-/**
- * Vérifie qu'il n'y a pas de superposition et que tous les pions posés
- * font partie de la séquence.
- */
 export function validateNoSuperposition(
   sequence: UneCase[],
   placedPions: UneCase[]
@@ -259,10 +253,6 @@ export function validateNoSuperposition(
   return true;
 }
 
-/**
- * Vérifie l'enchaînement : si `cnbjeu > 0`, la séquence doit contenir
- * au moins un pion verrouillé (`Lo`).
- */
 export function validateEnchainement(
   sequence: UneCase[],
   cnbjeu: number
@@ -271,15 +261,6 @@ export function validateEnchainement(
   return sequence.some((c) => c.etat === StateCase.Lo);
 }
 
-/**
- * Kotlin `encadre(a, b)` :
- * - si a == null et b == null → true
- * - si a == null : b doit être Cre
- * - si b == null : a doit être Cre
- * - si a != Cre et b == Cre → false
- * - si a == Cre et b != Cre → false
- * - sinon true
- */
 export function encadre(a: UneCase | null, b: UneCase | null): boolean {
   if (a === null && b === null) return true;
   if (a === null) return b !== null && b.etat === StateCase.Cre;
@@ -289,10 +270,6 @@ export function encadre(a: UneCase | null, b: UneCase | null): boolean {
   return true;
 }
 
-/**
- * Kotlin `tpencadre()` : renvoie `true` si AU MOINS UN opérateur posé
- * n'est PAS correctement encadré horizontalement ou verticalement.
- */
 export function tpencadre(grid: UneCase[][]): boolean {
   for (let j = 0; j < GRID_ROWS; j++) {
     for (let i = 0; i < GRID_COLS; i++) {
@@ -313,10 +290,6 @@ export function tpencadre(grid: UneCase[][]): boolean {
   return false;
 }
 
-/**
- * Validation complète d'une combinaison (alternance, superposition,
- * enchaînement, encadrement des opérateurs).
- */
 export function validateCombination(
   sequence: UneCase[],
   placedPions: UneCase[],
@@ -342,11 +315,6 @@ export function validateCombination(
 // 5. COLLECTE DE SÉQUENCE
 // ============================================================
 
-/**
- * Transposition stricte de `cpver` / `cphor` Kotlin :
- * - collecte depuis la case du pion posé, dans les deux sens
- * - arrêt dès qu'une case `Cre` est rencontrée
- */
 export function collectSequence(
   grid: UneCase[][],
   startCase: UneCase,
@@ -355,7 +323,6 @@ export function collectSequence(
   const sequence: UneCase[] = [];
   let hasLoPion = false;
 
-  // Forward : partir de startCase, avancer tant que la case suivante n'est pas Cre/vide.
   let current: UneCase | null = startCase;
   while (current && current.txt !== '' && current.etat !== StateCase.Cre) {
     sequence.push(current);
@@ -366,7 +333,6 @@ export function collectSequence(
     current = next;
   }
 
-  // Backward : partir de la case opposée, avancer tant que la case courante n'est pas Cre/vide.
   const opposite: Record<Sens, Sens> = {
     [Sens.Up]: Sens.Down,
     [Sens.Down]: Sens.Up,
@@ -386,10 +352,6 @@ export function collectSequence(
   return { sequence, hasLoPion };
 }
 
-/**
- * Trie une séquence selon la direction : par `indi` (horizontal) ou `indj` (vertical).
- * Fidèle à `trita` Kotlin.
- */
 export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
   const isHorizontal = direction === Sens.Left || direction === Sens.Right;
   return [...sequence].sort((a, b) => {
@@ -403,9 +365,6 @@ export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
 // 6. UTILITAIRES POUR LE STORE
 // ============================================================
 
-/**
- * Vérifie qu'une séquence est valide : au moins 3 éléments, longueur impaire.
- */
 export function isValidSequence(
   sequence: UneCase[] | null | undefined
 ): boolean {
@@ -413,9 +372,6 @@ export function isValidSequence(
   return sequence.length >= 3 && sequence.length % 2 !== 0;
 }
 
-/**
- * Retourne tous les pions posés (`Pla` ou `Choi`) de la grille plate.
- */
 export function getPlacedPions(
   flatGrid: UneCase[] | null | undefined
 ): UneCase[] {
@@ -425,9 +381,6 @@ export function getPlacedPions(
   );
 }
 
-/**
- * Retourne tous les pions verrouillés (`Lo`) de la grille plate.
- */
 export function getLockedPions(
   flatGrid: UneCase[] | null | undefined
 ): UneCase[] {
@@ -435,9 +388,6 @@ export function getLockedPions(
   return flatGrid.filter((c) => c.etat === StateCase.Lo);
 }
 
-/**
- * Vérifie si une séquence contient au moins un pion verrouillé.
- */
 export function hasLockedPionInSequence(
   sequence: UneCase[] | null | undefined
 ): boolean {
@@ -445,9 +395,6 @@ export function hasLockedPionInSequence(
   return sequence.some((c) => c.etat === StateCase.Lo);
 }
 
-/**
- * Vérifie si la case de départ (index 110) est couverte (Pla, Choi ou Lo).
- */
 export const isStartCaseCovered = (
   flatGrid: UneCase[] | null | undefined
 ): boolean => {
@@ -462,27 +409,81 @@ export const isStartCaseCovered = (
 };
 
 // ============================================================
-// 7. CALCUL DU RÉSULTAT — transposition stricte de `calcul` Kotlin
+// 7. ÉVALUATEUR D'EXPRESSION SÛR
 // ============================================================
 
 /**
- * Calcule le résultat d'une combinaison et la note associée.
- *
- * Kotlin :
- * ```
- * g.notedbase = if (g.nbreatind == g.result) 5.0 else -(abs(g.result - g.nbreatind))
- * g.bonus = 0
- * when (dtfil) {
- *   Min -> if (nbreatind >= 30) bonus += 1
- *   Cad -> if (nbreatind >= 100) bonus += 1
- *   Jun -> if (nbreatind >= 200) bonus += 1
- *   Sen -> if (nbreatind >= 300) bonus += 1
- * }
- * if (p.size > 6) g.bonus += p.size - 6
- * p.forEach { if (it.txt == "*" || it.txt == "/") g.bonus += 1 }
- * g.notedjeu = g.notedbase + g.bonus
- * ```
+ * Évalue une expression arithmétique simple : nombres entiers, `+ - * /`.
+ * Gère la priorité des opérations.
+ * Ne gère PAS les parenthèses (le jeu n'en produit pas).
  */
+export function evaluateExpression(expr: string): number {
+  if (!expr) return NaN;
+
+  const tokens: (number | string)[] = [];
+  let i = 0;
+  while (i < expr.length) {
+    const c = expr[i];
+    if (c === ' ') {
+      i++;
+      continue;
+    }
+    if (/[0-9]/.test(c)) {
+      let num = '';
+      while (i < expr.length && /[0-9]/.test(expr[i])) {
+        num += expr[i];
+        i++;
+      }
+      tokens.push(parseInt(num, 10));
+      continue;
+    }
+    if ('+-*/'.includes(c)) {
+      tokens.push(c);
+      i++;
+      continue;
+    }
+    return NaN;
+  }
+
+  if (tokens.length === 0) return NaN;
+
+  // Passe 1 : * et /
+  const pass1: (number | string)[] = [];
+  let idx = 0;
+  while (idx < tokens.length) {
+    const tok = tokens[idx];
+    if (tok === '*' || tok === '/') {
+      const left = pass1.pop();
+      const right = tokens[idx + 1];
+      if (typeof left !== 'number' || typeof right !== 'number') return NaN;
+      const res = tok === '*' ? left * right : left / right;
+      pass1.push(res);
+      idx += 2;
+    } else {
+      pass1.push(tok);
+      idx++;
+    }
+  }
+
+  // Passe 2 : + et -
+  if (typeof pass1[0] !== 'number') return NaN;
+  let acc = pass1[0];
+  idx = 1;
+  while (idx < pass1.length) {
+    const op = pass1[idx];
+    const right = pass1[idx + 1];
+    if ((op !== '+' && op !== '-') || typeof right !== 'number') return NaN;
+    acc = op === '+' ? acc + right : acc - right;
+    idx += 2;
+  }
+
+  return acc;
+}
+
+// ============================================================
+// 8. CALCUL DU RÉSULTAT
+// ============================================================
+
 export function calculateGameResult(
   targetCase: UneCase,
   sequence: UneCase[],
@@ -499,51 +500,38 @@ export function calculateGameResult(
     notedjeu: 0,
     combine: sequence.map((c) => c.txt).join(''),
     targetCase,
+    sequenceNcases: sequence.map((c) => c.ncase),
   };
 
   if (!sequence || sequence.length === 0) return game;
 
-  // Évaluation sécurisée de l'expression
   const sanitized = sequence
     .map((c) => c.txt)
     .join('')
     .replace(/×/g, '*')
     .replace(/÷/g, '/');
 
-  let calculated = 0;
-  if (/^[0-9+\-*/().\s]+$/.test(sanitized)) {
-    try {
-      // eslint-disable-next-line no-new-func
-      calculated = Function(`"use strict"; return (${sanitized})`)();
-    } catch {
-      calculated = 0;
-    }
-  }
+  const calculated = evaluateExpression(sanitized);
   game.result = Number.isFinite(calculated) ? calculated : 0;
 
-  // Note de base
   if (game.nbreatind === game.result) {
     game.notedbase = 5;
   } else {
     game.notedbase = -Math.abs(game.result - game.nbreatind);
   }
 
-  // Bonus (uniquement si égalité parfaite)
   if (game.nbreatind === game.result) {
     let bonus = 0;
 
-    // Palier selon le niveau
     if (niveau === Dtfil.Min && game.nbreatind >= 30) bonus += 1;
     if (niveau === Dtfil.Cad && game.nbreatind >= 100) bonus += 1;
     if (niveau === Dtfil.Jun && game.nbreatind >= 200) bonus += 1;
     if (niveau === Dtfil.Sen && game.nbreatind >= 300) bonus += 1;
 
-    // Bonus longueur : p.size > 6 → + (p.size - 6)
     if (placedPions.length > 6) {
       bonus += placedPions.length - 6;
     }
 
-    // Bonus opérateurs : +1 par opérateur multiplicatif
     for (const p of placedPions) {
       if (p.txt === '*' || p.txt === '/' || p.txt === '×' || p.txt === '÷') {
         bonus += 1;

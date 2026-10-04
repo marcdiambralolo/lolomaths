@@ -132,11 +132,7 @@ export function useSlide4SectionDoors() {
         if (retour === "learning") {
           router.push(`/star/playlolomaths`);
         } else
-          if (monjeu) {
-            router.push(`/star/choix/${monjeu}`);
-          } else {
-            router.push(`/star/profil`);
-          }
+          router.push(`/star/profil`);
       } else {
         setApiError(response.data.error || "Une erreur est survenue");
       }

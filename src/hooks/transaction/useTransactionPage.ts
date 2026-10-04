@@ -58,6 +58,7 @@ export function useTransactionPage() {
 
     const hasInitiatedPayment = useRef(false);
     const verificationAttempts = useRef(0);
+    
     const transactionId = searchParams?.get("transactionId");
     const tokenPay = searchParams?.get("tokenPay");
     const status = searchParams?.get("status");

@@ -15,9 +15,17 @@ import HelpToggle from "./components/HelpToggle";
 
 export const CompetitionScreen: React.FC = React.memo(() => {
   const {
-    helpMessages, showHelp, gameState, hasPlacedPions, selectedGameResult,
-    hasAnyValidDirection, isDialogOpen,
-    handleCloseDialog, handleResetRound, setShowHelp, handleAcceptCalculation,
+    helpMessages,
+    showHelp,
+    gameState,
+    hasPlacedPions,
+    selectedGameResult,
+    hasAnyValidDirection,
+    isDialogOpen,
+    handleCloseDialog,
+    handleResetRound,
+    setShowHelp,
+    handleAcceptCalculation,
     setSelectedDirectionIndex,
   } = useCompetitionGame();
 
@@ -55,4 +63,4 @@ export const CompetitionScreen: React.FC = React.memo(() => {
       />
     </main>
   );
-}); 
+});

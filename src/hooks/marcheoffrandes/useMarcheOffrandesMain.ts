@@ -106,10 +106,8 @@ export function useMarcheOffrandesMain() {
     );
   }, []);
 
-  const getRedirectUrl = (monjeu: string | undefined, retour: string | null): string => {
-    if (retour === 'learning') return '/star/learning';
-    if (monjeu) return `/star/choix/${monjeu}`;
-    return '/star/profil';
+  const getRedirectUrl = (): string => {
+    return '/star/playlolomaths';
   };
 
   const handleSimulatedPayment = useCallback(async () => {
@@ -192,7 +190,7 @@ export function useMarcheOffrandesMain() {
       const searchParams = new URLSearchParams(window.location.search);
       const retour = searchParams.get('retour');
 
-      let redirectUrl = getRedirectUrl(monjeu as string | undefined, retour);
+      let redirectUrl = getRedirectUrl();
       const transactionIdParam = `transactionId=${encodeURIComponent(transactionId)}`;
       redirectUrl = redirectUrl.includes('?')
         ? `${redirectUrl}&${transactionIdParam}&monjeu=${monjeu}`

@@ -1,5 +1,9 @@
 import type { ReactNode, ElementType } from 'react';
 
+// ============================================================
+// TYPES GÉNÉRIQUES
+// ============================================================
+
 export type DateLike = Date | string | number | null | undefined;
 export type ConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
 export type LearningConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
@@ -446,11 +450,11 @@ export interface GameCompletionState {
 
 export interface GameState {
   status:
-  | 'no_competition'
-  | 'not_started'
-  | 'active'
-  | 'results_available'
-  | 'ended_no_proclamation';
+    | 'no_competition'
+    | 'not_started'
+    | 'active'
+    | 'results_available'
+    | 'ended_no_proclamation';
   canUserPlay: boolean;
   showGameFinishedBanner: boolean;
   countdown: number | null;
@@ -472,7 +476,7 @@ export interface TournamentSummary {
 }
 
 // ============================================================
-// ENUMS JEU
+// ENUMS JEU (transposition Kotlin)
 // ============================================================
 
 export enum Direction {
@@ -503,10 +507,6 @@ export enum MovementSense {
 
 export type SensoryDirection = 'Up' | 'Down' | 'Left' | 'Right';
 
-// ============================================================
-// MODÈLES DE JEU (Kotlin → TS)
-// ============================================================
-
 export enum StateCase {
   Cre = 'Cre',
   Pla = 'Pla',
@@ -533,6 +533,18 @@ export enum Dtfil {
   Sen = 3,
 }
 
+/**
+ * Type de case :
+ *  - Plateau = case du plateau (tca = 1 en Kotlin)
+ *  - PionChiffre = pion nombre dans le rack (tca = 2 en Kotlin)
+ *  - PionOperateur = pion opérateur dans le rack (tca = 3 en Kotlin)
+ */
+export enum TypeCase {
+  Plateau = 1,
+  PionChiffre = 2,
+  PionOperateur = 3,
+}
+
 export interface UneCase {
   ncase: number;
   indi: number; // Colonne (0..12)
@@ -540,10 +552,10 @@ export interface UneCase {
   txt: string;
   itxt: string;
   etat: StateCase;
-  tca: 1 | 2 | 3; // 1 = Case Plateau, 2 = Pion Chiffre, 3 = Pion Opérateur
+  tca: TypeCase;
   placep?: number;
   isbou?: boolean;
-  isTarget?: boolean; // ← AJOUT : case cible (nombre à atteindre)
+  isTarget?: boolean;
 }
 
 export interface GameResult {
@@ -554,22 +566,24 @@ export interface GameResult {
   notedjeu: number;
   combine: string;
   targetCase: UneCase;
+  /** Ncase de chaque case de la séquence validée (pour verrouillage sélectif). */
+  sequenceNcases: number[];
 }
 
 export interface GameScore {
-  baseScore: number; // notedebase
-  result: number; // result
-  gameScore: number; // notedjeu
-  targetNumber: number; // nbreatind
-  bonus: number; // bonus
-  combination?: string; // combine
+  baseScore: number;
+  result: number;
+  gameScore: number;
+  targetNumber: number;
+  bonus: number;
+  combination?: string;
 }
 
 export interface GameMatrix {
-  name: string; // nom
-  cells: string[]; // cases
-  numbers: string[]; // nbre
-  operators: string[]; // oper
+  name: string;
+  cells: string[];
+  numbers: string[];
+  operators: string[];
 }
 
 // ============================================================
@@ -577,16 +591,16 @@ export interface GameMatrix {
 // ============================================================
 
 export interface BoardTheme {
-  id: number; // numero
-  name: string; // nom
-  cellBgColor: string; // coulfondcase
-  lockedCellBgColor: string; // coulfondcaseverouille
-  placedPawnBgColor: string; // coulfondpionplace
-  startCellBgColor: string; // coulfondcasedepart
-  selectedCellBgColor: string; // coulfondcaseselectionne
-  cellBorderColor: string; // coulbordurecase
-  normalPawnBgColor: string; // coulfondpionnormal
-  hoverPawnBgColor: string; // coulfondpionover
+  id: number;
+  name: string;
+  cellBgColor: string;
+  lockedCellBgColor: string;
+  placedPawnBgColor: string;
+  startCellBgColor: string;
+  selectedCellBgColor: string;
+  cellBorderColor: string;
+  normalPawnBgColor: string;
+  hoverPawnBgColor: string;
 }
 
 export function parseTheme(rawJson: Record<string, unknown>): BoardTheme {
@@ -614,35 +628,35 @@ export function parseTheme(rawJson: Record<string, unknown>): BoardTheme {
 // ============================================================
 
 export interface MatchModel {
-  id: string; // idpartie
-  tournamentId: string; // idtournoi
-  orderIndex: number; // numordrep
-  isGameOver: boolean; // isgameover
-  userId?: string; // iduser
-  partId?: string; // idpart
-  tourId?: string; // idtour
-  matchNumber?: string; // numeromatch
-  startedAt: Date; // datedebut
-  endedAt?: Date; // datefin
-  score?: string; // score
+  id: string;
+  tournamentId: string;
+  orderIndex: number;
+  isGameOver: boolean;
+  userId?: string;
+  partId?: string;
+  tourId?: string;
+  matchNumber?: string;
+  startedAt: Date;
+  endedAt?: Date;
+  score?: string;
 }
 
 export interface TournamentModel {
-  id: string; // idtournoi
-  playerName: string; // nomjoueur
-  tournamentNumber: string; // numtournoi
-  matchTimeLimit: string; // tempsmatch
-  isGlobalTime: boolean; // tpsglobal
-  level: DifficultyLevel; // niveau
-  colorThemeId: number; // couleurs
-  gamesPerMatch: number; // nombredejeu
-  totalMatches: number; // nbmatch
-  isGameOver: boolean; // isgameover
-  startedAt: Date; // datedebut
-  endedAt?: Date; // datefin
-  tourId?: string; // idtour
-  userId?: string; // iduser
-  score?: string; // score
+  id: string;
+  playerName: string;
+  tournamentNumber: string;
+  matchTimeLimit: string;
+  isGlobalTime: boolean;
+  level: DifficultyLevel;
+  colorThemeId: number;
+  gamesPerMatch: number;
+  totalMatches: number;
+  isGameOver: boolean;
+  startedAt: Date;
+  endedAt?: Date;
+  tourId?: string;
+  userId?: string;
+  score?: string;
 }
 
 export interface CreateTournamentDto {
@@ -657,14 +671,14 @@ export interface CreateTournamentDto {
 }
 
 export interface TournamentFormState {
-  playerName: string; // njoueur
-  tournamentNumber: string; // numetour
-  matchesCount: number; // nbrdmat
-  timeLimit: string; // stpdjeu
-  gamesPerMatch: number; // spnbjeu
-  isGlobalTime: boolean; // globalrb / perkchrb
-  themeId: number; // sptheme
-  matrixLevelIndex: number; // spniv
+  playerName: string;
+  tournamentNumber: string;
+  matchesCount: number;
+  timeLimit: string;
+  gamesPerMatch: number;
+  isGlobalTime: boolean;
+  themeId: number;
+  matrixLevelIndex: number;
   customMatchNumbers: string[];
 }
 

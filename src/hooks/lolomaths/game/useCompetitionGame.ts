@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import lcontentData from '@/data/lcontent.json';
 import { useChrono } from '@/hooks/lolomaths/useChrono';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
@@ -79,6 +80,7 @@ export interface GameHistoryItem {
 }
 
 export const useCompetitionGame = () => {
+  const router = useRouter();
   const { gameConfig } = useDiambraStore();
 
   const grid = useCompetitionStore((state) => state.grid);
@@ -95,7 +97,6 @@ export const useCompetitionGame = () => {
     (state) => state.confirmCalculation
   );
 
-  const [showResultZone, setShowResultZone] = useState(false);
   const [selectedDirectionIndex, setSelectedDirectionIndex] = useState<
     number | null
   >(null);
@@ -105,7 +106,9 @@ export const useCompetitionGame = () => {
     initialSeconds: 300,
     autoStart: true,
     onTimeUp: () => {
-      setShowResultZone(true);
+      // ⏱️ Temps écoulé → on déclenche la fin de match
+      //    (la navigation sera gérée par l'effet ci-dessous)
+      useCompetitionStore.setState({ isMatchOver: true });
     },
   });
 
@@ -113,6 +116,7 @@ export const useCompetitionGame = () => {
 
   const hasInitializedMatch = useRef(false);
   const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasNavigatedRef = useRef(false);
 
   const initializeGameSession = useCallback((): number => {
     const config = loadGameConfig();
@@ -156,12 +160,22 @@ export const useCompetitionGame = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ============================================================
+  // 🎯 NAVIGATION VERS /resultat QUAND LE MATCH EST TERMINÉ
+  // ============================================================
   useEffect(() => {
-    if (isMatchOver) {
-      setShowResultZone(true);
+    if (isMatchOver && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true;
       pauseChrono();
+
+      // Petit délai pour laisser le state se propager (optionnel)
+      const timeout = setTimeout(() => {
+        router.push('/star/resultat');
+      }, 300);
+
+      return () => clearTimeout(timeout);
     }
-  }, [isMatchOver, pauseChrono]);
+  }, [isMatchOver, pauseChrono, router]);
 
   const gameState = useMemo(() => {
     const isStartCovered = isStartCaseCovered(flatGrid);
@@ -222,7 +236,6 @@ export const useCompetitionGame = () => {
     [selectedDirectionIndex, selectedGameResult]
   );
 
-  // Affiche les flèches directionnelles UNIQUEMENT si au moins une direction est valide
   const hasAnyValidDirection = useMemo(
     () =>
       directionsValid.left ||
@@ -233,7 +246,6 @@ export const useCompetitionGame = () => {
   );
 
   return {
-    showResultZone,
     selectedDirectionIndex,
     directionsValid,
     gameState,
