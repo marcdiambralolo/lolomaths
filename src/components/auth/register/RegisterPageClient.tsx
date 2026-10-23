@@ -9,6 +9,9 @@ import { RegisterInputField } from './components/RegisterInputField';
 import { RegisterPasswordStrengthIndicator } from './components/RegisterPasswordStrengthIndicator';
 import SubmitButton from './components/SubmitButton';
 import TermsFooter from './components/TermsFooter';
+import Divider from './components/Divider';
+import LoginRedirectBanner from './components/LoginRedirectBanner';
+import InstructionText from './components/InstructionText';
 
 const RegisterForm: React.FC = () => {
   const {
@@ -74,8 +77,13 @@ const RegisterForm: React.FC = () => {
           isPending={isPending}
         />
       </form>
-
+ 
       <TermsFooter />
+
+       <div className="mt-8 space-y-3 w-full">
+             <Divider />
+            <LoginRedirectBanner /> 
+        </div>
 
     </FormContainer>
   );

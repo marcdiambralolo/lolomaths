@@ -6,7 +6,7 @@ const FormHeader = () => (
             LOLOMATHS
         </h1>
         <p className="mx-auto max-w-md text-xs text-gray-600 sm:text-sm">
-            Accédez à votre espace de jeu en utilisant votre email et votre mot de passe
+            Entrez votre email et votre mot de passe et cliquez sur Se connecter
         </p>
     </div>
 );

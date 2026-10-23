@@ -41,7 +41,7 @@ const LoginRedirectBanner = () => (
  const InstructionText = () => (
     <div className="text-center space-y-2">
         <p className="text-sm text-gray-600 max-w-md mx-auto">
-            Sinon, remplissez le formulaire ci-dessous, puis cliquez sur <br /> le bouton « S'inscrire ».
+            Remplissez le formulaire ci-dessous, puis cliquez sur <br /> le bouton « S'inscrire ».
         </p>
     </div>
 );
@@ -49,9 +49,7 @@ const LoginRedirectBanner = () => (
 const FormHeader = () => (
     <div className="text-center mb-2">
         <Logo />
-        <div className="mt-8 space-y-3 w-full">
-            <LoginRedirectBanner />
-            <Divider />
+        <div className="mt-8 space-y-3 w-full">         
             <InstructionText />
         </div>
     </div>

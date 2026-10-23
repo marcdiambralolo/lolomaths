@@ -8,40 +8,49 @@ import Logo from './components/Logo';
 import RegisterLink from './components/RegisterLink';
 import SecurityBadge from './components/SecurityBadge';
 import SubmitButton from './components/SubmitButton';
-import WelcomePageClient from './welcome/WelcomePageClient';
+import WelcomeDialog from './components/WelcomeDialog';
 
 const LoginForm = () => {
   const {
     handleSubmit, error, isSubmitDisabled, isLoading, isPending,
     isHydrated, usernameProps, passwordProps,
+    hasChosenAccount, setHasChosenAccount,
   } = useLoginForm();
 
   return (
-    <FormContainer>
-      <Logo />
-      <FormHeader />
+    <>
+      <WelcomeDialog
+        open={isHydrated && !hasChosenAccount}
+        onHasAccount={() => setHasChosenAccount(true)}
+      />
 
-      {error && <LoginErrorAlert message={error} />}
+      {hasChosenAccount && (
+        <FormContainer>
+          <Logo />
+          <FormHeader />
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <LoginInputField {...usernameProps} />
-        <LoginInputField {...passwordProps} />
+          {error && <LoginErrorAlert message={error} />}
 
-        <SubmitButton
-          isSubmitDisabled={isSubmitDisabled}
-          isHydrated={isHydrated}
-          isLoading={isLoading}
-          isPending={isPending}
-        />
-      </form>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <LoginInputField {...usernameProps} />
+            <LoginInputField {...passwordProps} />
 
-      <div className="mt-6 space-y-4">
-        <RegisterLink />
-        <SecurityBadge />
-      </div>
+            <SubmitButton
+              isSubmitDisabled={isSubmitDisabled}
+              isHydrated={isHydrated}
+              isLoading={isLoading}
+              isPending={isPending}
+            />
+          </form>
 
-      <WelcomePageClient />
-    </FormContainer>
+          <div className="mt-6 space-y-4">
+             <SecurityBadge />
+            <RegisterLink />
+           
+          </div>
+        </FormContainer>
+      )}
+    </>
   );
 };
 

@@ -5,25 +5,25 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const PROGRESS_INTERVAL = 100;
 const PROGRESS_STEP = 10;
-const SUCCESS_REDIRECT_DELAY = 4000;
-const ERROR_REDIRECT_DELAY = 500;
+const SUCCESS_REDIRECT_DELAY = 1200;   // raccourci : 4s c'est trop long
+const ERROR_REDIRECT_DELAY = 1500;
 const MAX_LOGOUT_WAIT = 10000;
+
+export type LogoutStatus = 'loading' | 'success' | 'error';
 
 export function useLogoutPage() {
   const { logout, user } = useAuth();
   const router = useRouter();
-  const [status, setStatus] = useState("loading");
-  const [progress, setProgress] = useState(0);
   const logoutStore = useAuthStore((s) => s.logout);
 
-  const progressIntervalRef = useRef<NodeJS.Timeout | number | null>(null);
-  const redirectTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
-  const errorTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
-  const logoutCompletedRef = useRef(false);
+  const [status, setStatus] = useState<LogoutStatus>('loading');
+  const [progress, setProgress] = useState(0);
 
-   if (typeof document !== 'undefined') {
-    document.cookie = 'monetoile_access_token=; Max-Age=0; path=/;';
-  }
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const logoutCompletedRef = useRef(false);
+  const hasRunRef = useRef(false);
 
   const cleanup = useCallback(() => {
     if (progressIntervalRef.current) {
@@ -41,64 +41,67 @@ export function useLogoutPage() {
   }, []);
 
   useEffect(() => {
+    // ✅ Garde anti double-exécution (React StrictMode en dev)
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
+
     const redirectToLogin = () => {
-      if (typeof window !== 'undefined') {
-        window.location.replace('/auth/login');
-      } else {
-        router.replace('/auth/login');
-        router.refresh();
-      }
+      // ✅ On utilise router + refresh pour que le middleware voie le cookie supprimé
+      router.replace('/auth/login');
+      router.refresh();
     };
 
     const performLogout = async () => {
-      logoutStore(); // Clear client-side auth state immediately
+      // 1. UI : l'utilisateur disparaît immédiatement
+      logoutStore();
+
+      // 2. Si pas d'utilisateur, on considère déjà déconnecté
       if (!user) {
-        setStatus("success");
-        redirectTimeoutRef.current = setTimeout(() => {
-          redirectToLogin();
-        }, SUCCESS_REDIRECT_DELAY);
+        setStatus('success');
+        setProgress(100);
+        redirectTimeoutRef.current = setTimeout(redirectToLogin, SUCCESS_REDIRECT_DELAY);
         return;
       }
-      
-      try {
-        progressIntervalRef.current = setInterval(() => {
-          setProgress((prev) => {
-            if (prev >= 90) {
-              if (progressIntervalRef.current) {
-                clearInterval(progressIntervalRef.current);
-                progressIntervalRef.current = null;
-              }
-              return 90;
+
+      // 3. Progress bar simulée qui monte jusqu'à 90 %
+      progressIntervalRef.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+              progressIntervalRef.current = null;
             }
-            return Math.min(prev + PROGRESS_STEP, 90);
-          });
-        }, PROGRESS_INTERVAL);
-        errorTimeoutRef.current = setTimeout(() => {
-          if (!logoutCompletedRef.current) {
-            cleanup();
-            setStatus("error");
-            redirectTimeoutRef.current = setTimeout(() => {
-              redirectToLogin();
-            }, ERROR_REDIRECT_DELAY);
+            return 90;
           }
-        }, MAX_LOGOUT_WAIT);
+          return Math.min(prev + PROGRESS_STEP, 90);
+        });
+      }, PROGRESS_INTERVAL);
+
+      // 4. Timeout de sécurité : si l'API ne répond jamais
+      errorTimeoutRef.current = setTimeout(() => {
+        if (!logoutCompletedRef.current) {
+          cleanup();
+          setStatus('error');
+          redirectTimeoutRef.current = setTimeout(redirectToLogin, ERROR_REDIRECT_DELAY);
+        }
+      }, MAX_LOGOUT_WAIT);
+
+      try {
+        // 5. Appel API réel (le serveur tue les cookies httpOnly)
         await logout();
         logoutCompletedRef.current = true;
         cleanup();
         setProgress(100);
-        setStatus("success");
-        redirectTimeoutRef.current = setTimeout(() => {
-          redirectToLogin();
-        }, SUCCESS_REDIRECT_DELAY);
+        setStatus('success');
+        redirectTimeoutRef.current = setTimeout(redirectToLogin, SUCCESS_REDIRECT_DELAY);
       } catch {
         cleanup();
-        setStatus("error");
-        redirectTimeoutRef.current = setTimeout(() => {
-          redirectToLogin();
-        }, ERROR_REDIRECT_DELAY);
+        setStatus('error');
+        redirectTimeoutRef.current = setTimeout(redirectToLogin, ERROR_REDIRECT_DELAY);
       }
     };
-    performLogout();
+
+    void performLogout();
 
     return cleanup;
   }, [cleanup, logout, logoutStore, router, user]);

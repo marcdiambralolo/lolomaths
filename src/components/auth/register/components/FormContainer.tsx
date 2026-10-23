@@ -7,7 +7,6 @@ const FormContainer = ({ children }: { children: React.ReactNode }) => (
         <div className="bg-white p-4">
             {children}
         </div>
-        <WelcomePageClient />
     </div>
 );
 

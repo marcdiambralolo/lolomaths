@@ -24,13 +24,8 @@ export default function WelcomePageClientContent() {
         <main className="min-h-screen bg-gradient-to-br from-white via-purple-50/30 to-indigo-50/50 overflow-x-hidden">
             <div className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
                 <WelcomeHeader />
-                <GameObjective />
-                <GameRules />
-                <GameFlow />
-                <GameLexicon />
-                <ScoringSystem />
-                <ChainRuleWarning />
-                <CallToAction />
+             
+                 
                 <div className="mt-12 text-center">
                     <p className="text-xs text-gray-400">© 2026 Lolomaths - Tous droits réservés.</p>
                 </div>

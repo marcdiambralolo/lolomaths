@@ -1,4 +1,5 @@
 'use client';
+
 import { AuthRequestError, authService } from '@/lib/api/services';
 import { clearClientApplicationState } from '@/lib/cache/clientState';
 import { config } from '@/lib/config';
@@ -25,10 +26,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Hook personnalisé pour accéder au contexte d'authentification
- * @throws Error si utilisé en dehors d'un AuthProvider
- */
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -41,9 +38,6 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-/**
- * Provider d'authentification optimisé avec gestion des tokens et permissions
- */
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -54,10 +48,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const persistUser = useAuthStore((s) => s.updateUser);
   const persistLogout = useAuthStore((s) => s.logout);
 
-  /**
-   * Initialise l'authentification au montage du composant
-   * Vérifie le token et récupère les données utilisateur
-   */
   useEffect(() => {
     let isMounted = true;
 
@@ -74,32 +64,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       try {
         const currentUser = await authService.me();
-
-        if (!isMounted) {
-          return;
-        }
-
+        if (!isMounted) return;
         persistLogin(currentUser);
-
       } catch (error) {
         if (error instanceof AuthRequestError && error.status === 401) {
-          // Supprime le cookie côté client si 401 (user supprimé ou token orphelin)
-          try {
-            if (typeof document !== 'undefined') {
-              document.cookie = 'monetoile_access_token=; Max-Age=0; path=/;';
-              document.cookie = 'monetoile_refresh_token=; Max-Age=0; path=/;';
-              window.location.replace('/auth/login');
-              return; // Stop further execution
-            }
-          } catch { }
+          // ⚠️ Ne PAS supprimer le cookie en JS ici : on laisse le middleware
+          // et le serveur gérer. On nettoie juste l'état client.
           await clearClientApplicationState();
+          if (isMounted && typeof window !== 'undefined') {
+            window.location.replace('/auth/login');
+            return;
+          }
         } else {
           logger.warn('Auth initialization skipped after non-auth error:', error);
         }
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
@@ -110,20 +90,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [persistLogin, persistLogout]);
 
-  /**
-   * Connexion utilisateur avec gestion d'erreurs
-   * @param credentials - Identifiants de connexion
-   */
   const login = useCallback(async (credentials: LoginDto): Promise<void> => {
     setIsLoading(true);
     try {
       const response = await authService.login(credentials);
       persistLogin(response.user);
-      if (response.accessToken) {
-        setAccessToken(response.accessToken);
-      } else {
-        setAccessToken(null);
-      }
+      setAccessToken(response.accessToken ?? null);
     } catch (error) {
       logger.error('Login error:', error);
       throw error;
@@ -132,16 +104,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [persistLogin]);
 
-  /**
-   * Inscription utilisateur avec redirection
-   * @param data - Données d'inscription
-   */
   const register = useCallback(async (data: RegisterDto): Promise<void> => {
     setIsLoading(true);
     try {
       const response = await authService.register(data);
       persistLogin(response.user);
-
       router.replace(config.routes.dashboard);
       router.refresh();
     } catch (error) {
@@ -153,30 +120,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [persistLogin, router]);
 
   /**
-   * Déconnexion utilisateur avec nettoyage complet
+   * ✅ Déconnexion propre :
+   * 1. Nettoyage immédiat de l'état Zustand (UI réactive)
+   * 2. Appel serveur pour tuer les cookies httpOnly (Set-Cookie)
+   * 3. Nettoyage de tous les caches client
+   * 4. Reset du token en mémoire
    */
   const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true);
-    logoutStore(); // Clear client-side auth state immediately
+
+    // 1. UI : l'utilisateur disparaît immédiatement de l'état
+    logoutStore();
+
     try {
-      if (typeof document !== 'undefined') {
-        document.cookie = 'monetoile_access_token=; Max-Age=0; path=/;';
-        document.cookie = 'monetoile_refresh_token=; Max-Age=0; path=/;';
-      }
+      // 2. Serveur : supprime les cookies httpOnly via Set-Cookie
       await authService.logout();
     } catch (error) {
-      logger.error('Logout error:', error);
+      // On log mais on continue : le nettoyage client doit avoir lieu quoi qu'il arrive
+      logger.error('Logout API error (continuing cleanup):', error);
     } finally {
+      // 3. Reset du token en mémoire
       setAccessToken(null);
+
+      // 4. Nettoyage de tous les caches client (React Query, localStorage, IndexedDB…)
+      try {
+        await clearClientApplicationState();
+      } catch (error) {
+        logger.error('Client state cleanup error:', error);
+      }
+
       persistLogout();
-      await clearClientApplicationState();
       setIsLoading(false);
     }
   }, [logoutStore, persistLogout]);
 
-  /**
-   * Rafraîchit les données utilisateur depuis l'API
-   */
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
       const currentUser = await authService.me();
@@ -187,44 +164,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [persistUser]);
 
-  /**
-   * Vérifie si l'utilisateur possède un ou plusieurs rôles
-   * @param roles - Rôle(s) à vérifier
-   * @returns true si l'utilisateur a au moins un des rôles
-   */
   const hasRole = useCallback((roles: Role | Role[]): boolean => {
     if (!user?.role) return false;
     const roleArray = Array.isArray(roles) ? roles : [roles];
     return roleArray.includes(user.role);
   }, [user]);
 
-  /**
-   * Vérifie si l'utilisateur possède une ou plusieurs permissions
-   * @param permissions - Permission(s) à vérifier
-   * @returns true si l'utilisateur a au moins une des permissions
-   */
   const hasPermission = useCallback((permissions: Permission | Permission[]): boolean => {
     if (!user) return false;
-
-    // Super Admin a toutes les permissions
     if (user.role === Role.SUPER_ADMIN) return true;
-
     const permissionArray = Array.isArray(permissions) ? permissions : [permissions];
-
-    // Vérification dans les permissions personnalisées
     return user.customPermissions
-      ? permissionArray.some(perm => user.customPermissions?.includes(perm))
+      ? permissionArray.some((perm) => user.customPermissions?.includes(perm))
       : false;
   }, [user]);
 
-  /**
-   * Calcul mémoïsé de l'état d'authentification
-   */
   const isAuthenticated = useMemo(() => !!user, [user]);
 
-  /**
-   * Valeur du contexte mémoïsée pour éviter les re-renders inutiles
-   */
   const value = useMemo<AuthContextType>(
     () => ({
       user,

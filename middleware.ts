@@ -68,8 +68,8 @@ export function middleware(request: NextRequest) {
   const isAuthAction = AUTH_ACTIONS.has(pathname);
   const isProtected = (pathname.startsWith('/admin')) || (pathname.startsWith('/star'));
 
-  // 🔥 Ajouter le cache buster pour /star/learning
-  if (pathname === '/star/learning' && !hasCacheBuster(request.nextUrl)) {
+  // 🔥 Ajouter le cache buster pour /star/profil
+  if (pathname === '/star/profil' && !hasCacheBuster(request.nextUrl)) {
     const url = request.nextUrl.clone();
     const cbValue = generateCacheBuster();
     url.searchParams.set('cb', cbValue);

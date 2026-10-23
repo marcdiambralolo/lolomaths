@@ -40,6 +40,7 @@ export function useLoginForm() {
   const [isPending, startTransition] = useTransition();
 
   const [isHydrated, setIsHydrated] = useState(false);
+  const [hasChosenAccount, setHasChosenAccount] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -79,10 +80,10 @@ export function useLoginForm() {
       setErrors(validationErrors);
       return;
     }
-    
+
     try {
       await login(formData);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       startTransition(() => {
         router.replace(returnTo);
@@ -102,23 +103,23 @@ export function useLoginForm() {
   }, []);
 
   const usernameProps = useMemo(() => ({
-    label: "Email",
-    name: "username",
-    type: "text",
+    label: 'Email',
+    name: 'username',
+    type: 'text',
     value: formData.username,
     error: errors.username,
-    placeholder: "Email",
+    placeholder: 'Email',
     icon: User as React.ElementType,
     onChange: handleChange,
   }), [formData.username, errors.username, handleChange]);
 
   const passwordProps = useMemo(() => ({
-    label: "Mot de passe",
-    name: "password",
+    label: 'Mot de passe',
+    name: 'password',
     type: showPassword ? 'text' : 'password',
     value: formData.password,
     error: errors.password,
-    placeholder: "••••••••",
+    placeholder: '••••••••',
     icon: Lock as React.ElementType,
     showPasswordToggle: true,
     showPassword,
@@ -127,6 +128,15 @@ export function useLoginForm() {
   }), [formData.password, errors.password, showPassword, togglePassword, handleChange]);
 
   return {
-   handleSubmit, error, isSubmitDisabled, isLoading, isPending, isHydrated, usernameProps, passwordProps,
+    handleSubmit,
+    error,
+    isSubmitDisabled,
+    isLoading,
+    isPending,
+    isHydrated,
+    usernameProps,
+    passwordProps,
+    hasChosenAccount,
+    setHasChosenAccount,
   };
 }
