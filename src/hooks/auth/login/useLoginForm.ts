@@ -105,7 +105,7 @@ export function useLoginForm() {
   const usernameProps = useMemo(() => ({
     label: 'Email',
     name: 'username',
-    type: 'text',
+    type: 'email',
     value: formData.username,
     error: errors.username,
     placeholder: 'Email',
