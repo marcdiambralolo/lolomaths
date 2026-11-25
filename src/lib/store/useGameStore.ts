@@ -132,6 +132,35 @@ function splitIntoRacks(
   return { numbersRacks, operatorsRacks };
 }
 
+// 🔥 Ajout des opérateurs permanents avec un placep unique
+function addPermanentOperators(operators: UneCase[], startIndex: number): UneCase[] {
+  const newOperators = [...operators];
+
+  newOperators.push({
+    ncase: -1,
+    indi: 0,
+    indj: 0,
+    txt: '+',
+    itxt: '+',
+    etat: StateCase.Pla,
+    tca: TypeCase.PionOperateur,
+    placep: startIndex,
+  });
+
+  newOperators.push({
+    ncase: -1,
+    indi: 0,
+    indj: 0,
+    txt: '-',
+    itxt: '-',
+    etat: StateCase.Pla,
+    tca: TypeCase.PionOperateur,
+    placep: startIndex + 1,
+  });
+
+  return newOperators;
+}
+
 function buildPionsFromRack(
   numbersTxt: string[],
   operatorsTxt: string[]
@@ -147,7 +176,7 @@ function buildPionsFromRack(
     placep: index,
   }));
 
-  const operators: UneCase[] = operatorsTxt.map((txt, index) => ({
+  const baseOperators: UneCase[] = operatorsTxt.map((txt, index) => ({
     ncase: -1,
     indi: 0,
     indj: 0,
@@ -157,6 +186,9 @@ function buildPionsFromRack(
     tca: TypeCase.PionOperateur,
     placep: numbersTxt.length + index,
   }));
+
+  // On injecte les permanents en leur donnant un placep qui suit les autres
+  const operators = addPermanentOperators(baseOperators, numbersTxt.length + baseOperators.length);
 
   return { numbers, operators, pions: [...numbers, ...operators] };
 }
@@ -502,6 +534,8 @@ export const useGameStore = create<GameState>()(
                 grid,
                 selectedCaseOnGrid.ncase
               );
+              
+              // 🔥 Comportement UNIQUE pour tous les pions : on remet en "Pla" (disponible)
               const nextPions = pions.map((p) =>
                 p.placep === pionOfCase.placep
                   ? { ...p, etat: StateCase.Pla }
@@ -534,6 +568,8 @@ export const useGameStore = create<GameState>()(
                 targetCase.ncase,
                 selectedPionInRack
               );
+              
+              // 🔥 Comportement UNIQUE : on passe le pion en "Cre" (posé)
               const nextPions = pions.map((p) =>
                 p.placep === selectedPionInRack.placep
                   ? { ...p, etat: StateCase.Cre }

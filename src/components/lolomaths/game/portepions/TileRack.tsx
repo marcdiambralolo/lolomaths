@@ -8,7 +8,7 @@ import { RackPion } from './RackPion';
 import { useGameStore } from '@/lib/store/useGameStore';
 
 // ============================================================
-// COMPOSANT : TileRack (Rack de 6 Nombres x 4 Opérateurs)
+// COMPOSANT : TileRack (Rack de 6 Nombres x 6 Opérateurs)
 // ============================================================
 
 export const TileRack: React.FC = memo(() => {
@@ -58,8 +58,8 @@ export const TileRack: React.FC = memo(() => {
             )}
           </div>
 
-          {/* ---------- RANGÉE DES OPÉRATEURS (4 COLONNES) ---------- */}
-          <div className="grid grid-cols-4 gap-1.5 min-h-[44px] items-center bg-slate-950/50 p-1.5 rounded-xl border border-slate-800/50 justify-items-center">
+          {/* ---------- RANGÉE DES OPÉRATEURS (6 COLONNES) ---------- */}
+          <div className="grid grid-cols-6 gap-1.5 min-h-[44px] items-center bg-slate-950/50 p-1.5 rounded-xl border border-slate-800/50 justify-items-center">
             {operators.length > 0 ? (
               operators.map((pion) => (
                 <RackPion
@@ -70,7 +70,7 @@ export const TileRack: React.FC = memo(() => {
                 />
               ))
             ) : (
-              <div className="col-span-4 text-center text-xs font-semibold text-slate-500 italic py-2">
+              <div className="col-span-6 text-center text-xs font-semibold text-slate-500 italic py-2">
                 Plus d&apos;opérateurs disponibles
               </div>
             )}

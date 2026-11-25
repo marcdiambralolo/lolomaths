@@ -398,3 +398,9 @@ body {
     display: none;
   }
 }
+
+@media (max-width: 639.98px) {
+  [role="gridcell"].mobile-cell-scale {
+    font-size: var(--mobile-font-size) !important;
+  }
+}

@@ -189,7 +189,7 @@ SchemaScript.displayName = 'SchemaScript';
 
 const RootMain = memo(function RootMain({ children }: { children: React.ReactNode }) {
   return (
-    <main id="main-content" className="relative" role="main" aria-label="Lolomaths">
+    <main id="main-content" className="relative w-full overflow-x-hidden" role="main" aria-label="Lolomaths">
       {children}
     </main>
   );

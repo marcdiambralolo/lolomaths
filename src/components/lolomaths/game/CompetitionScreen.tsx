@@ -33,16 +33,16 @@ export const CompetitionScreen: React.FC = React.memo(() => {
 
   return (
     <main
-      className="w-full max-w-md mx-auto mt-2 flex flex-col select-none px-2"
+      className="w-full mx-auto mt-2 flex flex-col select-none px-0 sm:px-2 sm:max-w-md"
       aria-label="Écran de compétition"
     >
-      <section id="zcom" className="flex flex-col gap-3">
+      <section id="zcom" className="flex flex-col w-full">
+        {/* Le plateau touchera les bords sur mobile */}
         <OplaGrid />
         <TileRack />
 
-        {/* ✅ Message quand le match est terminé */}
         {isMatchOver && (
-          <div className="bg-amber-500 text-slate-950 text-center text-sm font-bold py-2 px-3 rounded-xl shadow-lg">
+          <div className="bg-amber-500 text-slate-950 text-center text-sm font-bold py-2 px-3 rounded-xl shadow-lg mx-2 sm:mx-0 mt-2">
             🏁 Match terminé — redirection en cours…
           </div>
         )}
@@ -59,8 +59,9 @@ export const CompetitionScreen: React.FC = React.memo(() => {
         {showHelp && <HelpMessagesView messages={helpMessages} />}
         <GameScoreBoard />
         <GameHistoryList />
-        <HelpToggle checked={showHelp} onChange={setShowHelp} />
+        
         <HorlogeMise />
+        <HelpToggle checked={showHelp} onChange={setShowHelp} />
         <FooterSection />
       </section>
 

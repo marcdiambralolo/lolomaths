@@ -1,12 +1,8 @@
 'use client';
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { BoardTheme, StateCase, UneCase } from '@/lib/interfaces';
 import { useCellStyle } from './useCellStyle';
-
-// ============================================================
-// TYPES
-// ============================================================
 
 export interface GridCellProps {
   cell: UneCase;
@@ -16,9 +12,12 @@ export interface GridCellProps {
   onClick: (cell: UneCase) => void;
 }
 
-// ============================================================
-// COMPOSANT DE BASE
-// ============================================================
+function getMobileFontSize(content: string | number | null | undefined): string {
+  const length = String(content ?? '').trim().length;
+  if (length >= 3) return '12px';
+  if (length === 2) return '14px';
+  return '15.5px';
+}
 
 export const GridCellBase: React.FC<GridCellProps> = ({
   cell,
@@ -44,25 +43,43 @@ export const GridCellBase: React.FC<GridCellProps> = ({
   );
 
   const isDisabled = cell.etat === StateCase.Lo;
+  const mobileFontSize = useMemo(() => getMobileFontSize(content), [content]);
 
-  const title = [
-    `Case (${colIndex}, ${rowIndex})`,
-    `ID: ${cell.ncase}`,
-    `Valeur: ${content || 'vide'}`,
-    isStart ? 'Départ' : null,
-    isTarget ? 'Cible' : null,
-  ]
-    .filter(Boolean)
-    .join(' — ');
+  const mergedStyle = useMemo<React.CSSProperties>(
+    () =>
+      ({
+        ...style,
+        '--mobile-font-size': mobileFontSize,
+      }) as React.CSSProperties,
+    [style, mobileFontSize]
+  );
 
-  const ariaLabel = [
-    `Case ${cell.ncase}`,
-    `valeur ${content || 'vide'}`,
-    `état ${cell.etat}`,
-    isTarget ? 'cible' : null,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const title = useMemo(
+    () =>
+      [
+        `Case (${colIndex}, ${rowIndex})`,
+        `ID: ${cell.ncase}`,
+        `Valeur: ${content || 'vide'}`,
+        isStart ? 'Départ' : null,
+        isTarget ? 'Cible' : null,
+      ]
+        .filter(Boolean)
+        .join(' — '),
+    [colIndex, rowIndex, cell.ncase, content, isStart, isTarget]
+  );
+
+  const ariaLabel = useMemo(
+    () =>
+      [
+        `Case ${cell.ncase}`,
+        `valeur ${content || 'vide'}`,
+        `état ${cell.etat}`,
+        isTarget ? 'cible' : null,
+      ]
+        .filter(Boolean)
+        .join(', '),
+    [cell.ncase, content, cell.etat, isTarget]
+  );
 
   return (
     <div
@@ -73,8 +90,8 @@ export const GridCellBase: React.FC<GridCellProps> = ({
       aria-pressed={cell.etat === StateCase.Choi}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="relative flex items-center justify-center border rounded-sm select-none transition-colors duration-100"
-      style={style}
+      className="mobile-cell-scale relative flex items-center justify-center border-[0.5px] sm:border rounded-sm select-none transition-colors duration-100 box-border font-black tabular-nums leading-none m-0 p-0 tracking-tighter overflow-hidden"
+      style={mergedStyle}
       title={title}
       data-row={rowIndex}
       data-col={colIndex}
@@ -89,10 +106,6 @@ export const GridCellBase: React.FC<GridCellProps> = ({
 };
 
 GridCellBase.displayName = 'GridCellBase';
-
-// ============================================================
-// COMPARATEUR MEMO
-// ============================================================
 
 function arePropsEqual(prev: GridCellProps, next: GridCellProps): boolean {
   const a = prev.cell;
@@ -114,10 +127,6 @@ function arePropsEqual(prev: GridCellProps, next: GridCellProps): boolean {
     prev.colIndex === next.colIndex
   );
 }
-
-// ============================================================
-// EXPORT MEMOÏSÉ
-// ============================================================
 
 export const GridCell = memo(GridCellBase, arePropsEqual);
 GridCell.displayName = 'GridCell';
