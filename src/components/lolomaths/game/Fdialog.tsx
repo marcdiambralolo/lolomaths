@@ -16,6 +16,15 @@ interface ScoreRowProps {
   valueClassName?: string;
 }
 
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function formatNumber(value: unknown, decimals = 2): string {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value.toFixed(decimals)
+    : (0).toFixed(decimals);
+}
+
 const ScoreRow: React.FC<ScoreRowProps> = ({
   label,
   value,
@@ -27,9 +36,6 @@ const ScoreRow: React.FC<ScoreRowProps> = ({
   </div>
 );
 
-const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 export const Fdialog: React.FC<FdialogProps> = ({
   isOpen,
   gameResult,
@@ -40,31 +46,17 @@ export const Fdialog: React.FC<FdialogProps> = ({
   const acceptButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // ============================================================
-  // Gestion du focus : sauvegarde, restauration, focus initial
-  // ============================================================
   useEffect(() => {
     if (!isOpen) return;
 
-    // Sauvegarde de l'élément actif avant ouverture
     previousFocusRef.current = document.activeElement as HTMLElement | null;
-
-    // Focus sur le bouton "Valider" à l'ouverture
-    const timeoutId = setTimeout(() => {
-      acceptButtonRef.current?.focus();
-    }, 0);
+    acceptButtonRef.current?.focus();
 
     return () => {
-      clearTimeout(timeoutId);
-
-      // Restaure le focus à la fermeture
       previousFocusRef.current?.focus?.();
     };
   }, [isOpen]);
 
-  // ============================================================
-  // Gestion clavier : Escape + focus trap (Tab / Shift+Tab)
-  // ============================================================
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -86,7 +78,6 @@ export const Fdialog: React.FC<FdialogProps> = ({
         const last = focusables[focusables.length - 1];
         const active = document.activeElement as HTMLElement | null;
 
-        // Focus trap : boucle entre premier et dernier élément
         if (e.shiftKey) {
           if (active === first || !dialog.contains(active)) {
             e.preventDefault();
@@ -103,18 +94,16 @@ export const Fdialog: React.FC<FdialogProps> = ({
     [onCancel]
   );
 
-  // ============================================================
-  // Effet : attache le listener + bloque le scroll du body
-  // ============================================================
   useEffect(() => {
     if (!isOpen) return;
 
-    window.addEventListener('keydown', handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow;
     };
   }, [isOpen, handleKeyDown]);
 
@@ -123,24 +112,11 @@ export const Fdialog: React.FC<FdialogProps> = ({
   const ecartAbsolu = Math.abs(gameResult.nbreatind - gameResult.result);
   const isPerfect = ecartAbsolu === 0;
 
-  // Formatage propre avec 2 chiffres après la virgule (toFixed(2))
-  const formattedScore = typeof gameResult.notedjeu === 'number'
-    ? gameResult.notedjeu.toFixed(2)
-    : '0.00';
-
-  const formattedResult = typeof gameResult.result === 'number'
-    ? gameResult.result.toFixed(2)
-    : '0.00';
-
-  const formattedEcart = ecartAbsolu.toFixed(2);
-
-  const formattedBaseNote = typeof gameResult.notedbase === 'number'
-    ? gameResult.notedbase.toFixed(2)
-    : '0.00';
-
-  const formattedBonus = typeof gameResult.bonus === 'number'
-    ? gameResult.bonus.toFixed(2)
-    : '0.00';
+  const formattedScore = formatNumber(gameResult.notedjeu);
+  const formattedResult = formatNumber(gameResult.result);
+  const formattedEcart = formatNumber(ecartAbsolu);
+  const formattedBaseNote = formatNumber(gameResult.notedbase);
+  const formattedBonus = formatNumber(gameResult.bonus);
 
   return (
     <div
@@ -158,7 +134,6 @@ export const Fdialog: React.FC<FdialogProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
       >
-        {/* En-tête */}
         <div className="bg-slate-800/80 px-6 py-4 border-b border-slate-700 flex justify-between items-center">
           <h3 id="dialog-title" className="text-lg font-bold text-amber-400">
             Détail du calcul
@@ -171,7 +146,6 @@ export const Fdialog: React.FC<FdialogProps> = ({
           </span>
         </div>
 
-        {/* Banner d'état du coup */}
         <div
           id="dialog-description"
           className={`px-6 py-2 text-xs font-semibold uppercase tracking-wider flex justify-between items-center ${
@@ -180,11 +154,12 @@ export const Fdialog: React.FC<FdialogProps> = ({
               : 'bg-amber-500/10 text-amber-400 border-b border-amber-500/20'
           }`}
         >
-          <span>{isPerfect ? 'Coup Parfait' : "Coup Inexact (Pénalité d'écart)"}</span>
+          <span>
+            {isPerfect ? 'Coup Parfait' : "Coup Inexact (Pénalité d'écart)"}
+          </span>
           <span>{isPerfect ? 'Bonus Activés' : 'Bonus = 0'}</span>
         </div>
 
-        {/* Contenu principal */}
         <div className="p-6 flex flex-col gap-1 font-mono text-sm">
           <ScoreRow
             label="Nombre à atteindre :"
@@ -228,7 +203,6 @@ export const Fdialog: React.FC<FdialogProps> = ({
             }
           />
 
-          {/* Résultat Final */}
           <div className="flex justify-between items-center pt-4 mt-2 text-base border-t border-slate-700/50">
             <span className="font-bold text-slate-100 uppercase tracking-wide">
               Note obtenue :
@@ -243,7 +217,6 @@ export const Fdialog: React.FC<FdialogProps> = ({
           </div>
         </div>
 
-        {/* Boutons d'action */}
         <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex justify-end gap-3">
           <button
             type="button"

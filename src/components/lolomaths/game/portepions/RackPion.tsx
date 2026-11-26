@@ -15,6 +15,30 @@ export interface RackPionProps {
   onClick: (pion: UneCase) => void;
 }
 
+const BASE_3D_SHADOW = [
+  '0 1px 0 rgba(15, 23, 42, 0.95)',
+  '0 2px 0 rgba(15, 23, 42, 0.95)',
+  '0 3px 0 rgba(15, 23, 42, 0.95)',
+  '0 4px 0 rgba(15, 23, 42, 0.95)',
+  '0 5px 0 rgba(15, 23, 42, 0.95)',
+  '0 8px 12px rgba(0, 0, 0, 0.5)',
+  'inset 0 1.5px 1px rgba(255, 255, 255, 0.45)',
+  'inset 0 -2px 3px rgba(0, 0, 0, 0.35)',
+].join(', ');
+
+const SELECTED_3D_SHADOW = [
+  '0 0 0 2px rgba(255, 255, 255, 0.9)',
+  '0 1px 0 rgba(15, 23, 42, 0.95)',
+  '0 2px 0 rgba(15, 23, 42, 0.95)',
+  '0 3px 0 rgba(15, 23, 42, 0.95)',
+  '0 4px 0 rgba(15, 23, 42, 0.95)',
+  '0 5px 0 rgba(15, 23, 42, 0.95)',
+  '0 6px 0 rgba(15, 23, 42, 0.95)',
+  '0 10px 14px rgba(0, 0, 0, 0.55)',
+  'inset 0 1.5px 1px rgba(255, 255, 255, 0.55)',
+  'inset 0 -2px 3px rgba(0, 0, 0, 0.35)',
+].join(', ');
+
 export const RackPionBase: React.FC<RackPionProps> = ({
   pion,
   theme,
@@ -31,9 +55,8 @@ export const RackPionBase: React.FC<RackPionProps> = ({
     if (isUsed) {
       return {
         ...style,
-        transform: 'perspective(300px) rotateX(8deg) translateY(4px)',
-        boxShadow:
-          'inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.08)',
+        opacity: 0,
+        pointerEvents: 'none',
       };
     }
 
@@ -43,18 +66,7 @@ export const RackPionBase: React.FC<RackPionProps> = ({
         backgroundImage:
           'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.04) 55%, rgba(0,0,0,0.22) 100%)',
         transform: 'perspective(300px) rotateX(10deg) translateY(-2px)',
-        boxShadow: [
-          '0 0 0 2px rgba(255, 255, 255, 0.9)',
-          '0 1px 0 rgba(15, 23, 42, 0.95)',
-          '0 2px 0 rgba(15, 23, 42, 0.95)',
-          '0 3px 0 rgba(15, 23, 42, 0.95)',
-          '0 4px 0 rgba(15, 23, 42, 0.95)',
-          '0 5px 0 rgba(15, 23, 42, 0.95)',
-          '0 6px 0 rgba(15, 23, 42, 0.95)',
-          '0 10px 14px rgba(0, 0, 0, 0.55)',
-          'inset 0 1.5px 1px rgba(255, 255, 255, 0.55)',
-          'inset 0 -2px 3px rgba(0, 0, 0, 0.35)',
-        ].join(', '),
+        boxShadow: SELECTED_3D_SHADOW,
       };
     }
 
@@ -63,16 +75,7 @@ export const RackPionBase: React.FC<RackPionProps> = ({
       backgroundImage:
         'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.02) 55%, rgba(0,0,0,0.25) 100%)',
       transform: 'perspective(300px) rotateX(10deg)',
-      boxShadow: [
-        '0 1px 0 rgba(15, 23, 42, 0.95)',
-        '0 2px 0 rgba(15, 23, 42, 0.95)',
-        '0 3px 0 rgba(15, 23, 42, 0.95)',
-        '0 4px 0 rgba(15, 23, 42, 0.95)',
-        '0 5px 0 rgba(15, 23, 42, 0.95)',
-        '0 8px 12px rgba(0, 0, 0, 0.5)',
-        'inset 0 1.5px 1px rgba(255, 255, 255, 0.45)',
-        'inset 0 -2px 3px rgba(0, 0, 0, 0.35)',
-      ].join(', '),
+      boxShadow: BASE_3D_SHADOW,
     };
   }, [style, isSelected, isUsed]);
 
@@ -83,6 +86,7 @@ export const RackPionBase: React.FC<RackPionProps> = ({
       disabled={isUsed}
       aria-label={getRackPionAriaLabel(pion, isSelected)}
       aria-pressed={isSelected}
+      aria-hidden={isUsed}
       title={getRackPionTitle(pion)}
       className={`
         relative flex items-center justify-center
@@ -91,7 +95,7 @@ export const RackPionBase: React.FC<RackPionProps> = ({
         transition-all duration-100 ease-out
         ${
           isUsed
-            ? 'opacity-40 cursor-not-allowed'
+            ? 'cursor-not-allowed'
             : 'hover:brightness-110 active:!translate-y-[4px] active:!shadow-[0_1px_0_rgba(15,23,42,0.95),0_2px_4px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)] cursor-pointer'
         }
         focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80
@@ -122,6 +126,7 @@ function arePropsEqual(prev: RackPionProps, next: RackPionProps): boolean {
   return (
     a.placep === b.placep &&
     a.txt === b.txt &&
+    a.itxt === b.itxt &&
     a.etat === b.etat &&
     a.tca === b.tca &&
     prev.theme === next.theme &&

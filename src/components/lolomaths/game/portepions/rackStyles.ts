@@ -1,31 +1,32 @@
+import React from 'react';
+import { BoardTheme, StateCase, TypeCase, UneCase } from '@/lib/interfaces';
+
 // ============================================================
 // CONSTANTES VISUELLES DU RACK
 // ============================================================
 
-import { UneCase, BoardTheme, TypeCase, StateCase } from "@/lib/interfaces";
-
-/** Taille d'un pion (largeur et hauteur) - Identique pour tous. */
+/** Taille d'un pion (largeur et hauteur) - identique pour tous. */
 export const RACK_PION_SIZE = 'clamp(32px, 8vw, 44px)';
 
-/** Taille de la police d'un NOMBRE. */
+/** Taille de la police d'un pion nombre. */
 export const RACK_PION_NUMBER_FONT_SIZE = 'clamp(12px, 2.4vw, 16px)';
 
-/** 🔥 Taille de la police d'un OPÉRATEUR (encore plus grande). */
+/** Taille de la police d'un pion opérateur. */
 export const RACK_PION_OPERATOR_FONT_SIZE = 'clamp(32px, 6.5vw, 42px)';
 
 /** Police monospace pour aligner les chiffres. */
 export const RACK_PION_FONT_FAMILY = 'monospace';
 
-/** Couleur de texte par défaut d'un pion (provenant du thème ou blanc). */
+/** Couleur de texte par défaut d'un pion. */
 export const RACK_PION_TEXT_COLOR = '#ffffff';
 
-/** Opacité d'un pion utilisé (retiré du rack). */
+/** Opacité d'un pion utilisé. */
 export const RACK_PION_USED_OPACITY = 0;
 
 /** Opacité d'un pion disponible. */
 export const RACK_PION_AVAILABLE_OPACITY = 1;
 
-/** Symbole affiché pour un pion opérateur (fond légèrement renforcé). */
+/** Fond subtil pour distinguer un pion opérateur. */
 export const OPERATOR_BADGE_BG = 'rgba(255, 255, 255, 0.08)';
 
 // ============================================================
@@ -33,12 +34,14 @@ export const OPERATOR_BADGE_BG = 'rgba(255, 255, 255, 0.08)';
 // ============================================================
 
 /**
- * Formate le texte d'un opérateur pour l'affichage.
- * - `*` devient `×`
- * - `/` devient `÷`
- * Les autres caractères (y compris `+` et `-`) restent inchangés.
+ * Formate le texte d'un opérateur pour l'affichage :
+ * - `*` -> `×`
+ * - `/` -> `÷`
+ * - Les autres symboles restent inchangés.
  */
-export function formatOperatorDisplay(txt: string | number | null | undefined): string {
+export function formatOperatorDisplay(
+  txt: string | number | null | undefined
+): string {
   const str = String(txt ?? '');
   switch (str) {
     case '*':
@@ -48,6 +51,45 @@ export function formatOperatorDisplay(txt: string | number | null | undefined): 
     default:
       return str;
   }
+}
+
+// ============================================================
+// HELPERS D'ÉTAT ET ACCESSIBILITÉ
+// ============================================================
+
+/**
+ * Vérifie si un pion est sélectionné (`Choi`).
+ */
+export function isRackPionSelected(pion: UneCase): boolean {
+  return pion.etat === StateCase.Choi;
+}
+
+/**
+ * Vérifie si un pion a été utilisé / placé (`Cre`).
+ */
+export function isRackPionUsed(pion: UneCase): boolean {
+  return pion.etat === StateCase.Cre;
+}
+
+function getPionTypeLabel(pion: UneCase): string {
+  return pion.tca === TypeCase.PionOperateur ? 'Opérateur' : 'Nombre';
+}
+
+/**
+ * Retourne le libellé accessible d'un pion.
+ */
+export function getRackPionAriaLabel(pion: UneCase, isSelected: boolean): string {
+  const type = getPionTypeLabel(pion);
+  const symbol = formatOperatorDisplay(pion.txt);
+  const state = isSelected ? ' sélectionné' : '';
+  return `${type} ${symbol}${state}`;
+}
+
+/**
+ * Retourne le titre (tooltip) d'un pion.
+ */
+export function getRackPionTitle(pion: UneCase): string {
+  return `${getPionTypeLabel(pion)} ${formatOperatorDisplay(pion.txt)}`;
 }
 
 // ============================================================
@@ -71,22 +113,18 @@ export function computeRackPionStyle({
   isUsed,
 }: RackPionStyleInput): React.CSSProperties {
   const isOperator = pion.tca === TypeCase.PionOperateur;
-
   const activeColor = isSelected
     ? theme.hoverPawnBgColor
     : theme.normalPawnBgColor;
 
-  const fontSize = isOperator ? RACK_PION_OPERATOR_FONT_SIZE : RACK_PION_NUMBER_FONT_SIZE;
-
-  // 🔥 Pour séparer les points du ÷, on ajoute un léger letter-spacing sur les opérateurs
-  const letterSpacing = isOperator ? '0.05em' : 'normal';
-
   const style: React.CSSProperties = {
     width: RACK_PION_SIZE,
     height: RACK_PION_SIZE,
-    fontSize: fontSize,
+    fontSize: isOperator
+      ? RACK_PION_OPERATOR_FONT_SIZE
+      : RACK_PION_NUMBER_FONT_SIZE,
     fontFamily: RACK_PION_FONT_FAMILY,
-    letterSpacing: letterSpacing, // 🔥 Espacement ajouté pour aérer le ÷
+    letterSpacing: isOperator ? '0.05em' : 'normal',
     backgroundColor: isUsed ? 'transparent' : activeColor,
     borderColor: isUsed ? 'transparent' : activeColor,
     color: isUsed ? 'transparent' : RACK_PION_TEXT_COLOR,
@@ -100,35 +138,4 @@ export function computeRackPionStyle({
   }
 
   return style;
-}
-
-/**
- * Retourne le libellé accessible d'un pion (avec symboles formatés).
- */
-export function getRackPionAriaLabel(pion: UneCase, isSelected: boolean): string {
-  const type = pion.tca === TypeCase.PionOperateur ? 'Opérateur' : 'Nombre';
-  const state = isSelected ? ' sélectionné' : '';
-  return `${type} ${formatOperatorDisplay(pion.txt)}${state}`;
-}
-
-/**
- * Retourne le titre (tooltip) d'un pion (avec symboles formatés).
- */
-export function getRackPionTitle(pion: UneCase): string {
-  const type = pion.tca === TypeCase.PionOperateur ? 'Opérateur' : 'Nombre';
-  return `${type} ${formatOperatorDisplay(pion.txt)}`;
-}
-
-/**
- * Vérifie si un pion est sélectionné (Choi).
- */
-export function isRackPionSelected(pion: UneCase): boolean {
-  return pion.etat === StateCase.Choi;
-}
-
-/**
- * Vérifie si un pion a été utilisé (placé sur la grille -> Cre).
- */
-export function isRackPionUsed(pion: UneCase): boolean {
-  return pion.etat === StateCase.Cre;
 }

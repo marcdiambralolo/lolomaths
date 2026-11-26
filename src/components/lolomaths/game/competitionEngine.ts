@@ -1,10 +1,10 @@
 import {
-  UneCase,
-  StateCase,
-  Sens,
   Dtfil,
   GameResult,
+  Sens,
+  StateCase,
   TypeCase,
+  UneCase,
 } from '@/lib/interfaces';
 
 // ============================================================
@@ -22,9 +22,6 @@ export const RACK_OPERATORS_COUNT = 4;
 /** Symbole interne pour la case départ. */
 export const DEPART_SYMBOL = 'depart';
 
-/**
- * Set des opérateurs reconnus. Inclut les variantes Unicode `×` et `÷`.
- */
 const OPERATORS_SET: ReadonlySet<string> = new Set([
   '+',
   '-',
@@ -33,6 +30,20 @@ const OPERATORS_SET: ReadonlySet<string> = new Set([
   '×',
   '÷',
 ]);
+
+const MULTIPLY_DIVIDE_SET: ReadonlySet<string> = new Set([
+  '*',
+  '/',
+  '×',
+  '÷',
+]);
+
+const OPPOSITE_DIRECTION: Record<Sens, Sens> = {
+  [Sens.Up]: Sens.Down,
+  [Sens.Down]: Sens.Up,
+  [Sens.Left]: Sens.Right,
+  [Sens.Right]: Sens.Left,
+};
 
 /**
  * Vérifie si une chaîne est un opérateur.
@@ -70,40 +81,38 @@ export class JavaRandom {
   }
 }
 
+function toNumericSeed(seed: number | string | undefined): number {
+  if (typeof seed === 'number' && Number.isFinite(seed)) return seed;
+  if (typeof seed === 'string') {
+    const parsed = parseInt(seed, 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 12345;
+}
+
 /**
- * Mélange déterministe d'une liste — transposition stricte de `radlist` Kotlin.
+ * Mélange déterministe d'une liste — transposition de `radlist` Kotlin.
  */
 export function radlist(list: string[], seed: number | string): string[] {
-  if (!list || list.length === 0) return [];
+  if (!Array.isArray(list) || list.length === 0) return [];
 
-  const numericSeed =
-    typeof seed === 'string' ? parseInt(seed, 10) || 12345 : seed;
-  const rng = new JavaRandom(numericSeed);
+  const rng = new JavaRandom(toNumericSeed(seed));
   const lra: string[] = [];
   const use = new Array<boolean>(list.length).fill(false);
 
   const maxIterations = list.length * 1000;
   let iterations = 0;
 
-  while (lra.length < list.length) {
-    if (++iterations > maxIterations) {
-      break;
-    }
-
+  while (lra.length < list.length && ++iterations <= maxIterations) {
     const compteur = Math.round(rng.nextDouble() * (list.length - 1));
-
-    if (compteur < 0 || compteur >= list.length) continue;
-    if (use[compteur]) continue;
+    if (compteur < 0 || compteur >= list.length || use[compteur]) continue;
 
     use[compteur] = true;
     lra.push(list[compteur]);
   }
 
-  // Completer la liste si l'algorithme a manqué des cases
-  if (lra.length < list.length) {
-    for (let i = 0; i < list.length; i++) {
-      if (!use[i]) lra.push(list[i]);
-    }
+  for (let i = 0; i < list.length; i++) {
+    if (!use[i]) lra.push(list[i]);
   }
 
   return lra;
@@ -129,7 +138,7 @@ export function generateInitialRack(
 // ============================================================
 
 /**
- * Transposition stricte de `malisteca(numeromat, wl)` Kotlin.
+ * Transposition de `malisteca(numeromat, wl)` Kotlin.
  */
 export function malisteca(numeromat: string, wl: string[]): string[] {
   const lcases = radlist(wl, numeromat);
@@ -142,8 +151,9 @@ export function malisteca(numeromat: string, wl: string[]): string[] {
   return lcases;
 }
 
-export function getRandomBoardNumber(): string {
-  return Math.floor(Math.random() * 640).toString();
+export function getRandomBoardNumber(rng?: JavaRandom): string {
+  const value = rng ? rng.nextDouble() : Math.random();
+  return Math.floor(value * 640).toString();
 }
 
 /**
@@ -153,32 +163,32 @@ export function createInitialGrid(
   numeromat?: string,
   listecaseRef?: string[]
 ): UneCase[][] {
+  const totalCells = GRID_ROWS * GRID_COLS;
   let lcases: string[] = [];
 
-  if (
-    numeromat &&
-    listecaseRef &&
-    listecaseRef.length >= GRID_ROWS * GRID_COLS
-  ) {
+  if (numeromat && Array.isArray(listecaseRef) && listecaseRef.length >= totalCells) {
     lcases = malisteca(numeromat, listecaseRef);
   } else {
-    for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
-      lcases.push(i === START_CASE_INDEX ? DEPART_SYMBOL : getRandomBoardNumber());
+    const rng = new JavaRandom(toNumericSeed(numeromat));
+    for (let i = 0; i < totalCells; i++) {
+      lcases.push(i === START_CASE_INDEX ? DEPART_SYMBOL : getRandomBoardNumber(rng));
     }
   }
 
   const grid: UneCase[][] = [];
   let count = 0;
+
   for (let j = 0; j < GRID_ROWS; j++) {
     const row: UneCase[] = [];
     for (let i = 0; i < GRID_COLS; i++) {
       const val = lcases[count] || '';
+      const cleanVal = val === DEPART_SYMBOL ? '' : val;
       row.push({
         ncase: count,
         indi: i,
         indj: j,
-        txt: val === DEPART_SYMBOL ? '' : val,
-        itxt: val === DEPART_SYMBOL ? '' : val,
+        txt: cleanVal,
+        itxt: cleanVal,
         etat: StateCase.Cre,
         tca: TypeCase.Plateau,
       });
@@ -186,6 +196,7 @@ export function createInitialGrid(
     }
     grid.push(row);
   }
+
   return grid;
 }
 
@@ -222,7 +233,7 @@ export function sontDeMemeType(a: UneCase, b: UneCase): boolean {
 }
 
 export function validateAlternance(sequence: UneCase[]): boolean {
-  if (!sequence || sequence.length < 3) return false;
+  if (!Array.isArray(sequence) || sequence.length < 3) return false;
   if (isOperateur(sequence[0].txt)) return false;
   if (isOperateur(sequence[sequence.length - 1].txt)) return false;
 
@@ -236,15 +247,16 @@ export function validateNoSuperposition(
   sequence: UneCase[],
   placedPions: UneCase[]
 ): boolean {
-  const used = new Set<number>();
+  const sequenceIds = new Set<number>();
   for (const c of sequence) {
-    if (used.has(c.ncase)) return false;
-    used.add(c.ncase);
+    if (sequenceIds.has(c.ncase)) return false;
+    sequenceIds.add(c.ncase);
   }
+
   for (const p of placedPions) {
     if (
       (p.etat === StateCase.Pla || p.etat === StateCase.Choi) &&
-      !sequence.some((c) => c.ncase === p.ncase)
+      !sequenceIds.has(p.ncase)
     ) {
       return false;
     }
@@ -261,16 +273,11 @@ export function validateEnchainement(
 }
 
 /**
- * Transposition stricte de encadre(a, b) Kotlin.
+ * Transposition de `encadre(a, b)` Kotlin.
  */
 export function encadre(a: UneCase | null, b: UneCase | null): boolean {
-  if (a === null) {
-    if (b === null) return true;
-    return b.etat === StateCase.Cre;
-  }
-  if (b === null) {
-    return a.etat === StateCase.Cre;
-  }
+  if (a === null) return b === null || b.etat === StateCase.Cre;
+  if (b === null) return a.etat === StateCase.Cre;
   if (a.etat !== StateCase.Cre && b.etat === StateCase.Cre) return false;
   if (b.etat !== StateCase.Cre && a.etat === StateCase.Cre) return false;
   return true;
@@ -280,17 +287,18 @@ export function tpencadre(grid: UneCase[][]): boolean {
   for (let j = 0; j < GRID_ROWS; j++) {
     for (let i = 0; i < GRID_COLS; i++) {
       const cell = grid[j]?.[i];
-      if (!cell) continue;
-      if (cell.etat === StateCase.Cre) continue;
-      if (!isOperateur(cell.txt)) continue;
+      if (!cell || cell.etat === StateCase.Cre || !isOperateur(cell.txt)) {
+        continue;
+      }
 
       const left = i > 0 ? grid[j][i - 1] : null;
       const right = i < GRID_COLS - 1 ? grid[j][i + 1] : null;
       const up = j > 0 ? grid[j - 1][i] : null;
       const down = j < GRID_ROWS - 1 ? grid[j + 1][i] : null;
 
-      if (!encadre(right, left)) return true;
-      if (!encadre(down, up)) return true;
+      if (!encadre(right, left) || !encadre(down, up)) {
+        return true;
+      }
     }
   }
   return false;
@@ -334,24 +342,16 @@ export function collectSequence(
     sequence.push(current);
     if (current.etat === StateCase.Lo) hasLoPion = true;
     const next = getNextCase(grid, current, direction);
-    if (!next) break;
-    if (next.etat === StateCase.Cre || next.txt === '') break;
+    if (!next || next.etat === StateCase.Cre || next.txt === '') break;
     current = next;
   }
 
-  const opposite: Record<Sens, Sens> = {
-    [Sens.Up]: Sens.Down,
-    [Sens.Down]: Sens.Up,
-    [Sens.Left]: Sens.Right,
-    [Sens.Right]: Sens.Left,
-  };
-  let prev = getNextCase(grid, startCase, opposite[direction]);
+  let prev = getNextCase(grid, startCase, OPPOSITE_DIRECTION[direction]);
   while (prev && prev.txt !== '' && prev.etat !== StateCase.Cre) {
     sequence.unshift(prev);
     if (prev.etat === StateCase.Lo) hasLoPion = true;
-    const next = getNextCase(grid, prev, opposite[direction]);
-    if (!next) break;
-    if (next.etat === StateCase.Cre || next.txt === '') break;
+    const next = getNextCase(grid, prev, OPPOSITE_DIRECTION[direction]);
+    if (!next || next.etat === StateCase.Cre || next.txt === '') break;
     prev = next;
   }
 
@@ -360,11 +360,9 @@ export function collectSequence(
 
 export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
   const isHorizontal = direction === Sens.Left || direction === Sens.Right;
-  return [...sequence].sort((a, b) => {
-    const ai = isHorizontal ? a.indi : a.indj;
-    const bi = isHorizontal ? b.indi : b.indj;
-    return ai - bi;
-  });
+  return [...sequence].sort((a, b) =>
+    isHorizontal ? a.indi - b.indi : a.indj - b.indj
+  );
 }
 
 // ============================================================
@@ -374,14 +372,17 @@ export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
 export function isValidSequence(
   sequence: UneCase[] | null | undefined
 ): boolean {
-  if (!sequence || !Array.isArray(sequence)) return false;
-  return sequence.length >= 3 && sequence.length % 2 !== 0;
+  return (
+    Array.isArray(sequence) &&
+    sequence.length >= 3 &&
+    sequence.length % 2 !== 0
+  );
 }
 
 export function getPlacedPions(
   flatGrid: UneCase[] | null | undefined
 ): UneCase[] {
-  if (!flatGrid || !Array.isArray(flatGrid)) return [];
+  if (!Array.isArray(flatGrid)) return [];
   return flatGrid.filter(
     (c) => c.etat === StateCase.Pla || c.etat === StateCase.Choi
   );
@@ -390,21 +391,21 @@ export function getPlacedPions(
 export function getLockedPions(
   flatGrid: UneCase[] | null | undefined
 ): UneCase[] {
-  if (!flatGrid || !Array.isArray(flatGrid)) return [];
+  if (!Array.isArray(flatGrid)) return [];
   return flatGrid.filter((c) => c.etat === StateCase.Lo);
 }
 
 export function hasLockedPionInSequence(
   sequence: UneCase[] | null | undefined
 ): boolean {
-  if (!sequence || !Array.isArray(sequence)) return false;
+  if (!Array.isArray(sequence)) return false;
   return sequence.some((c) => c.etat === StateCase.Lo);
 }
 
-export const isStartCaseCovered = (
+export function isStartCaseCovered(
   flatGrid: UneCase[] | null | undefined
-): boolean => {
-  if (!flatGrid || !Array.isArray(flatGrid)) return false;
+): boolean {
+  if (!Array.isArray(flatGrid)) return false;
   const start = flatGrid.find((c) => c.ncase === START_CASE_INDEX);
   if (!start) return false;
   return (
@@ -412,45 +413,40 @@ export const isStartCaseCovered = (
     start.etat === StateCase.Choi ||
     start.etat === StateCase.Lo
   );
-};
+}
 
 // ============================================================
-// 7. ÉVALUATEUR DE CALCUL SEQUENTIEL (STRICTEMENT FIDÈLE À KOTLIN)
+// 7. ÉVALUATEUR DE CALCUL SEQUENTIEL (GAUCHE À DROITE)
 // ============================================================
 
-/**
- * Évalue une séquence d'expression de gauche à droite SANS priorité opératoire.
- * Transposition exacte de la boucle Kotlin :
- * res = f[0] (accumulateur)
- * pour chaque opérateur et operande : accumulateur op operande
- */
+function parseNumberSafe(raw: string): number {
+  const parsed = parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function evaluateSequentialSequence(sequence: UneCase[]): number {
-  if (!sequence || sequence.length < 3) return 0;
+  if (!Array.isArray(sequence) || sequence.length < 3) return 0;
 
-  const f = [...sequence];
-  let res = parseFloat(f[0].txt) || 0;
-  f.shift();
+  let res = parseNumberSafe(sequence[0].txt);
 
-  while (f.length >= 2) {
-    const operateur = f[0].txt;
-    f.shift();
-    const dividende = parseFloat(f[0].txt) || 0;
-    f.shift();
+  for (let i = 1; i + 1 < sequence.length; i += 2) {
+    const operateur = sequence[i].txt;
+    const operand = parseNumberSafe(sequence[i + 1].txt);
 
     switch (operateur) {
       case '/':
       case '÷':
-        if (dividende !== 0) res /= dividende;
+        if (operand !== 0) res /= operand;
         break;
       case '*':
       case '×':
-        res *= dividende;
+        res *= operand;
         break;
       case '+':
-        res += dividende;
+        res += operand;
         break;
       case '-':
-        res -= dividende;
+        res -= operand;
         break;
     }
   }
@@ -458,9 +454,39 @@ export function evaluateSequentialSequence(sequence: UneCase[]): number {
   return res;
 }
 
+export type NiveauLabel = 'Min' | 'Cad' | 'Jun' | 'Sen';
+
+function formatNiveauLabel(niveau: Dtfil): NiveauLabel {
+  switch (niveau) {
+    case Dtfil.Min:
+      return 'Min';
+    case Dtfil.Cad:
+      return 'Cad';
+    case Dtfil.Jun:
+      return 'Jun';
+    default:
+      return 'Sen';
+  }
+}
+
 // ============================================================
 // 8. CALCUL DU RÉSULTAT DU JEU
 // ============================================================
+
+ 
+
+function getLevelTargetThreshold(niveau: Dtfil): number {
+  switch (niveau) {
+    case Dtfil.Min:
+      return 30;
+    case Dtfil.Cad:
+      return 100;
+    case Dtfil.Jun:
+      return 200;
+    default:
+      return 300;
+  }
+}
 
 export function calculateGameResult(
   targetCase: UneCase,
@@ -469,6 +495,7 @@ export function calculateGameResult(
   niveau: Dtfil
 ): GameResult {
   const targetValue = parseInt(targetCase.itxt || targetCase.txt, 10) || 0;
+  const now = new Date().toISOString();
 
   const game: GameResult = {
     nbreatind: targetValue,
@@ -476,53 +503,48 @@ export function calculateGameResult(
     notedbase: 0,
     bonus: 0,
     notedjeu: 0,
-    combine: sequence.map((c) => c.txt).join(''),
+    combine: Array.isArray(sequence) ? sequence.map((c) => c.txt).join('') : '',
     targetCase,
-    sequenceNcases: sequence.map((c) => c.ncase),
+    sequenceNcases: Array.isArray(sequence) ? sequence.map((c) => c.ncase) : [],
     _id: '',
     userId: '',
     scoreTotal: 0,
     nombreDeJeux: 0,
-    niveau: niveau === Dtfil.Min ? 'Min' : niveau === Dtfil.Cad ? 'Cad' : niveau === Dtfil.Jun ? 'Jun' : 'Sen',
+    niveau: formatNiveauLabel(niveau),
     duree: '',
-    date: new Date().toISOString(),
+    date: now,
     idjeu: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-
+    createdAt: now,
+    updatedAt: now,
   };
 
-  if (!sequence || sequence.length === 0) return game;
+  if (!Array.isArray(sequence) || sequence.length === 0) return game;
 
   game.result = evaluateSequentialSequence(sequence);
+  const isExactMatch = game.nbreatind === game.result;
 
-  if (game.nbreatind === game.result) {
-    game.notedbase = 5;
-  } else {
-    game.notedbase = -Math.abs(game.result - game.nbreatind);
-  }
+  game.notedbase = isExactMatch
+    ? 5
+    : -Math.abs(game.result - game.nbreatind);
 
-  if (game.nbreatind === game.result) {
+  if (isExactMatch) {
     let bonus = 0;
 
-    if (niveau === Dtfil.Min && game.nbreatind >= 30) bonus += 1;
-    if (niveau === Dtfil.Cad && game.nbreatind >= 100) bonus += 1;
-    if (niveau === Dtfil.Jun && game.nbreatind >= 200) bonus += 1;
-    if (niveau === Dtfil.Sen && game.nbreatind >= 300) bonus += 1;
+    if (game.nbreatind >= getLevelTargetThreshold(niveau)) {
+      bonus += 1;
+    }
 
     if (placedPions.length > 6) {
       bonus += placedPions.length - 6;
     }
 
     for (const p of placedPions) {
-      if (p.txt === '*' || p.txt === '/' || p.txt === '×' || p.txt === '÷') {
+      if (MULTIPLY_DIVIDE_SET.has(p.txt)) {
         bonus += 1;
       }
     }
 
     game.bonus = bonus;
-  } else {
-    game.bonus = 0;
   }
 
   game.notedjeu = game.notedbase + game.bonus;

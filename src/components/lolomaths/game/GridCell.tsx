@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo, useCallback, useMemo } from 'react';
-import { BoardTheme, StateCase, TypeCase, UneCase } from '@/lib/interfaces';
+import { BoardTheme, StateCase, UneCase } from '@/lib/interfaces';
 import { useCellStyle } from './useCellStyle';
 import { formatOperatorDisplay } from '@/components/lolomaths/game/portepions/rackStyles';
 
@@ -13,8 +13,8 @@ export interface GridCellProps {
   onClick: (cell: UneCase) => void;
 }
 
-// 🔥 Taille spécifique pour les opérateurs sur le plateau
 const PLATEAU_OPERATOR_FONT_SIZE = 'clamp(28px, 5.5vw, 36px)';
+const OPERATORS = new Set(['*', '/', '+', '-', '×', '÷']);
 
 function getMobileFontSize(content: string | number | null | undefined): string {
   const length = String(content ?? '').trim().length;
@@ -32,7 +32,16 @@ export const GridCellBase: React.FC<GridCellProps> = ({
 }) => {
   const { content, isStart, isTarget, style } = useCellStyle(cell, theme);
 
-  const displayContent = useMemo(() => formatOperatorDisplay(content), [content]);
+  const displayContent = formatOperatorDisplay(content);
+  const isDisabled = cell.etat === StateCase.Lo;
+  const hasPlacedPion =
+    cell.etat === StateCase.Pla || cell.etat === StateCase.Choi;
+  const isOperatorContent =
+    OPERATORS.has(content) || OPERATORS.has(displayContent);
+
+  const mobileFontSize = isOperatorContent
+    ? PLATEAU_OPERATOR_FONT_SIZE
+    : getMobileFontSize(displayContent);
 
   const handleClick = useCallback(() => {
     onClick(cell);
@@ -48,24 +57,8 @@ export const GridCellBase: React.FC<GridCellProps> = ({
     [handleClick]
   );
 
-  const isDisabled = cell.etat === StateCase.Lo;
-  const hasPlacedPion = cell.etat === StateCase.Choi || Boolean(cell.placep);
-
-  // 🔥 Détecte si le contenu est un opérateur (qu'il soit natif ou formaté)
-  const isOperatorContent = 
-    content === '*' || content === '/' || content === '+' || content === '-' ||
-    content === '×' || content === '÷';
-
-  const mobileFontSize = useMemo(() => {
-    if (isOperatorContent) {
-      return PLATEAU_OPERATOR_FONT_SIZE;
-    }
-    return getMobileFontSize(displayContent);
-  }, [displayContent, isOperatorContent]);
-
   const mergedStyle = useMemo<React.CSSProperties>(() => {
-    // Style de base avec la taille de police dynamique
-    const baseStyle: React.CSSProperties = {
+    const baseStyle = {
       ...style,
       fontSize: mobileFontSize,
       '--mobile-font-size': mobileFontSize,

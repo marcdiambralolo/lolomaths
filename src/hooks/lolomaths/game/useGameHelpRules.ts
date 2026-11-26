@@ -41,14 +41,7 @@ export const useGameHelpRules = ({
       return messages;
     }
 
-    // ============================================================
-    // 2. Plus de pions disponibles dans le rack
-    // ============================================================
-    if (!hasAvailablePions && isStartCovered) {
-      messages.push(
-        '📦 Plus de pions disponibles dans le porte-pions. Le match va se terminer.'
-      );
-    }
+    
 
     // ============================================================
     // 3. Case de départ non couverte

@@ -13,7 +13,7 @@ export const GameHeaderControls: React.FC<GameHeaderControlsProps> = ({
   const cnbjeu = useGameStore((state) => state.cnbjeu);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-lg select-none">
+    <div className="bg-slate-900 border border-slate-800 p-3 flex items-center justify-between gap-3 shadow-lg select-none">
       <div className="font-mono text-xs font-bold text-slate-400 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
         Jeu #{cnbjeu + 1}
       </div> 

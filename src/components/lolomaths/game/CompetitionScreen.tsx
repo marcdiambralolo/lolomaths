@@ -14,7 +14,10 @@ import { HelpMessagesView } from "./components/HelpMessagesView";
 import HelpToggle from "./components/HelpToggle";
 import { TileRack } from "./portepions/TileRack";
 
-export const CompetitionScreen: React.FC = React.memo(() => {
+const MATCH_OVER_BANNER =
+  "bg-amber-500 text-slate-950 text-center text-sm font-bold py-2 px-3 rounded-xl shadow-lg mx-2 sm:mx-0 mt-2";
+
+export const CompetitionScreen: React.FC = () => {
   const {
     helpMessages,
     showHelp,
@@ -31,23 +34,27 @@ export const CompetitionScreen: React.FC = React.memo(() => {
     setSelectedDirectionIndex,
   } = useCompetitionGame();
 
+  // Conditions dérivées (lisibilité)
+  const showMatchOverBanner = isMatchOver;
+  const showDirectionActions =
+    !isMatchOver && gameState.isStartCovered && hasAnyValidDirection;
+
   return (
     <main
-      className="w-full mx-auto mt-2 flex flex-col select-none px-0 sm:px-0 sm:max-w-md"
+      className="w-full mx-auto mt-2 flex flex-col select-none sm:max-w-md"
       aria-label="Écran de compétition"
     >
-      <section id="zcom" className="flex flex-col w-full">
-        {/* Le plateau touchera les bords sur mobile */}
+      <section id="competition" className="flex flex-col w-full">
         <OplaGrid />
         <TileRack />
 
-        {isMatchOver && (
-          <div className="bg-amber-500 text-slate-950 text-center text-sm font-bold py-2 px-3 rounded-xl shadow-lg mx-2 sm:mx-0 mt-2">
+        {showMatchOverBanner && (
+          <div className={MATCH_OVER_BANNER}>
             🏁 Match terminé — redirection en cours…
           </div>
         )}
 
-        {!isMatchOver && gameState.isStartCovered && hasAnyValidDirection && (
+        {showDirectionActions && (
           <DirectionActions onSelectDirection={setSelectedDirectionIndex} />
         )}
 
@@ -59,7 +66,7 @@ export const CompetitionScreen: React.FC = React.memo(() => {
         {showHelp && <HelpMessagesView messages={helpMessages} />}
         <GameScoreBoard />
         <GameHistoryList />
-        
+
         <HorlogeMise />
         <HelpToggle checked={showHelp} onChange={setShowHelp} />
         <FooterSection />
@@ -67,12 +74,12 @@ export const CompetitionScreen: React.FC = React.memo(() => {
 
       <Fdialog
         isOpen={isDialogOpen}
-        gameResult={selectedGameResult ?? null}
+        gameResult={selectedGameResult}
         onAccept={handleAcceptCalculation}
         onCancel={handleCloseDialog}
       />
     </main>
   );
-});
+};
 
 CompetitionScreen.displayName = "CompetitionScreen";

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { BoardTheme, UneCase } from '@/lib/interfaces';
 import {
   computeRackPionStyle,
@@ -13,12 +13,7 @@ export interface UseRackPionStyleResult {
 }
 
 /**
- * Hook qui calcule le style d'un pion du rack.
- *
- * Mémoïse le style en fonction de :
- *  - l'état du pion (Pla / Choi / Cre)
- *  - le thème
- *  - le type (chiffre ou opérateur)
+ * Hook qui calcule et mémoïse le style d'un pion du rack.
  */
 export function useRackPionStyle(
   pion: UneCase,
@@ -29,7 +24,16 @@ export function useRackPionStyle(
 
   const style = useMemo(
     () => computeRackPionStyle({ pion, theme, isSelected, isUsed }),
-    [pion.etat, pion.tca, pion.placep, theme, isSelected, isUsed]
+    [
+      pion,
+      pion.etat,
+      pion.tca,
+      pion.placep,
+      pion.txt,
+      theme,
+      isSelected,
+      isUsed,
+    ]
   );
 
   return { isSelected, isUsed, style };

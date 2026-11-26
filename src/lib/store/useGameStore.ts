@@ -83,7 +83,7 @@ interface GameState {
   resetPions: () => void;
   calculateScores: () => void;
   confirmCalculation: (resultIndex: number) => void;
-  validerCoupDirection?: (resultIndex: number) => void;
+  validerCoupDirection: (resultIndex: number) => void;
   resetToInitialState: () => void;
   startTournament: (meta: TournamentMeta) => void;
   startMatch: (numeromatch: string) => void;
@@ -94,6 +94,15 @@ interface GameState {
 // ============================================================
 // HELPERS
 // ============================================================
+
+const EMPTY_DIRECTIONS: DirectionsValid = {
+  left: false,
+  right: false,
+  up: false,
+  down: false,
+};
+
+const EMPTY_RESULTS: (GameResult | null)[] = [null, null, null, null];
 
 function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -121,32 +130,33 @@ function splitIntoRacks(
   return { numbersRacks, operatorsRacks };
 }
 
-function addPermanentOperators(operators: UneCase[], startIndex: number): UneCase[] {
-  const newOperators = [...operators];
-
-  newOperators.push({
-    ncase: -1,
-    indi: 0,
-    indj: 0,
-    txt: '+',
-    itxt: '+',
-    etat: StateCase.Pla,
-    tca: TypeCase.PionOperateur,
-    placep: startIndex,
-  });
-
-  newOperators.push({
-    ncase: -1,
-    indi: 0,
-    indj: 0,
-    txt: '-',
-    itxt: '-',
-    etat: StateCase.Pla,
-    tca: TypeCase.PionOperateur,
-    placep: startIndex + 1,
-  });
-
-  return newOperators;
+function addPermanentOperators(
+  operators: UneCase[],
+  startIndex: number
+): UneCase[] {
+  return [
+    ...operators,
+    {
+      ncase: -1,
+      indi: 0,
+      indj: 0,
+      txt: '+',
+      itxt: '+',
+      etat: StateCase.Pla,
+      tca: TypeCase.PionOperateur,
+      placep: startIndex,
+    },
+    {
+      ncase: -1,
+      indi: 0,
+      indj: 0,
+      txt: '-',
+      itxt: '-',
+      etat: StateCase.Pla,
+      tca: TypeCase.PionOperateur,
+      placep: startIndex + 1,
+    },
+  ];
 }
 
 function buildPionsFromRack(
@@ -208,13 +218,15 @@ function resetSelections(
 }
 
 function selectPionInRack(pions: UneCase[], placep: number): UneCase[] {
-  return pions.map((p) =>
-    p.placep === placep
-      ? { ...p, etat: StateCase.Choi }
-      : p.etat === StateCase.Choi
-        ? { ...p, etat: StateCase.Pla }
-        : p
-  );
+  return pions.map((p) => {
+    if (p.placep === placep) {
+      return {
+        ...p,
+        etat: p.etat === StateCase.Choi ? StateCase.Pla : StateCase.Choi,
+      };
+    }
+    return p.etat === StateCase.Choi ? { ...p, etat: StateCase.Pla } : p;
+  });
 }
 
 function selectCaseOnGrid(grid: UneCase[][], ncase: number): UneCase[][] {
@@ -222,7 +234,13 @@ function selectCaseOnGrid(grid: UneCase[][], ncase: number): UneCase[][] {
     row.map((cell) => {
       const clearedTarget = cell.isTarget ? { ...cell, isTarget: false } : cell;
       if (clearedTarget.ncase === ncase) {
-        return { ...clearedTarget, etat: StateCase.Choi };
+        return {
+          ...clearedTarget,
+          etat:
+            clearedTarget.etat === StateCase.Choi
+              ? StateCase.Pla
+              : StateCase.Choi,
+        };
       }
       return clearedTarget.etat === StateCase.Choi
         ? { ...clearedTarget, etat: StateCase.Pla }
@@ -240,13 +258,12 @@ function placePionOnGrid(
     row.map((cell) =>
       cell.ncase === ncase
         ? {
-          ...cell,
-          txt: pion.txt,
-          etat: StateCase.Pla,
-          placep: pion.placep,
-          isTarget: false,
-          // ⚠️ ON NE TOUCHE PAS À cell.itxt (le nombre d'origine de la case)
-        }
+            ...cell,
+            txt: pion.txt,
+            etat: StateCase.Pla,
+            placep: pion.placep,
+            isTarget: false,
+          }
         : cell
     )
   );
@@ -257,12 +274,12 @@ function removePionFromGrid(grid: UneCase[][], ncase: number): UneCase[][] {
     row.map((cell) =>
       cell.ncase === ncase
         ? {
-          ...cell,
-          txt: cell.itxt,
-          etat: StateCase.Cre,
-          placep: undefined,
-          isTarget: false,
-        }
+            ...cell,
+            txt: cell.itxt,
+            etat: StateCase.Cre,
+            placep: undefined,
+            isTarget: false,
+          }
         : cell
     )
   );
@@ -276,7 +293,6 @@ function movePionOnGrid(
   let movedTxt = '';
   let movedPlacep: number | undefined;
 
-  // 1. On vide la case d'origine (on restaure son itxt)
   const intermediate = grid.map((row) =>
     row.map((cell) => {
       if (cell.ncase === fromNcase) {
@@ -294,18 +310,16 @@ function movePionOnGrid(
     })
   );
 
-  // 2. On place le pion sur la destination SANS écraser son itxt
   return intermediate.map((row) =>
     row.map((cell) =>
       cell.ncase === toNcase
         ? {
-          ...cell,
-          txt: movedTxt,
-          // 🔥 ON NE TOUCHE PAS À cell.itxt ICI !
-          etat: StateCase.Pla,
-          placep: movedPlacep,
-          isTarget: false,
-        }
+            ...cell,
+            txt: movedTxt,
+            etat: StateCase.Pla,
+            placep: movedPlacep,
+            isTarget: false,
+          }
         : cell
     )
   );
@@ -321,12 +335,12 @@ const INITIAL_STATE = {
   preGeneratedNumbers: [] as string[][],
   preGeneratedOperators: [] as string[][],
   rackIndex: 0,
-  gameResults: [null, null, null, null] as (GameResult | null)[],
+  gameResults: [...EMPTY_RESULTS],
   niveau: Dtfil.Jun,
   cnbjeu: 0,
   nombredejeu: 20,
   scoreTotal: 0,
-  directionsValid: { left: false, right: false, up: false, down: false },
+  directionsValid: { ...EMPTY_DIRECTIONS },
   lastConfirmedResult: null as GameResult | null,
   isMatchOver: false,
   currentTournamentId: null as string | null,
@@ -380,14 +394,9 @@ export const useGameStore = create<GameState>()(
           cnbjeu: 0,
           nombredejeu,
           scoreTotal: 0,
-          gameResults: [null, null, null, null],
+          gameResults: [...EMPTY_RESULTS],
           lastConfirmedResult: null,
-          directionsValid: {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-          },
+          directionsValid: { ...EMPTY_DIRECTIONS },
           isMatchOver: false,
         });
       },
@@ -430,13 +439,8 @@ export const useGameStore = create<GameState>()(
             pions: [],
             rackIndex: nextIndex,
             cnbjeu: nextCnbjeu,
-            gameResults: [null, null, null, null],
-            directionsValid: {
-              left: false,
-              right: false,
-              up: false,
-              down: false,
-            },
+            gameResults: [...EMPTY_RESULTS],
+            directionsValid: { ...EMPTY_DIRECTIONS },
             isMatchOver: true,
           });
           return;
@@ -444,7 +448,7 @@ export const useGameStore = create<GameState>()(
 
         const nextNumbers = preGeneratedNumbers[nextIndex] ?? [];
         const nextOperators = preGeneratedOperators[nextIndex] ?? [];
-        
+
         const { numbers, operators, pions } = buildPionsFromRack(
           nextNumbers,
           nextOperators
@@ -458,20 +462,14 @@ export const useGameStore = create<GameState>()(
           pions,
           rackIndex: nextIndex,
           cnbjeu: nextCnbjeu,
-          gameResults: [null, null, null, null],
-          directionsValid: {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-          },
+          gameResults: [...EMPTY_RESULTS],
+          directionsValid: { ...EMPTY_DIRECTIONS },
           isMatchOver: false,
         });
       },
 
       handleCaseClick: (targetCase: UneCase) => {
         const { pions, grid, flatGrid, isMatchOver } = get();
-
         if (isMatchOver) return;
 
         const selectedPionInRack = pions.find(
@@ -481,25 +479,18 @@ export const useGameStore = create<GameState>()(
           (c) => c.etat === StateCase.Choi && c.tca === TypeCase.Plateau
         );
 
-        // 🔥 CAS PRIORITAIRE : Un pion est sélectionné sur le plateau
-        //    et on clique sur une zone du rack
-        if (
-          selectedCaseOnGrid &&
-          (targetCase.tca === TypeCase.PionChiffre ||
-            targetCase.tca === TypeCase.PionOperateur)
-        ) {
-          const pionOfCase = pions.find(
-            (p) => p.placep === selectedCaseOnGrid.placep
-          );
-          if (!pionOfCase) return;
+        const isRackTarget =
+          targetCase.tca === TypeCase.PionChiffre ||
+          targetCase.tca === TypeCase.PionOperateur;
+
+        // Cas prioritaire : un pion est sélectionné sur le plateau et on clique vers le rack
+        if (selectedCaseOnGrid && isRackTarget) {
+          const pionPlacep = selectedCaseOnGrid.placep;
+          if (pionPlacep === undefined) return;
 
           const nextGrid = removePionFromGrid(grid, selectedCaseOnGrid.ncase);
-
           const nextPions = pions.map((p) => {
-            if (p.placep === pionOfCase.placep) {
-              return { ...p, etat: StateCase.Pla, placep: targetCase.placep! };
-            }
-            if (p.etat === StateCase.Choi) {
+            if (p.placep === pionPlacep || p.etat === StateCase.Choi) {
               return { ...p, etat: StateCase.Pla };
             }
             return p;
@@ -514,62 +505,26 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        // Gestion des pions dans le rack
-        if (
-          targetCase.tca === TypeCase.PionChiffre ||
-          targetCase.tca === TypeCase.PionOperateur
-        ) {
-          switch (targetCase.etat) {
-            case StateCase.Pla: {
-              const pionExists = pions.some((p) => p.placep === targetCase.placep);
-              if (!pionExists) return;
+        // Clic sur un pion ou emplacement du rack
+        if (isRackTarget) {
+          if (targetCase.etat === StateCase.Pla) {
+            const pionExists = pions.some(
+              (p) => p.placep === targetCase.placep
+            );
+            if (!pionExists || targetCase.placep === undefined) return;
 
-              const nextPions = selectPionInRack(pions, targetCase.placep!);
-              const { grid: nextGrid } = resetSelections(grid, pions);
-              set({
-                grid: nextGrid,
-                flatGrid: nextGrid.flat(),
-                pions: nextPions,
-              });
-              return;
-            }
-
-            case StateCase.Choi:
-              return;
-
-            case StateCase.Cre: {
-              if (!selectedCaseOnGrid) return;
-
-              const pionOfCase = pions.find(
-                (p) => p.placep === selectedCaseOnGrid.placep
-              );
-              if (!pionOfCase) return;
-
-              const nextGrid = removePionFromGrid(grid, selectedCaseOnGrid.ncase);
-              
-              const nextPions = pions.map((p) =>
-                p.placep === pionOfCase.placep
-                  ? { ...p, etat: StateCase.Pla }
-                  : p.etat === StateCase.Choi
-                    ? { ...p, etat: StateCase.Pla }
-                    : p
-              );
-
-              set({
-                grid: nextGrid,
-                flatGrid: nextGrid.flat(),
-                pions: nextPions,
-              });
-              get().calculateScores();
-              return;
-            }
-
-            default:
-              return;
+            const nextPions = selectPionInRack(pions, targetCase.placep);
+            const { grid: nextGrid } = resetSelections(grid, pions);
+            set({
+              grid: nextGrid,
+              flatGrid: nextGrid.flat(),
+              pions: nextPions,
+            });
           }
+          return;
         }
 
-        // Gestion des cases du plateau
+        // Clic sur une case du plateau
         if (targetCase.tca === TypeCase.Plateau) {
           if (targetCase.etat === StateCase.Lo) return;
 
@@ -580,7 +535,6 @@ export const useGameStore = create<GameState>()(
                 targetCase.ncase,
                 selectedPionInRack
               );
-              
               const nextPions = pions.map((p) =>
                 p.placep === selectedPionInRack.placep
                   ? { ...p, etat: StateCase.Cre }
@@ -606,7 +560,6 @@ export const useGameStore = create<GameState>()(
                 flatGrid: nextGrid.flat(),
               });
               get().calculateScores();
-              return;
             }
             return;
           }
@@ -615,25 +568,14 @@ export const useGameStore = create<GameState>()(
             targetCase.etat === StateCase.Pla ||
             targetCase.etat === StateCase.Choi
           ) {
-            const isAlreadySelected = targetCase.etat === StateCase.Choi;
-            if (isAlreadySelected) {
-              const { grid: nextGrid, pions: nextPions } = resetSelections(
-                grid,
-                pions
-              );
-              set({
-                grid: nextGrid,
-                flatGrid: nextGrid.flat(),
-                pions: nextPions,
-              });
-              return;
-            }
-
+            const { pions: clearedPions } = resetSelections(grid, pions);
             const nextGrid = selectCaseOnGrid(grid, targetCase.ncase);
             set({
               grid: nextGrid,
               flatGrid: nextGrid.flat(),
+              pions: clearedPions,
             });
+            get().calculateScores();
           }
         }
       },
@@ -650,19 +592,19 @@ export const useGameStore = create<GameState>()(
           row.map((cell) =>
             cell.etat !== StateCase.Lo
               ? {
-                ...cell,
-                txt: cell.itxt,
-                etat: StateCase.Cre,
-                placep: undefined,
-                isTarget: false,
-              }
+                  ...cell,
+                  txt: cell.itxt,
+                  etat: StateCase.Cre,
+                  placep: undefined,
+                  isTarget: false,
+                }
               : cell
           )
         );
 
         const currentNumbers = preGeneratedNumbers[rackIndex] ?? [];
         const currentOperators = preGeneratedOperators[rackIndex] ?? [];
-        
+
         const { numbers, operators, pions: nextPions } = buildPionsFromRack(
           currentNumbers,
           currentOperators
@@ -674,13 +616,8 @@ export const useGameStore = create<GameState>()(
           numbers,
           operators,
           pions: nextPions,
-          gameResults: [null, null, null, null],
-          directionsValid: {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-          },
+          gameResults: [...EMPTY_RESULTS],
+          directionsValid: { ...EMPTY_DIRECTIONS },
         });
       },
 
@@ -690,40 +627,16 @@ export const useGameStore = create<GameState>()(
         const baseGrid = clearTargets(grid);
         const baseFlatGrid = baseGrid.flat();
 
-        if (isMatchOver) {
+        if (
+          isMatchOver ||
+          !isStartCaseCovered(baseFlatGrid) ||
+          tpencadre(baseGrid)
+        ) {
           set({
             grid: baseGrid,
             flatGrid: baseFlatGrid,
-            directionsValid: {
-              left: false,
-              right: false,
-              up: false,
-              down: false,
-            },
-            gameResults: [null, null, null, null],
-          });
-          return;
-        }
-
-        const emptyResults: (GameResult | null)[] = [
-          null,
-          null,
-          null,
-          null,
-        ];
-        const emptyDirections = {
-          left: false,
-          right: false,
-          up: false,
-          down: false,
-        };
-
-        if (!isStartCaseCovered(baseFlatGrid)) {
-          set({
-            grid: baseGrid,
-            flatGrid: baseFlatGrid,
-            directionsValid: emptyDirections,
-            gameResults: emptyResults,
+            directionsValid: { ...EMPTY_DIRECTIONS },
+            gameResults: [...EMPTY_RESULTS],
           });
           return;
         }
@@ -733,29 +646,14 @@ export const useGameStore = create<GameState>()(
           set({
             grid: baseGrid,
             flatGrid: baseFlatGrid,
-            directionsValid: emptyDirections,
-            gameResults: emptyResults,
+            directionsValid: { ...EMPTY_DIRECTIONS },
+            gameResults: [...EMPTY_RESULTS],
           });
           return;
         }
 
-        if (tpencadre(baseGrid)) {
-          set({
-            grid: baseGrid,
-            flatGrid: baseFlatGrid,
-            directionsValid: emptyDirections,
-            gameResults: emptyResults,
-          });
-          return;
-        }
-
-        const results: (GameResult | null)[] = [null, null, null, null];
-        const directionsValid = {
-          left: false,
-          right: false,
-          up: false,
-          down: false,
-        };
+        const results: (GameResult | null)[] = [...EMPTY_RESULTS];
+        const directionsValid: DirectionsValid = { ...EMPTY_DIRECTIONS };
 
         const directions = [
           { sens: Sens.Up, index: 0, key: 'up' as const },
@@ -772,7 +670,6 @@ export const useGameStore = create<GameState>()(
 
         directions.forEach(({ sens, index, key }) => {
           const { sequence } = collectSequence(baseGrid, firstPlaced, sens);
-
           if (!isValidSequence(sequence)) return;
 
           const validation = validateCombination(
@@ -781,21 +678,23 @@ export const useGameStore = create<GameState>()(
             cnbjeu,
             baseGrid
           );
-
           if (!validation.valid) return;
 
           const sorted = sortSequence(sequence, sens);
-
           const edgeCase =
             sens === Sens.Up || sens === Sens.Left
               ? sorted[0]
               : sorted[sorted.length - 1];
 
           const targetCase = getNextCase(baseGrid, edgeCase, sens);
-          if (!targetCase) return;
-          if (targetCase.etat !== StateCase.Cre) return;
-          if (isOperateur(targetCase.txt)) return;
-          if (targetCase.txt === '') return;
+          if (
+            !targetCase ||
+            targetCase.etat !== StateCase.Cre ||
+            isOperateur(targetCase.txt) ||
+            targetCase.txt === ''
+          ) {
+            return;
+          }
 
           const targetRow = targetGrid[targetCase.indj];
           if (targetRow) {
@@ -805,14 +704,12 @@ export const useGameStore = create<GameState>()(
             };
           }
 
-          const gameRes = calculateGameResult(
+          results[index] = calculateGameResult(
             targetCase,
             sorted,
             placedOnGrid,
             niveau
           );
-
-          results[index] = gameRes;
           directionsValid[key] = true;
         });
 
@@ -826,24 +723,23 @@ export const useGameStore = create<GameState>()(
 
       confirmCalculation: (resultIndex: number) => {
         const { grid, gameResults, scoreTotal, isMatchOver, pions } = get();
-
         if (isMatchOver) return;
 
         const selectedResult = gameResults[resultIndex];
         if (!selectedResult) return;
 
         const validatedNcases = new Set(selectedResult.sequenceNcases);
-
         const validatedPlacep = new Set<number>();
-        
+
         grid.forEach((row) => {
           row.forEach((cell) => {
-            if (!validatedNcases.has(cell.ncase)) return;
-            
-            const p = cell.placep;
-            if (p === undefined || p === null) return;
-            
-            validatedPlacep.add(p as number);
+            if (
+              validatedNcases.has(cell.ncase) &&
+              cell.placep !== undefined &&
+              cell.placep !== null
+            ) {
+              validatedPlacep.add(cell.placep);
+            }
           });
         });
 
@@ -852,10 +748,7 @@ export const useGameStore = create<GameState>()(
             if (validatedNcases.has(cell.ncase)) {
               return { ...cell, etat: StateCase.Lo, isTarget: false };
             }
-            if (
-              cell.etat === StateCase.Pla ||
-              cell.etat === StateCase.Choi
-            ) {
+            if (cell.etat === StateCase.Pla || cell.etat === StateCase.Choi) {
               return {
                 ...cell,
                 txt: cell.itxt,
@@ -869,9 +762,8 @@ export const useGameStore = create<GameState>()(
         );
 
         const nextPions = pions.filter((pion) => {
-          const pPlacep = pion.placep;
-          if (pPlacep === undefined || pPlacep === null) return true;
-          return !validatedPlacep.has(pPlacep as number);
+          if (pion.placep === undefined || pion.placep === null) return true;
+          return !validatedPlacep.has(pion.placep);
         });
 
         set({
@@ -880,13 +772,8 @@ export const useGameStore = create<GameState>()(
           pions: nextPions,
           scoreTotal: scoreTotal + selectedResult.notedjeu,
           lastConfirmedResult: selectedResult,
-          gameResults: [null, null, null, null],
-          directionsValid: {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-          },
+          gameResults: [...EMPTY_RESULTS],
+          directionsValid: { ...EMPTY_DIRECTIONS },
         });
 
         get().nextJeu();
@@ -900,26 +787,11 @@ export const useGameStore = create<GameState>()(
         const { numeromat, nombredejeu } = get();
         const grid = createInitialGrid(numeromat);
         set({
+          ...INITIAL_STATE,
+          numeromat,
+          nombredejeu,
           grid,
           flatGrid: grid.flat(),
-          numbers: [],
-          operators: [],
-          pions: [],
-          preGeneratedNumbers: [],
-          preGeneratedOperators: [],
-          rackIndex: 0,
-          cnbjeu: 0,
-          nombredejeu,
-          scoreTotal: 0,
-          gameResults: [null, null, null, null],
-          lastConfirmedResult: null,
-          directionsValid: {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-          },
-          isMatchOver: false,
         });
       },
 
@@ -971,7 +843,27 @@ export const useGameStore = create<GameState>()(
       name: STORAGE_NAME,
       storage: createJSONStorage(() => localStorage),
       version: CURRENT_VERSION,
-      partialize: (state) => ({ ...state }),
+      partialize: (state) => ({
+        numeromat: state.numeromat,
+        grid: state.grid,
+        numbers: state.numbers,
+        operators: state.operators,
+        pions: state.pions,
+        preGeneratedNumbers: state.preGeneratedNumbers,
+        preGeneratedOperators: state.preGeneratedOperators,
+        rackIndex: state.rackIndex,
+        niveau: state.niveau,
+        cnbjeu: state.cnbjeu,
+        nombredejeu: state.nombredejeu,
+        scoreTotal: state.scoreTotal,
+        lastConfirmedResult: state.lastConfirmedResult,
+        isMatchOver: state.isMatchOver,
+        currentTournamentId: state.currentTournamentId,
+        currentMatchId: state.currentMatchId,
+        tournamentMeta: state.tournamentMeta,
+        matchIndex: state.matchIndex,
+        numeromatch: state.numeromatch,
+      }),
     }
   )
 );

@@ -13,6 +13,10 @@ import { useGameHelpRules } from './useGameHelpRules';
 import { useGamePersistence } from './useGamePersistence';
 import { useGameStore } from '@/lib/store/useGameStore';
 
+// ============================================================
+// Configuration
+// ============================================================
+
 export interface GameConfig {
   niveau: number;
   matrixIndex: number;
@@ -29,26 +33,30 @@ const DEFAULT_CONFIG: GameConfig = {
   nombredejeu: 20,
 };
 
+const NO_TIME_LIMIT_SECONDS = 86_400;
+const DEFAULT_DURATION_SECONDS = 300;
+const NAVIGATION_DELAY_MS = 300;
+const STRICT_MODE_PAUSE_DELAY_MS = 100;
+const CONFIG_STORAGE_KEY = 'lolomaths_config';
+const RESULT_ROUTE = '/star/resultat';
+
 function convertTempsmatchToSeconds(
-  tempsmatch: string | undefined,
-  fallback = 300
+  tempsmatch: string | undefined | null,
+  fallback = DEFAULT_DURATION_SECONDS
 ): number {
   if (tempsmatch === undefined || tempsmatch === null || tempsmatch === '') {
     return fallback;
   }
-  if (tempsmatch === '-1') {
-    return 86400;
-  }
+  if (tempsmatch === '-1') return NO_TIME_LIMIT_SECONDS;
+
   const minutes = parseInt(tempsmatch, 10);
-  if (!Number.isFinite(minutes) || minutes <= 0) {
-    return fallback;
-  }
+  if (!Number.isFinite(minutes) || minutes <= 0) return fallback;
   return minutes * 60;
 }
 
 export const loadGameConfig = (): GameConfig => {
   try {
-    const savedConfig = localStorage.getItem('lolomaths_config');
+    const savedConfig = localStorage.getItem(CONFIG_STORAGE_KEY);
     if (!savedConfig) return DEFAULT_CONFIG;
 
     const config = JSON.parse(savedConfig);
@@ -59,7 +67,7 @@ export const loadGameConfig = (): GameConfig => {
     } else if (typeof config.tempsmatch === 'string') {
       duration = convertTempsmatchToSeconds(config.tempsmatch);
     } else {
-      duration = DEFAULT_CONFIG.matchDuration ?? 300;
+      duration = DEFAULT_CONFIG.matchDuration ?? DEFAULT_DURATION_SECONDS;
     }
 
     return {
@@ -80,53 +88,56 @@ export interface GameHistoryItem {
   combination: string;
 }
 
+// ============================================================
+// Hook principal
+// ============================================================
+
 export const useCompetitionGame = () => {
   const router = useRouter();
   const { gameConfig } = useCompetitionStore();
 
-  // ============================================================
-  // 🔥 PERSISTANCE AUTOMATIQUE — sans paramètres
-  // ============================================================
+  // Persistance automatique
   useGamePersistence();
 
-  const grid = useGameStore((state) => state.grid);
+  // -------- Lecture du store (selectors granulaires) --------
+  const grid = useGameStore((s) => s.grid);
+  const cnbjeu = useGameStore((s) => s.cnbjeu);
+  const nombredejeu = useGameStore((s) => s.nombredejeu);
+  const directionsValid = useGameStore((s) => s.directionsValid);
+  const gameResults = useGameStore((s) => s.gameResults);
+  const isMatchOver = useGameStore((s) => s.isMatchOver);
+  const pions = useGameStore((s) => s.pions);
+
+  const initGame = useGameStore((s) => s.initGame);
+  const resetPions = useGameStore((s) => s.resetPions);
+  const confirmCalculation = useGameStore((s) => s.confirmCalculation);
+
+  // -------- Dérivés --------
   const flatGrid = useMemo(() => grid.flat(), [grid]);
-  const cnbjeu = useGameStore((state) => state.cnbjeu);
-  const nombredejeu = useGameStore((state) => state.nombredejeu);
-  const directionsValid = useGameStore((state) => state.directionsValid);
-  const gameResults = useGameStore((state) => state.gameResults);
-  const isMatchOver = useGameStore((state) => state.isMatchOver);
-  const pions = useGameStore((state) => state.pions);
 
-  const initGame = useGameStore((state) => state.initGame);
-  const resetPions = useGameStore((state) => state.resetPions);
-  const confirmCalculation = useGameStore(
-    (state) => state.confirmCalculation
-  );
-
-  // ============================================================
-  // ✅ DÉTECTION "PLUS DE PIONS DISPONIBLES DANS LE RACK"
-  // ============================================================
+  // Source unique : "reste-t-il des pions jouables dans le rack ?"
   const hasPionsInRack = useMemo(
     () => pions.some((p) => p.etat === StateCase.Pla),
     [pions]
   );
 
+  // -------- État local UI --------
   const [selectedDirectionIndex, setSelectedDirectionIndex] = useState<
     number | null
   >(null);
   const [showHelp, setShowHelp] = useState(true);
 
-  const chrono = useChrono({
-    initialSeconds: 300,
+  // -------- Chrono --------
+  const handleTimeUp = useCallback(() => {
+    useGameStore.getState().endMatch();
+  }, []);
+
+  const { resetAndStart: resetAndStartChrono, pause: pauseChrono } = useChrono({
     autoStart: true,
-    onTimeUp: () => {
-      useGameStore.setState({ isMatchOver: true });
-    },
+    onTimeUp: handleTimeUp,
   });
 
-  const { resetAndStart: resetAndStartChrono, pause: pauseChrono } = chrono;
-
+  // -------- Refs d'orchestration --------
   const hasInitializedMatch = useRef(false);
   const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasNavigatedRef = useRef(false);
@@ -134,22 +145,27 @@ export const useCompetitionGame = () => {
   const initializeGameSession = useCallback((): number => {
     const config = loadGameConfig();
     const activeMatrix = lcontentData[config.matrixIndex] ?? lcontentData[1];
-    const duration = config.matchDuration ?? 300;
+    const duration = config.matchDuration ?? DEFAULT_DURATION_SECONDS;
 
     if (!activeMatrix) return duration;
 
-    initGame(
-      activeMatrix.nombres,
-      activeMatrix.operateurs,
-      activeMatrix.niveau ?? config.niveau,
-      gameConfig?.numeromatch ?? config.numeromatch,
-      activeMatrix.cases,
-      config.nombredejeu ?? 20
-    );
+    try {
+      initGame(
+        activeMatrix.nombres,
+        activeMatrix.operateurs,
+        activeMatrix.niveau ?? config.niveau,
+        gameConfig?.numeromatch ?? config.numeromatch,
+        activeMatrix.cases,
+        config.nombredejeu ?? DEFAULT_CONFIG.nombredejeu ?? 20
+      );
+    } catch (e) {
+      console.error('Erreur lors de l\'initialisation de la partie:', e);
+    }
 
     return duration;
   }, [initGame, gameConfig?.numeromatch]);
 
+  // -------- Initialisation (une seule fois) --------
   useEffect(() => {
     if (pauseTimeoutRef.current !== null) {
       clearTimeout(pauseTimeoutRef.current);
@@ -157,9 +173,8 @@ export const useCompetitionGame = () => {
     }
 
     if (!hasInitializedMatch.current) {
-      hasInitializedMatch.current = true;
-
       const duration = initializeGameSession();
+      hasInitializedMatch.current = true; // après succès
       resetAndStartChrono(duration);
     }
 
@@ -168,27 +183,23 @@ export const useCompetitionGame = () => {
         pauseChrono();
         hasInitializedMatch.current = false;
         pauseTimeoutRef.current = null;
-      }, 100);
+      }, STRICT_MODE_PAUSE_DELAY_MS);
     };
+    // Volontairement [] : init unique au montage
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ============================================================
-  // ✅ FIN DE MATCH SI PLUS DE PIONS DANS LE RACK
-  // ============================================================
+  // -------- Fin de match si plus de pions dans le rack --------
   useEffect(() => {
     if (isMatchOver) return;
     if (cnbjeu === 0) return;
     if (hasPionsInRack) return;
 
     pauseChrono();
-    useGameStore.setState({ isMatchOver: true });
+    useGameStore.getState().endMatch();
   }, [hasPionsInRack, cnbjeu, isMatchOver, pauseChrono]);
 
-  // ============================================================
-  // ✅ REDIRECTION VERS /star/resultat
-  //    (avec reset du ref pour React Strict Mode)
-  // ============================================================
+  // -------- Redirection vers la page résultat --------
   useEffect(() => {
     if (!isMatchOver) return;
     if (hasNavigatedRef.current) return;
@@ -197,32 +208,29 @@ export const useCompetitionGame = () => {
     pauseChrono();
 
     const timeout = setTimeout(() => {
-      router.push('/star/resultat');
-    }, 300);
+      router.push(RESULT_ROUTE);
+    }, NAVIGATION_DELAY_MS);
 
     return () => {
       clearTimeout(timeout);
-      // ✅ Reset du flag : permet la ré-exécution en Strict Mode
-      hasNavigatedRef.current = false;
+      hasNavigatedRef.current = false; // reset pour Strict Mode
     };
   }, [isMatchOver, pauseChrono, router]);
 
+  // -------- Dérivés du plateau --------
   const gameState = useMemo(() => {
     const isStartCovered = isStartCaseCovered(flatGrid);
     const placedPions = getPlacedPions(flatGrid);
-    const hasAvailablePions = flatGrid.some(
-      (cell) => cell.etat === StateCase.Pla || cell.etat === StateCase.Choi
-    );
 
     return {
       isStartCovered,
       placedPions,
       hasLockedPion: hasLockedPionInSequence(placedPions),
       isFirstGame: cnbjeu === 0,
-      hasAvailablePions,
     };
   }, [flatGrid, cnbjeu]);
 
+  // -------- Handlers --------
   const handleResetRound = useCallback(() => {
     resetPions();
     setSelectedDirectionIndex(null);
@@ -234,52 +242,41 @@ export const useCompetitionGame = () => {
     setSelectedDirectionIndex(null);
   }, [selectedDirectionIndex, confirmCalculation]);
 
+  const handleCloseDialog = useCallback(() => {
+    setSelectedDirectionIndex(null);
+  }, []);
+
+  // -------- Help messages --------
   const helpMessages = useGameHelpRules({
     isStartCovered: gameState.isStartCovered,
     placedPions: gameState.placedPions,
     hasLockedPion: gameState.hasLockedPion,
     isFirstGame: gameState.isFirstGame,
-    hasAvailablePions: gameState.hasAvailablePions,
+    hasAvailablePions: hasPionsInRack, // ← source unique
     isMatchOver,
     directionsValid,
   });
 
-  const hasPlacedPions = useMemo(
-    () => gameState.placedPions.length > 0,
-    [gameState.placedPions.length]
-  );
+  // -------- Valeurs dérivées UI --------
+  const hasPlacedPions = gameState.placedPions.length > 0;
 
-  const selectedGameResult = useMemo(
-    () =>
+  const { selectedGameResult, isDialogOpen } = useMemo(() => {
+    const result =
       selectedDirectionIndex !== null
         ? gameResults[selectedDirectionIndex] ?? null
-        : null,
-    [selectedDirectionIndex, gameResults]
-  );
+        : null;
+    return { selectedGameResult: result, isDialogOpen: result !== null };
+  }, [selectedDirectionIndex, gameResults]);
 
-  const handleCloseDialog = useCallback(() => {
-    setSelectedDirectionIndex(null);
-  }, [setSelectedDirectionIndex]);
-
-  const isDialogOpen = useMemo(
-    () => selectedDirectionIndex !== null && selectedGameResult !== null,
-    [selectedDirectionIndex, selectedGameResult]
-  );
-
-  const hasAnyValidDirection = useMemo(
-    () =>
-      directionsValid.left ||
-      directionsValid.right ||
-      directionsValid.up ||
-      directionsValid.down,
-    [directionsValid]
-  );
+  const hasAnyValidDirection =
+    directionsValid.left ||
+    directionsValid.right ||
+    directionsValid.up ||
+    directionsValid.down;
 
   return {
-    selectedDirectionIndex,
-    directionsValid,
+    // état dérivé
     gameState,
-    showHelp,
     helpMessages,
     hasPlacedPions,
     selectedGameResult,
@@ -287,6 +284,11 @@ export const useCompetitionGame = () => {
     nombredejeu,
     hasAnyValidDirection,
     isDialogOpen,
+    directionsValid,
+    // état local
+    selectedDirectionIndex,
+    showHelp,
+    // actions
     handleCloseDialog,
     setSelectedDirectionIndex,
     setShowHelp,
