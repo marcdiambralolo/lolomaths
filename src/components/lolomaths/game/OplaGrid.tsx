@@ -31,7 +31,7 @@ export const OplaGrid: React.FC = memo(() => {
     <div
       id="opla"
       // p-0 sur mobile, sm:p-1.5 sur PC. Pas de bordure sur mobile.
-      className="w-full bg-slate-950 p-0 sm:p-1.5 rounded-none sm:rounded-xl border-0 sm:border border-slate-800 shadow-none sm:shadow-2xl overflow-hidden select-none"
+      className="w-full bg-slate-950 p-0 sm:p-0 rounded-none   border-0 sm:border border-slate-800 shadow-none sm:shadow-2xl overflow-hidden select-none"
     >
       <div
         className="w-full grid  @container"

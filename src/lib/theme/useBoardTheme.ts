@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { BoardTheme } from '@/lib/interfaces';
 import { getThemeById } from './themesLoader';
 
-const DEFAULT_THEME_ID = 0;
+const DEFAULT_THEME_ID = 2;
 
 /**
  * Hook qui retourne le thème actif du plateau.

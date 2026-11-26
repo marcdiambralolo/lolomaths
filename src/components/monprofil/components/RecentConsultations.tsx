@@ -1,5 +1,5 @@
 "use client";
-import ConsultationCard from "@/components/commons/ConsultationCard";
+import GameResultCard from "@/components/commons/GameResultCard";
 import { History } from "lucide-react";
 
 const RecentConsultations = ({ consultations }: { consultations: any[] }) => {
@@ -13,7 +13,7 @@ const RecentConsultations = ({ consultations }: { consultations: any[] }) => {
             </h3>
             <div className="space-y-3">
                 {consultations.slice(0, 10).map((consultation, index) => (
-                    <ConsultationCard
+                    <GameResultCard
                         key={consultation?._id ?? consultation?.id ?? index}
                         consultation={consultation}
                         index={index}

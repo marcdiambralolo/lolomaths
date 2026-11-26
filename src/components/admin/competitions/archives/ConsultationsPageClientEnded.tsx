@@ -1,17 +1,27 @@
 'use client';
-import ConsultationCard from '@/components/commons/ConsultationCard';
+import GameResultCard from '@/components/commons/GameResultCard';
 import { useAdminConsultationsPageFinished } from '@/hooks/admin/competitions/archives/useAdminConsultationsPageFinished';
-import { 
-  ChevronLeft, ChevronRight, FileText, RefreshCw, 
-  Archive, Calendar, Trophy, Award, Clock, TrendingUp,
-  Users, Crown, Sparkles, ArrowLeft, Medal, Star, 
-  Zap, BarChart3, Activity, Gem, Target,
-  Hash, BookOpen, Grid3x3, List
-} from 'lucide-react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { formatEditionDate } from '@/lib/functions';
+import { AnimatePresence, motion, Variants } from 'framer-motion';
+import {
+  Archive,
+  ArrowLeft,
+  Award,
+  BarChart3,
+  BookOpen,
+  Calendar,
+  ChevronLeft, ChevronRight,
+  Crown,
+  FileText,
+  Grid3x3,
+  Hash,
+  RefreshCw,
+  Trophy,
+  Users,
+  Zap
+} from 'lucide-react';
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
 
 // ============================================================================
 // ANIMATIONS
@@ -425,7 +435,7 @@ export default function ConsultationsArchivePage() {
                           layout
                           whileHover={{ y: -5 }}
                         >
-                          <ConsultationCard
+                          <GameResultCard
                             consultation={consultation}
                             index={index}
                             showDate={false}

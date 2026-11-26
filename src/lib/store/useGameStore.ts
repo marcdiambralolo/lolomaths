@@ -55,7 +55,6 @@ export interface TournamentMeta {
 }
 
 interface GameState {
-  // État de jeu
   numeromat: string;
   grid: UneCase[][];
   flatGrid: UneCase[];
@@ -73,14 +72,12 @@ interface GameState {
   scoreTotal: number;
   directionsValid: DirectionsValid;
   isMatchOver: boolean;
-  // Identité tournoi / match
   currentTournamentId: string | null;
   currentMatchId: string | null;
   tournamentMeta: TournamentMeta | null;
   matchIndex: number;
   numeromatch: string;
 
-  // Actions
   initGame: (
     numbersTxt: string[],
     operatorsTxt: string[],
@@ -132,7 +129,6 @@ function splitIntoRacks(
   return { numbersRacks, operatorsRacks };
 }
 
-// 🔥 Ajout des opérateurs permanents avec un placep unique
 function addPermanentOperators(operators: UneCase[], startIndex: number): UneCase[] {
   const newOperators = [...operators];
 
@@ -187,8 +183,10 @@ function buildPionsFromRack(
     placep: numbersTxt.length + index,
   }));
 
-  // On injecte les permanents en leur donnant un placep qui suit les autres
-  const operators = addPermanentOperators(baseOperators, numbersTxt.length + baseOperators.length);
+  const operators = addPermanentOperators(
+    baseOperators,
+    numbersTxt.length + baseOperators.length
+  );
 
   return { numbers, operators, pions: [...numbers, ...operators] };
 }
@@ -335,14 +333,13 @@ const INITIAL_STATE = {
   preGeneratedOperators: [] as string[][],
   rackIndex: 0,
   gameResults: [null, null, null, null] as (GameResult | null)[],
-  niveau: Dtfil.Sen,
+  niveau: Dtfil.Jun,
   cnbjeu: 0,
   nombredejeu: 20,
   scoreTotal: 0,
   directionsValid: { left: false, right: false, up: false, down: false },
   lastConfirmedResult: null as GameResult | null,
   isMatchOver: false,
-
   currentTournamentId: null as string | null,
   currentMatchId: null as string | null,
   tournamentMeta: null as TournamentMeta | null,
@@ -359,10 +356,6 @@ export const useGameStore = create<GameState>()(
     (set, get) => ({
       ...INITIAL_STATE,
 
-      // ============================================================
-      // ACTIONS DE JEU
-      // ============================================================
-
       initGame: (
         numbersTxt,
         operatorsTxt,
@@ -372,7 +365,6 @@ export const useGameStore = create<GameState>()(
         nombredejeu = 20
       ) => {
         const grid = createInitialGrid(numeromat, listecaseRef);
-
         const shuffledNumbers = radlist(numbersTxt, numeromat);
         const shuffledOperators = radlist(operatorsTxt, numeromat);
 
@@ -467,6 +459,7 @@ export const useGameStore = create<GameState>()(
 
         const nextNumbers = preGeneratedNumbers[nextIndex] ?? [];
         const nextOperators = preGeneratedOperators[nextIndex] ?? [];
+        
         const { numbers, operators, pions } = buildPionsFromRack(
           nextNumbers,
           nextOperators
@@ -503,12 +496,55 @@ export const useGameStore = create<GameState>()(
           (c) => c.etat === StateCase.Choi && c.tca === TypeCase.Plateau
         );
 
+        // 🔥 NOUVEAU CAS : Un pion est sélectionné sur le plateau et on clique sur une zone du rack
+        if (
+          selectedCaseOnGrid &&
+          (targetCase.tca === TypeCase.PionChiffre ||
+            targetCase.tca === TypeCase.PionOperateur)
+        ) {
+          const pionInArray = pions.find((p) => p.placep === targetCase.placep);
+
+          // Si l'emplacement cliqué est vide (le pion n'est plus dans le tableau)
+          if (!pionInArray) {
+            const pionOfCase = pions.find(
+              (p) => p.placep === selectedCaseOnGrid.placep
+            );
+            if (!pionOfCase) return;
+
+            const nextGrid = removePionFromGrid(
+              grid,
+              selectedCaseOnGrid.ncase
+            );
+
+            // On remet le pion dans le rack avec le placep de la case cliquée
+            const nextPions = pions.map((p) =>
+              p.placep === pionOfCase.placep
+                ? { ...p, etat: StateCase.Pla, placep: targetCase.placep! }
+                : p.etat === StateCase.Choi
+                  ? { ...p, etat: StateCase.Pla }
+                  : p
+            );
+
+            set({
+              grid: nextGrid,
+              flatGrid: nextGrid.flat(),
+              pions: nextPions,
+            });
+            get().calculateScores();
+            return;
+          }
+        }
+
+        // Gestion des pions dans le rack
         if (
           targetCase.tca === TypeCase.PionChiffre ||
           targetCase.tca === TypeCase.PionOperateur
         ) {
           switch (targetCase.etat) {
             case StateCase.Pla: {
+              const pionExists = pions.some((p) => p.placep === targetCase.placep);
+              if (!pionExists) return;
+
               const nextPions = selectPionInRack(pions, targetCase.placep!);
               const { grid: nextGrid } = resetSelections(grid, pions);
               set({
@@ -535,7 +571,6 @@ export const useGameStore = create<GameState>()(
                 selectedCaseOnGrid.ncase
               );
               
-              // 🔥 Comportement UNIQUE pour tous les pions : on remet en "Pla" (disponible)
               const nextPions = pions.map((p) =>
                 p.placep === pionOfCase.placep
                   ? { ...p, etat: StateCase.Pla }
@@ -558,10 +593,13 @@ export const useGameStore = create<GameState>()(
           }
         }
 
+        // Gestion des cases du plateau
         if (targetCase.tca === TypeCase.Plateau) {
           if (targetCase.etat === StateCase.Lo) return;
 
+          // Si on clique sur une case vide du plateau
           if (targetCase.etat === StateCase.Cre) {
+            // Si un pion est sélectionné dans le rack, on le place
             if (selectedPionInRack) {
               const nextGrid = placePionOnGrid(
                 grid,
@@ -569,7 +607,6 @@ export const useGameStore = create<GameState>()(
                 selectedPionInRack
               );
               
-              // 🔥 Comportement UNIQUE : on passe le pion en "Cre" (posé)
               const nextPions = pions.map((p) =>
                 p.placep === selectedPionInRack.placep
                   ? { ...p, etat: StateCase.Cre }
@@ -584,6 +621,7 @@ export const useGameStore = create<GameState>()(
               return;
             }
 
+            // Si un pion est sélectionné sur le plateau, on le déplace
             if (selectedCaseOnGrid) {
               const nextGrid = movePionOnGrid(
                 grid,
@@ -600,6 +638,7 @@ export const useGameStore = create<GameState>()(
             return;
           }
 
+          // Si on clique sur une case du plateau qui contient un pion
           if (
             targetCase.etat === StateCase.Pla ||
             targetCase.etat === StateCase.Choi
@@ -651,6 +690,7 @@ export const useGameStore = create<GameState>()(
 
         const currentNumbers = preGeneratedNumbers[rackIndex] ?? [];
         const currentOperators = preGeneratedOperators[rackIndex] ?? [];
+        
         const { numbers, operators, pions: nextPions } = buildPionsFromRack(
           currentNumbers,
           currentOperators
@@ -813,7 +853,7 @@ export const useGameStore = create<GameState>()(
       },
 
       confirmCalculation: (resultIndex: number) => {
-        const { grid, gameResults, scoreTotal, isMatchOver } = get();
+        const { grid, gameResults, scoreTotal, isMatchOver, pions } = get();
 
         if (isMatchOver) return;
 
@@ -821,6 +861,19 @@ export const useGameStore = create<GameState>()(
         if (!selectedResult) return;
 
         const validatedNcases = new Set(selectedResult.sequenceNcases);
+
+        const validatedPlacep = new Set<number>();
+        
+        grid.forEach((row) => {
+          row.forEach((cell) => {
+            if (!validatedNcases.has(cell.ncase)) return;
+            
+            const p = cell.placep;
+            if (p === undefined || p === null) return;
+            
+            validatedPlacep.add(p as number);
+          });
+        });
 
         const nextGrid = grid.map((row) =>
           row.map((cell) => {
@@ -843,9 +896,16 @@ export const useGameStore = create<GameState>()(
           })
         );
 
+        const nextPions = pions.filter((pion) => {
+          const pPlacep = pion.placep;
+          if (pPlacep === undefined || pPlacep === null) return true;
+          return !validatedPlacep.has(pPlacep as number);
+        });
+
         set({
           grid: nextGrid,
           flatGrid: nextGrid.flat(),
+          pions: nextPions,
           scoreTotal: scoreTotal + selectedResult.notedjeu,
           lastConfirmedResult: selectedResult,
           gameResults: [null, null, null, null],
@@ -890,10 +950,6 @@ export const useGameStore = create<GameState>()(
           isMatchOver: false,
         });
       },
-
-      // ============================================================
-      // ACTIONS TOURNOI / MATCH
-      // ============================================================
 
       startTournament: (meta: TournamentMeta) => {
         const tournamentId = generateId('tour');
@@ -943,7 +999,6 @@ export const useGameStore = create<GameState>()(
       name: STORAGE_NAME,
       storage: createJSONStorage(() => localStorage),
       version: CURRENT_VERSION,
-      // On persiste tout l'état de jeu
       partialize: (state) => ({ ...state }),
     }
   )

@@ -1,8 +1,4 @@
-import type { ReactNode, ElementType } from 'react';
-
-// ============================================================
-// TYPES GÉNÉRIQUES
-// ============================================================
+import type { ReactNode, ElementType } from 'react'; 
 
 export type DateLike = Date | string | number | null | undefined;
 export type ConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
@@ -221,6 +217,28 @@ export interface Consultation {
   edition: unknown;
   id?: string;
   nombredevues: number;
+  [key: string]: unknown;
+}
+
+export interface GameResult {
+  _id: string;
+  userId: string;
+  clientId?: {
+    nom: string;
+    prenoms: string;
+    _id: string;
+    username: string;
+  };
+  scoreTotal: number;       // ex: 45.50
+  nombreDeJeux: number;     // ex: 20
+  niveau: 'Min' | 'Cad' | 'Jun' | 'Sen';
+  duree: string;            // ex: "12m30s"
+  date: string;             // ISO date
+  idMatch?: string;
+    createdAt: string;
+     idjeu: string | GameConfiguration;
+  updatedAt: string;
+  matchStatus?: 'active' | 'ended' | 'upcoming';
   [key: string]: unknown;
 }
 
@@ -505,7 +523,7 @@ export interface TournamentSummary {
 }
 
 // ============================================================
-// ENUMS JEU (transposition Kotlin)
+// ENUMS JEU
 // ============================================================
 
 export enum Direction {

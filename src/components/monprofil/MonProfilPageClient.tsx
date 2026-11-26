@@ -4,10 +4,10 @@ import { useConsultationsListPage } from "@/hooks/consultations/useConsultations
 import { staggerContainer } from "@/lib/animations";
 import { cx, formatEditionDate } from "@/lib/functions";
 import { AnimatePresence, motion, Variants } from "framer-motion";
-import { AlertCircle, CalendarDays, ChevronRight, Crown, Flame, Gamepad2, History, Plus, Trophy, UserRound } from "lucide-react";
+import { AlertCircle, CalendarDays, ChevronRight, Crown, Flame, Gamepad2, History, Trophy, UserRound } from "lucide-react";
 import Link from "next/link";
 import { memo, type ReactNode } from "react";
-import ConsultationCard from "../commons/ConsultationCard";
+import GameResultCard from "../commons/GameResultCard";
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -340,7 +340,7 @@ function MonProfilPageClientImpl() {
                     </h3>
                     <div className="space-y-3">
                       {consultations.slice(0, 10).map((consultation, index) => (
-                        <ConsultationCard
+                        <GameResultCard
                           key={consultation?._id ?? consultation?.id ?? index}
                           consultation={consultation}
                           index={index}

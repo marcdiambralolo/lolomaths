@@ -43,16 +43,31 @@ export const GridCellBase: React.FC<GridCellProps> = ({
   );
 
   const isDisabled = cell.etat === StateCase.Lo;
+  // Détecte si un pion est posé sur la cellule
+  const hasPlacedPion = cell.etat === StateCase.Choi || Boolean(cell.placep);
+
   const mobileFontSize = useMemo(() => getMobileFontSize(content), [content]);
 
-  const mergedStyle = useMemo<React.CSSProperties>(
-    () =>
-      ({
+  const mergedStyle = useMemo<React.CSSProperties>(() => {
+    if (!hasPlacedPion) {
+      return {
         ...style,
         '--mobile-font-size': mobileFontSize,
-      }) as React.CSSProperties,
-    [style, mobileFontSize]
-  );
+      } as React.CSSProperties;
+    }
+
+    // Effet 3D biseauté/bombé quand un pion est posé dans la cellule
+    const existingShadow = style.boxShadow ? `${style.boxShadow}, ` : '';
+    const existingBgImage = style.backgroundImage ? `${style.backgroundImage}, ` : '';
+
+    return {
+      ...style,
+      '--mobile-font-size': mobileFontSize,
+      zIndex: 2,
+      backgroundImage: `${existingBgImage}linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.06) 45%, rgba(0,0,0,0.32) 100%)`,
+      boxShadow: `${existingShadow}inset 0 2px 1px rgba(255, 255, 255, 0.55), inset 0 -3px 2px rgba(0, 0, 0, 0.55), inset 1.5px 0 1px rgba(255, 255, 255, 0.2), inset -1.5px 0 1px rgba(0, 0, 0, 0.35), 0 2px 5px rgba(0, 0, 0, 0.6)`,
+    } as React.CSSProperties;
+  }, [style, hasPlacedPion, mobileFontSize]);
 
   const title = useMemo(
     () =>
@@ -90,7 +105,9 @@ export const GridCellBase: React.FC<GridCellProps> = ({
       aria-pressed={cell.etat === StateCase.Choi}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="mobile-cell-scale relative flex items-center justify-center border-[0.5px] sm:border rounded-sm select-none transition-colors duration-100 box-border font-black tabular-nums leading-none m-0 p-0 tracking-tighter overflow-hidden"
+      className={`mobile-cell-scale relative flex items-center justify-center border-[0.5px] sm:border rounded-sm select-none transition-all duration-100 box-border font-black tabular-nums leading-none m-0 p-0 tracking-tighter overflow-hidden ${
+        hasPlacedPion ? 'ring-1 ring-white/40 scale-[1.03]' : ''
+      }`}
       style={mergedStyle}
       title={title}
       data-row={rowIndex}
@@ -99,8 +116,21 @@ export const GridCellBase: React.FC<GridCellProps> = ({
       data-state={cell.etat}
       data-target={isTarget ? 'true' : undefined}
       data-start={isStart ? 'true' : undefined}
+      data-placed={hasPlacedPion ? 'true' : undefined}
     >
-      {content}
+      <span
+        className="pointer-events-none leading-none"
+        style={
+          hasPlacedPion
+            ? {
+                textShadow:
+                  '0 1px 0 rgba(255, 255, 255, 0.25), 0 -1px 1px rgba(0, 0, 0, 0.65)',
+              }
+            : undefined
+        }
+      >
+        {content}
+      </span>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 'use client';
 import CacheLink from '@/components/commons/CacheLink';
-import ConsultationCard from '@/components/commons/ConsultationCard';
+import GameResultCard from '@/components/commons/GameResultCard';
 import { useAdminConsultationsPageFinished } from '@/hooks/admin/competitions/parties/useAdminConsultationsPageFinished';
 import { formatEditionDate } from '@/lib/functions';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
@@ -170,12 +170,12 @@ export default function ConsultationsPage() {
 
     // Statistiques de temps
     let totalTime = 0;
-    consultations.forEach(c => {
-      if (c.timeSpent) {
-        const timeInSeconds = parseFloat(c.timeSpent.replace('s', ''));
-        if (!isNaN(timeInSeconds)) totalTime += timeInSeconds;
-      }
-    });
+    // consultations.forEach(c => {
+    //   if (c.timeSpent) {
+    //     const timeInSeconds = parseFloat(c.timeSpent.replace('s', ''));
+    //     if (!isNaN(timeInSeconds)) totalTime += timeInSeconds;
+    //   }
+    // });
 
     return {
       totalGames: consultations.length,
@@ -378,7 +378,7 @@ export default function ConsultationsPage() {
                       layout
                       whileHover={{ y: -5 }}
                     >
-                      <ConsultationCard
+                      <GameResultCard
                         consultation={consultation}
                         index={index}
                         showDate={false}

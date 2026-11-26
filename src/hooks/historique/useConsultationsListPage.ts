@@ -1,11 +1,11 @@
 import { api } from '@/lib/api/client';
-import { Consultation } from '@/lib/interfaces';
+import { GameResult } from '@/lib/interfaces';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const ITEMS_PER_PAGE = 10;
 
 type ConsultationListResponse = {
-  consultations: Consultation[];
+  consultations: GameResult[];
   total: number;
 };
 
@@ -15,7 +15,7 @@ const fetchConsultationsPage = async ({ pageParam = 1 }): Promise<ConsultationLi
     limit: String(ITEMS_PER_PAGE),
   });
 
-  const { data } = await api.get<{ consultations?: Consultation[]; total?: number }>(
+  const { data } = await api.get<{ consultations?: GameResult[]; total?: number }>(
     `/admin/consultations?${params}`,
     {
       headers: { 'Cache-Control': 'no-cache' },

@@ -5,7 +5,7 @@ import { cx } from "@/lib/functions";
 import { motion } from "framer-motion";
 import { History } from "lucide-react";
 import { memo, type ReactNode } from "react";
-import ConsultationCard from "../commons/ConsultationCard";
+import GameResultCard from "../commons/GameResultCard";
 
 interface TabButtonProps {
   active: boolean;
@@ -106,7 +106,7 @@ function MonProfilPageClientImpl() {
         ) : (
           <div className="space-y-3">
             {consultationsglobaux.map((consultation, index) => (
-              <ConsultationCard
+              <GameResultCard
                 key={consultation?._id ?? consultation?.id ?? index}
                 consultation={consultation}
                 index={index}

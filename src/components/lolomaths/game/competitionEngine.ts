@@ -479,6 +479,17 @@ export function calculateGameResult(
     combine: sequence.map((c) => c.txt).join(''),
     targetCase,
     sequenceNcases: sequence.map((c) => c.ncase),
+    _id: '',
+    userId: '',
+    scoreTotal: 0,
+    nombreDeJeux: 0,
+    niveau: niveau === Dtfil.Min ? 'Min' : niveau === Dtfil.Cad ? 'Cad' : niveau === Dtfil.Jun ? 'Jun' : 'Sen',
+    duree: '',
+    date: new Date().toISOString(),
+    idjeu: '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+
   };
 
   if (!sequence || sequence.length === 0) return game;

@@ -1,15 +1,10 @@
 'use client';
 
 import React, { memo, useCallback, useMemo } from 'react';
-import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { TypeCase, UneCase } from '@/lib/interfaces';
 import { useBoardTheme } from '@/lib/theme/useBoardTheme';
 import { RackPion } from './RackPion';
 import { useGameStore } from '@/lib/store/useGameStore';
-
-// ============================================================
-// COMPOSANT : TileRack (Rack de 6 Nombres x 6 Opérateurs)
-// ============================================================
 
 export const TileRack: React.FC = memo(() => {
   const pions = useGameStore((state) => state.pions);
@@ -20,6 +15,7 @@ export const TileRack: React.FC = memo(() => {
     () => pions.filter((p) => p.tca === TypeCase.PionChiffre),
     [pions]
   );
+  
   const operators = useMemo(
     () => pions.filter((p) => p.tca === TypeCase.PionOperateur),
     [pions]
@@ -33,14 +29,14 @@ export const TileRack: React.FC = memo(() => {
   const isRackEmpty = pions.length === 0;
 
   return (
-    <div className="flex flex-col gap-2 p-1 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl w-full max-w-md mx-auto select-none">
+    <div className="flex flex-col gap-2 p-1 bg-slate-900/90 border border-slate-800  shadow-xl w-full max-w-md mx-auto select-none">
       {isRackEmpty ? (
         <div className="text-center text-xs font-semibold text-slate-500 italic py-4">
           Aucun pion disponible
         </div>
       ) : (
         <>
-          {/* ---------- RANGÉE DES NOMBRES (6 COLONNES) ---------- */}
+          {/* ---------- RANGÉE DES NOMBRES ---------- */}
           <div className="grid grid-cols-6 gap-1.5 min-h-[44px] items-center bg-slate-950/50 p-1 rounded-xl border border-slate-800/50 justify-items-center">
             {numbers.length > 0 ? (
               numbers.map((pion) => (
@@ -58,7 +54,7 @@ export const TileRack: React.FC = memo(() => {
             )}
           </div>
 
-          {/* ---------- RANGÉE DES OPÉRATEURS (6 COLONNES) ---------- */}
+          {/* ---------- RANGÉE DES OPÉRATEURS ---------- */}
           <div className="grid grid-cols-6 gap-1.5 min-h-[44px] items-center bg-slate-950/50 p-1.5 rounded-xl border border-slate-800/50 justify-items-center">
             {operators.length > 0 ? (
               operators.map((pion) => (

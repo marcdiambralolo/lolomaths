@@ -1,7 +1,7 @@
 import { api } from '@/lib/api/client';
 import { coerceIsoDate, formatDateFR, processUserData, safeTrim } from '@/lib/functions';
 import { useAuth } from '@/lib/hooks';
-import { Consultation } from '@/lib/interfaces';
+import { Consultation, GameResult } from '@/lib/interfaces';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface EditionInfo {
@@ -15,7 +15,7 @@ interface EditionInfo {
 
 export function useConsultationsListPage() {
   const [activeTab, setActiveTab] = useState<'history' | 'games'>('games');
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [consultations, setConsultations] = useState<GameResult[]>([]);
   const [editions, setEditions] = useState<EditionInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

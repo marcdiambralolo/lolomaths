@@ -33,7 +33,7 @@ export const CompetitionScreen: React.FC = React.memo(() => {
 
   return (
     <main
-      className="w-full mx-auto mt-2 flex flex-col select-none px-0 sm:px-2 sm:max-w-md"
+      className="w-full mx-auto mt-2 flex flex-col select-none px-0 sm:px-0 sm:max-w-md"
       aria-label="Écran de compétition"
     >
       <section id="zcom" className="flex flex-col w-full">
