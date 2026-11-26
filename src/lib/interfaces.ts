@@ -1,4 +1,4 @@
-import type { ReactNode, ElementType } from 'react'; 
+import type { ReactNode, ElementType } from 'react';
 
 export type DateLike = Date | string | number | null | undefined;
 export type ConfigStatus = 'pending' | 'active' | 'ended' | 'cancelled';
@@ -195,29 +195,29 @@ export interface FormData {
 // ============================================================
 //  GAME CONFIG / LEARNING CONFIG
 // ============================================================
- 
+
 
 export interface GameResult {
   _id: string;
   userId: string;
   clientId?: {
-      phone: string;
+    phone: string;
     nom: string;
     prenoms: string;
     _id: string;
     username: string;
-     country: string;
+    country: string;
   };
-    timeSpent: string;
-    nombredevues: number;
+  timeSpent: string;
+  nombredevues: number;
   scoreTotal: number;       // ex: 45.50
   nombreDeJeux: number;     // ex: 20
   niveau: 'Min' | 'Cad' | 'Jun' | 'Sen';
   duree: string;            // ex: "12m30s"
   date: string;             // ISO date
   idMatch?: string;
-    createdAt: string;
-     idjeu: string | GameConfiguration;
+  createdAt: string;
+  idjeu: string | GameConfiguration;
   updatedAt: string;
   matchStatus?: 'active' | 'ended' | 'upcoming';
   [key: string]: unknown;
@@ -478,11 +478,11 @@ export interface GameCompletionState {
 
 export interface GameState {
   status:
-    | 'no_competition'
-    | 'not_started'
-    | 'active'
-    | 'results_available'
-    | 'ended_no_proclamation';
+  | 'no_competition'
+  | 'not_started'
+  | 'active'
+  | 'results_available'
+  | 'ended_no_proclamation';
   canUserPlay: boolean;
   showGameFinishedBanner: boolean;
   countdown: number | null;

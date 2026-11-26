@@ -1,4 +1,5 @@
 'use client';
+
 import Loader from "@/app/loading";
 import { useHorlogeInit } from "@/hooks/lolomaths/home/useHorlogeInit";
 import { memo } from 'react';
@@ -6,7 +7,13 @@ import DashboardContent from "./DashboardContent";
 
 const HorlogeMise = memo(() => {
   const {
-    completeGameCleanup, endDate, isLoading, gameState, countdown, stats, demarrerJeu
+    completeGameCleanup,
+    endDate,
+    isLoading,
+    gameState,
+    countdown,
+    stats,
+    demarrerJeu,
   } = useHorlogeInit();
 
   if (isLoading) return <Loader />;
@@ -22,5 +29,7 @@ const HorlogeMise = memo(() => {
     />
   );
 });
+
+HorlogeMise.displayName = "HorlogeMise";
 
 export default HorlogeMise;

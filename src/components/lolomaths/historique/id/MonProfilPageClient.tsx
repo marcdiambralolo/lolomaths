@@ -3,7 +3,7 @@ import Loader from "@/app/loading";
 import { useAdminConsultationsPageFinished } from "@/hooks/lolomaths/historique/useAdminConsultationsPageFinished";
 import { useHistoriqueConsultations } from "@/hooks/lolomaths/historique/useHistoriqueConsultations";
 import { memo } from "react";
- import EditionCard from "../components/EditionCard";
+import EditionCard from "../components/EditionCard";
 import ParticipationsSection from "../components/ParticipationsSection";
 import TitleSection from "../components/TitleSection";
 import WinnersSection from "../components/WinnersSection";
@@ -30,7 +30,7 @@ const HistoriquePageClient = memo(() => {
 
   return (
     <div className="max-w-4xl mx-auto px-3 py-4 sm:px-4 sm:py-8">
-       
+
       {activeEdition && (
         <div className="w-full mx-auto max-w-xl px-4">
           <EditionCard activeEdition={activeEdition} />

@@ -1,4 +1,5 @@
 'use client';
+
 import { useStatsDataWithCache } from '@/hooks/cache/useStatsDataWithCache';
 import { api } from '@/lib/api/client';
 import { LearningConfiguration } from '@/lib/interfaces';
@@ -42,33 +43,43 @@ export function useHorlogeInit() {
     gcTime: CONFIG_GC_TIME,
   });
 
-  const lastSyncedConfigIdRef = useRef<string | null>(null);
+  const lastSyncedSignatureRef = useRef<string | null>(null);
   useEffect(() => {
-    const configId = gameConfig?._id || gameConfig?.id || null;
-    if (gameConfig && configId !== lastSyncedConfigIdRef.current) {
-      lastSyncedConfigIdRef.current = configId;
+    if (!gameConfig) return;
+    const signature = JSON.stringify(gameConfig);
+    if (signature !== lastSyncedSignatureRef.current) {
+      lastSyncedSignatureRef.current = signature;
       setGameConfig(gameConfig);
     }
   }, [gameConfig, setGameConfig]);
 
   const { lastEndedGame, isLoading: isLastEndedLoading } = useLastEndedGame();
   const { currentTimestamp, dates, countdowns } = useGameTimers(gameConfig);
-  const { gameState } = useGameStatus({ gameConfig, dates, countdowns, currentTimestamp, lastEndedGame });
+  const { gameState } = useGameStatus({
+    gameConfig,
+    dates,
+    countdowns,
+    currentTimestamp,
+    lastEndedGame,
+  });
 
   const completeGameCleanup = useCallback(() => {
     setGameIsFinished(false);
     setAfficheChoix(false);
-  }, [setGameIsFinished, setAfficheChoix, ]);
+  }, [setGameIsFinished, setAfficheChoix]);
 
-  const navigateToGame = useCallback((path: string, configId: string) => {
-    const targetPath = `${path}?puzzle=${configId}`;
+  const navigateToGame = useCallback(
+    (path: string, configId: string) => {
+      const targetPath = `${path}?lolomaths=${configId}`;
 
-    if (pathname === path) {
-      router.replace(`${targetPath}&_t=${Date.now()}`);
-    } else {
-      router.push(targetPath);
-    }
-  }, [pathname, router]);
+      if (pathname === path) {
+        router.replace(`${targetPath}&_t=${Date.now()}`);
+      } else {
+        router.push(targetPath);
+      }
+    },
+    [pathname, router]
+  );
 
   const demarrerJeu = useCallback(() => {
     const configId = gameConfig?._id || gameConfig?.id;
@@ -84,7 +95,10 @@ export function useHorlogeInit() {
     });
   }, [gameConfig, idEditionencours, setAfficheChoix, navigateToGame]);
 
-  const isLoading = isLastEndedLoading || isConfigLoading || isStatsLoading;
+  const isLoading =
+    (isLastEndedLoading && !gameConfig) ||
+    (isConfigLoading && !gameConfig) ||
+    (isStatsLoading && !stats);
 
   return {
     demarrerJeu,

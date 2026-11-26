@@ -10,10 +10,10 @@ interface DirectionActionsProps {
 // Ordre = index dans gameResults : [0]=Up, [1]=Down, [2]=Left, [3]=Right.
 // Fidèle à `disen(index)` Kotlin.
 const DIRECTION_CONFIG = [
-  { key: 'up' as const, index: 0, label: '↑ Haut' },
-  { key: 'down' as const, index: 1, label: '↓ Bas' },
-  { key: 'left' as const, index: 2, label: '← Gauche' },
-  { key: 'right' as const, index: 3, label: '→ Droite' },
+  { key: 'up' as const, index: 0, label: 'Haut' },
+  { key: 'down' as const, index: 1, label: 'Bas' },
+  { key: 'left' as const, index: 2, label: 'Gauche' },
+  { key: 'right' as const, index: 3, label: 'Droite' },
 ];
 
 function formatTwoDecimals(value: unknown): string {
@@ -67,7 +67,7 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
             key={item.key}
             type="button"
             onClick={() => onSelectDirection(item.index)}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs sm:text-sm transition shadow-md hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-300"
+            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-lg sm:text-lg leading-tight transition shadow-md hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-300"
             aria-label={`${item.label} (rc = ${formattedRc} , df = ${formattedDf})`}
           >
             {item.label} (rc = {formattedRc} , df = {formattedDf})

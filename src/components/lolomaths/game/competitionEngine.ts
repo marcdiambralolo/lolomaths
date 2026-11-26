@@ -22,6 +22,8 @@ export const RACK_OPERATORS_COUNT = 4;
 /** Symbole interne pour la case départ. */
 export const DEPART_SYMBOL = 'depart';
 
+const FLOAT_EPSILON = 1e-9;
+
 const OPERATORS_SET: ReadonlySet<string> = new Set([
   '+',
   '-',
@@ -45,9 +47,6 @@ const OPPOSITE_DIRECTION: Record<Sens, Sens> = {
   [Sens.Right]: Sens.Left,
 };
 
-/**
- * Vérifie si une chaîne est un opérateur.
- */
 export function isOperateur(txt: string): boolean {
   return OPERATORS_SET.has(txt);
 }
@@ -90,9 +89,6 @@ function toNumericSeed(seed: number | string | undefined): number {
   return 12345;
 }
 
-/**
- * Mélange déterministe d'une liste — transposition de `radlist` Kotlin.
- */
 export function radlist(list: string[], seed: number | string): string[] {
   if (!Array.isArray(list) || list.length === 0) return [];
 
@@ -118,9 +114,6 @@ export function radlist(list: string[], seed: number | string): string[] {
   return lra;
 }
 
-/**
- * Distribution du rack à partir d'un pool.
- */
 export function generateInitialRack(
   fullPool: string[],
   numeromat: string,
@@ -137,9 +130,6 @@ export function generateInitialRack(
 // 2. CONSTRUCTION DE LA GRILLE
 // ============================================================
 
-/**
- * Transposition de `malisteca(numeromat, wl)` Kotlin.
- */
 export function malisteca(numeromat: string, wl: string[]): string[] {
   const lcases = radlist(wl, numeromat);
   const indp = lcases.indexOf(DEPART_SYMBOL);
@@ -156,9 +146,6 @@ export function getRandomBoardNumber(rng?: JavaRandom): string {
   return Math.floor(value * 640).toString();
 }
 
-/**
- * Crée la grille initiale (17 × 13).
- */
 export function createInitialGrid(
   numeromat?: string,
   listecaseRef?: string[]
@@ -166,12 +153,18 @@ export function createInitialGrid(
   const totalCells = GRID_ROWS * GRID_COLS;
   let lcases: string[] = [];
 
-  if (numeromat && Array.isArray(listecaseRef) && listecaseRef.length >= totalCells) {
+  if (
+    numeromat &&
+    Array.isArray(listecaseRef) &&
+    listecaseRef.length >= totalCells
+  ) {
     lcases = malisteca(numeromat, listecaseRef);
   } else {
     const rng = new JavaRandom(toNumericSeed(numeromat));
     for (let i = 0; i < totalCells; i++) {
-      lcases.push(i === START_CASE_INDEX ? DEPART_SYMBOL : getRandomBoardNumber(rng));
+      lcases.push(
+        i === START_CASE_INDEX ? DEPART_SYMBOL : getRandomBoardNumber(rng)
+      );
     }
   }
 
@@ -272,9 +265,6 @@ export function validateEnchainement(
   return sequence.some((c) => c.etat === StateCase.Lo);
 }
 
-/**
- * Transposition de `encadre(a, b)` Kotlin.
- */
 export function encadre(a: UneCase | null, b: UneCase | null): boolean {
   if (a === null) return b === null || b.etat === StateCase.Cre;
   if (b === null) return a.etat === StateCase.Cre;
@@ -473,8 +463,6 @@ function formatNiveauLabel(niveau: Dtfil): NiveauLabel {
 // 8. CALCUL DU RÉSULTAT DU JEU
 // ============================================================
 
- 
-
 function getLevelTargetThreshold(niveau: Dtfil): number {
   switch (niveau) {
     case Dtfil.Min:
@@ -503,9 +491,13 @@ export function calculateGameResult(
     notedbase: 0,
     bonus: 0,
     notedjeu: 0,
-    combine: Array.isArray(sequence) ? sequence.map((c) => c.txt).join('') : '',
+    combine: Array.isArray(sequence)
+      ? sequence.map((c) => c.txt).join('')
+      : '',
     targetCase,
-    sequenceNcases: Array.isArray(sequence) ? sequence.map((c) => c.ncase) : [],
+    sequenceNcases: Array.isArray(sequence)
+      ? sequence.map((c) => c.ncase)
+      : [],
     _id: '',
     userId: '',
     scoreTotal: 0,
@@ -519,17 +511,16 @@ export function calculateGameResult(
     timeSpent: '0',
     score: 0,
     nombredevues: 0,
-
   };
 
   if (!Array.isArray(sequence) || sequence.length === 0) return game;
 
-  game.result = evaluateSequentialSequence(sequence);
-  const isExactMatch = game.nbreatind === game.result;
+  const rawResult = evaluateSequentialSequence(sequence);
+  const diffFromTarget = Math.abs(rawResult - targetValue);
+  const isExactMatch = diffFromTarget < FLOAT_EPSILON;
 
-  game.notedbase = isExactMatch
-    ? 5
-    : -Math.abs(game.result - game.nbreatind);
+  game.result = isExactMatch ? targetValue : rawResult;
+  game.notedbase = isExactMatch ? 5 : -diffFromTarget;
 
   if (isExactMatch) {
     let bonus = 0;

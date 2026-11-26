@@ -1,20 +1,28 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
 import { useGameHistory } from '@/hooks/lolomaths/game/useGameHistory';
 
-export const GameHistoryList: React.FC = () => {
+function formatScore(value: unknown): { numeric: number; label: string } {
+  const numeric =
+    typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  const fixed = numeric.toFixed(2);
+  return {
+    numeric,
+    label: numeric >= 0 ? `+${fixed}` : fixed,
+  };
+}
+
+export const GameHistoryList: React.FC = memo(() => {
   const { gameHistory } = useGameHistory();
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll vers le bas à l'ajout d'un nouveau jeu
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [gameHistory.length]);
 
-  // Mémoïsation des 5 derniers jeux + offset
   const { visibleGames, offset } = useMemo(() => {
     const visible = gameHistory.slice(-5);
     return {
@@ -35,26 +43,26 @@ export const GameHistoryList: React.FC = () => {
       <div className="flex flex-wrap gap-1 text-[10px] text-slate-400">
         {visibleGames.map((g, idx) => {
           const realIndex = offset + idx + 1;
-          const formattedScore = typeof g.score === 'number' ? g.score.toFixed(2) : '0.00';
-          const scoreLabel =
-            g.score >= 0 ? `+${formattedScore}` : `${formattedScore}`;
+          const { numeric, label } = formatScore(g.score);
 
           return (
             <span
-              key={realIndex}
+              key={`${realIndex}-${g.combination}`}
               role="listitem"
               className={`px-2 py-0.5 rounded ${
-                g.score >= 0
+                numeric >= 0
                   ? 'bg-emerald-900/40 text-emerald-300'
                   : 'bg-rose-900/40 text-rose-300'
               }`}
-              title={`Jeu ${realIndex} — ${g.combination} — ${scoreLabel} pts`}
+              title={`Jeu ${realIndex} — ${g.combination} — ${label} pts`}
             >
-              J{realIndex}: {scoreLabel}pts
+              J{realIndex}: {label}
             </span>
           );
         })}
       </div>
     </div>
   );
-};
+});
+
+GameHistoryList.displayName = 'GameHistoryList';
