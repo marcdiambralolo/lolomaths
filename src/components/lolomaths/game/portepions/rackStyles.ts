@@ -1,8 +1,8 @@
-import { BoardTheme, StateCase, TypeCase, UneCase } from '@/lib/interfaces';
-
 // ============================================================
 // CONSTANTES VISUELLES DU RACK
 // ============================================================
+
+import { UneCase, BoardTheme, TypeCase, StateCase } from "@/lib/interfaces";
 
 /** Taille d'un pion (largeur et hauteur) - Identique pour tous. */
 export const RACK_PION_SIZE = 'clamp(32px, 8vw, 44px)';
@@ -10,8 +10,8 @@ export const RACK_PION_SIZE = 'clamp(32px, 8vw, 44px)';
 /** Taille de la police d'un NOMBRE. */
 export const RACK_PION_NUMBER_FONT_SIZE = 'clamp(12px, 2.4vw, 16px)';
 
-/** 🔥 Taille de la police d'un OPÉRATEUR (plus grande pour plus de lisibilité). */
-export const RACK_PION_OPERATOR_FONT_SIZE = 'clamp(22px, 4.5vw, 30px)';
+/** 🔥 Taille de la police d'un OPÉRATEUR (encore plus grande). */
+export const RACK_PION_OPERATOR_FONT_SIZE = 'clamp(32px, 6.5vw, 42px)';
 
 /** Police monospace pour aligner les chiffres. */
 export const RACK_PION_FONT_FAMILY = 'monospace';
@@ -78,11 +78,15 @@ export function computeRackPionStyle({
 
   const fontSize = isOperator ? RACK_PION_OPERATOR_FONT_SIZE : RACK_PION_NUMBER_FONT_SIZE;
 
+  // 🔥 Pour séparer les points du ÷, on ajoute un léger letter-spacing sur les opérateurs
+  const letterSpacing = isOperator ? '0.05em' : 'normal';
+
   const style: React.CSSProperties = {
     width: RACK_PION_SIZE,
     height: RACK_PION_SIZE,
     fontSize: fontSize,
     fontFamily: RACK_PION_FONT_FAMILY,
+    letterSpacing: letterSpacing, // 🔥 Espacement ajouté pour aérer le ÷
     backgroundColor: isUsed ? 'transparent' : activeColor,
     borderColor: isUsed ? 'transparent' : activeColor,
     color: isUsed ? 'transparent' : RACK_PION_TEXT_COLOR,

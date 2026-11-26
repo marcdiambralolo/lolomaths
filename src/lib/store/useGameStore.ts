@@ -245,6 +245,7 @@ function placePionOnGrid(
           etat: StateCase.Pla,
           placep: pion.placep,
           isTarget: false,
+          // ⚠️ ON NE TOUCHE PAS À cell.itxt (le nombre d'origine de la case)
         }
         : cell
     )
@@ -274,14 +275,13 @@ function movePionOnGrid(
 ): UneCase[][] {
   let movedTxt = '';
   let movedPlacep: number | undefined;
-  let movedItxt = '';
 
+  // 1. On vide la case d'origine (on restaure son itxt)
   const intermediate = grid.map((row) =>
     row.map((cell) => {
       if (cell.ncase === fromNcase) {
         movedTxt = cell.txt;
         movedPlacep = cell.placep;
-        movedItxt = cell.itxt;
         return {
           ...cell,
           txt: cell.itxt,
@@ -294,13 +294,14 @@ function movePionOnGrid(
     })
   );
 
+  // 2. On place le pion sur la destination SANS écraser son itxt
   return intermediate.map((row) =>
     row.map((cell) =>
       cell.ncase === toNcase
         ? {
           ...cell,
           txt: movedTxt,
-          itxt: movedItxt,
+          // 🔥 ON NE TOUCHE PAS À cell.itxt ICI !
           etat: StateCase.Pla,
           placep: movedPlacep,
           isTarget: false,
@@ -480,32 +481,24 @@ export const useGameStore = create<GameState>()(
           (c) => c.etat === StateCase.Choi && c.tca === TypeCase.Plateau
         );
 
-        // ============================================================
         // 🔥 CAS PRIORITAIRE : Un pion est sélectionné sur le plateau
         //    et on clique sur une zone du rack
-        // ============================================================
         if (
           selectedCaseOnGrid &&
           (targetCase.tca === TypeCase.PionChiffre ||
             targetCase.tca === TypeCase.PionOperateur)
         ) {
-          // Récupérer le pion qui est sur le plateau (via son placep)
           const pionOfCase = pions.find(
             (p) => p.placep === selectedCaseOnGrid.placep
           );
           if (!pionOfCase) return;
 
-          // On retire le pion de la grille (nettoyage de la case)
           const nextGrid = removePionFromGrid(grid, selectedCaseOnGrid.ncase);
 
-          // On remet le pion dans le rack à l'emplacement cliqué
-          // (que l'emplacement soit vide ou occupé par un autre pion, on le remplace)
           const nextPions = pions.map((p) => {
-            // Le pion du plateau revient dans le rack avec le nouveau placep
             if (p.placep === pionOfCase.placep) {
               return { ...p, etat: StateCase.Pla, placep: targetCase.placep! };
             }
-            // Les autres pions qui étaient sélectionnés sont désélectionnés
             if (p.etat === StateCase.Choi) {
               return { ...p, etat: StateCase.Pla };
             }
@@ -521,9 +514,7 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        // ============================================================
-        // Gestion des pions dans le rack (clic sans pion du plateau sélectionné)
-        // ============================================================
+        // Gestion des pions dans le rack
         if (
           targetCase.tca === TypeCase.PionChiffre ||
           targetCase.tca === TypeCase.PionOperateur
@@ -578,9 +569,7 @@ export const useGameStore = create<GameState>()(
           }
         }
 
-        // ============================================================
         // Gestion des cases du plateau
-        // ============================================================
         if (targetCase.tca === TypeCase.Plateau) {
           if (targetCase.etat === StateCase.Lo) return;
 

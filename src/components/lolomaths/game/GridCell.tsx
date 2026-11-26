@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo, useCallback, useMemo } from 'react';
-import { BoardTheme, StateCase, UneCase } from '@/lib/interfaces';
+import { BoardTheme, StateCase, TypeCase, UneCase } from '@/lib/interfaces';
 import { useCellStyle } from './useCellStyle';
 import { formatOperatorDisplay } from '@/components/lolomaths/game/portepions/rackStyles';
 
@@ -12,6 +12,9 @@ export interface GridCellProps {
   theme: BoardTheme;
   onClick: (cell: UneCase) => void;
 }
+
+// 🔥 Taille spécifique pour les opérateurs sur le plateau
+const PLATEAU_OPERATOR_FONT_SIZE = 'clamp(28px, 5.5vw, 36px)';
 
 function getMobileFontSize(content: string | number | null | undefined): string {
   const length = String(content ?? '').trim().length;
@@ -29,7 +32,6 @@ export const GridCellBase: React.FC<GridCellProps> = ({
 }) => {
   const { content, isStart, isTarget, style } = useCellStyle(cell, theme);
 
-  // 🔥 On formate le contenu pour l'affichage (× et ÷)
   const displayContent = useMemo(() => formatOperatorDisplay(content), [content]);
 
   const handleClick = useCallback(() => {
@@ -49,27 +51,41 @@ export const GridCellBase: React.FC<GridCellProps> = ({
   const isDisabled = cell.etat === StateCase.Lo;
   const hasPlacedPion = cell.etat === StateCase.Choi || Boolean(cell.placep);
 
-  const mobileFontSize = useMemo(() => getMobileFontSize(displayContent), [displayContent]);
+  // 🔥 Détecte si le contenu est un opérateur (qu'il soit natif ou formaté)
+  const isOperatorContent = 
+    content === '*' || content === '/' || content === '+' || content === '-' ||
+    content === '×' || content === '÷';
+
+  const mobileFontSize = useMemo(() => {
+    if (isOperatorContent) {
+      return PLATEAU_OPERATOR_FONT_SIZE;
+    }
+    return getMobileFontSize(displayContent);
+  }, [displayContent, isOperatorContent]);
 
   const mergedStyle = useMemo<React.CSSProperties>(() => {
+    // Style de base avec la taille de police dynamique
+    const baseStyle: React.CSSProperties = {
+      ...style,
+      fontSize: mobileFontSize,
+      '--mobile-font-size': mobileFontSize,
+      letterSpacing: isOperatorContent ? '0.05em' : 'normal',
+    } as React.CSSProperties;
+
     if (!hasPlacedPion) {
-      return {
-        ...style,
-        '--mobile-font-size': mobileFontSize,
-      } as React.CSSProperties;
+      return baseStyle;
     }
 
     const existingShadow = style.boxShadow ? `${style.boxShadow}, ` : '';
     const existingBgImage = style.backgroundImage ? `${style.backgroundImage}, ` : '';
 
     return {
-      ...style,
-      '--mobile-font-size': mobileFontSize,
+      ...baseStyle,
       zIndex: 2,
       backgroundImage: `${existingBgImage}linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.06) 45%, rgba(0,0,0,0.32) 100%)`,
       boxShadow: `${existingShadow}inset 0 2px 1px rgba(255, 255, 255, 0.55), inset 0 -3px 2px rgba(0, 0, 0, 0.55), inset 1.5px 0 1px rgba(255, 255, 255, 0.2), inset -1.5px 0 1px rgba(0, 0, 0, 0.35), 0 2px 5px rgba(0, 0, 0, 0.6)`,
     } as React.CSSProperties;
-  }, [style, hasPlacedPion, mobileFontSize]);
+  }, [style, hasPlacedPion, mobileFontSize, isOperatorContent]);
 
   const title = useMemo(
     () =>
