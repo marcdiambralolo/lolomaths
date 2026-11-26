@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api/client';
-import { Consultation } from '@/lib/interfaces';
+import { GameResult } from '@/lib/interfaces';
+import { useCallback, useEffect, useState } from 'react';
 
 export const ITEMS_PER_PAGE = 10000;
 
@@ -14,7 +14,7 @@ interface ActiveEdition {
 }
 
 export function useAdminConsultationsPageFinished() {
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [consultations, setConsultations] = useState<GameResult[]>([]);
   const [activeEdition, setActiveEdition] = useState<ActiveEdition | null>(null);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,7 +35,7 @@ export function useAdminConsultationsPageFinished() {
       });
 
       const data: any = response.data;
-      setConsultations(data?.consultations as unknown as Consultation[] || []);
+      setConsultations(data?.consultations as unknown as GameResult[] || []);
       setActiveEdition(data?.activeEdition || null);
       setTotal(data?.total || 0);
       setCurrentPage(page);

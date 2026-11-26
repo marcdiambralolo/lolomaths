@@ -1,23 +1,20 @@
+import { useEffect, useRef } from 'react';
 import {
   GameRecord,
   MatchRecord,
   TournamentRecord,
 } from '@/lib/interfaces';
-import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { useGameStore } from '@/lib/store/useGameStore';
 import { useHistoryStore } from '@/lib/store/useHistoryStore';
- import { useEffect, useRef } from 'react';
 
 // ============================================================
 // HELPERS
 // ============================================================
 
-/** Génère un identifiant unique côté client. */
 function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** Lit la configuration `lolomaths_config` depuis le localStorage. */
 interface LolomathsConfig {
   nomjoueur?: string;
   numtournoi?: string;
@@ -41,7 +38,6 @@ function readLolomathsConfig(): LolomathsConfig {
   }
 }
 
-/** Convertit un `GameResult` en `GameRecord`. */
 function gameResultToRecord(
   result: NonNullable<
     ReturnType<typeof useGameStore.getState>['lastConfirmedResult']
@@ -51,15 +47,13 @@ function gameResultToRecord(
   numjeu: number,
   niveau: number
 ): GameRecord {
-  const sequencePions = result.sequenceNcases.join(',');
-
   return {
     id: generateId('game'),
     matchId,
     tournamentId,
     numjeu,
     combinaison: result.combine,
-    sequencePions,
+    sequencePions: result.sequenceNcases.join(','),
     cible: result.nbreatind,
     resultat: result.result,
     notedebase: result.notedbase,
@@ -75,16 +69,11 @@ function gameResultToRecord(
 // ============================================================
 
 /**
- * Hook qui enregistre automatiquement les jeux, matchs et tournois
- * dans ` ` à chaque étape clé.
- *
- * ⚠️ Ne prend AUCUN paramètre : lit la configuration depuis `localStorage`.
+ * Enregistre automatiquement les tournois, matchs et jeux dans l'historique
+ * aux étapes clés du cycle de vie.
  */
 export function useGamePersistence() {
-  // ----- Store de jeu -----
-  const currentTournamentId = useGameStore(
-    (s) => s.currentTournamentId
-  );
+  const currentTournamentId = useGameStore((s) => s.currentTournamentId);
   const currentMatchId = useGameStore((s) => s.currentMatchId);
   const matchIndex = useGameStore((s) => s.matchIndex);
   const numeromatch = useGameStore((s) => s.numeromatch);
@@ -93,40 +82,41 @@ export function useGamePersistence() {
   const niveau = useGameStore((s) => s.niveau);
   const scoreTotal = useGameStore((s) => s.scoreTotal);
   const isMatchOver = useGameStore((s) => s.isMatchOver);
-  const lastConfirmedResult = useGameStore(
-    (s) => s.lastConfirmedResult
-  );
+  const lastConfirmedResult = useGameStore((s) => s.lastConfirmedResult);
 
-  // ----- Actions du store -----
   const startTournament = useGameStore((s) => s.startTournament);
   const startMatch = useGameStore((s) => s.startMatch);
   const endMatch = useGameStore((s) => s.endMatch);
   const endTournament = useGameStore((s) => s.endTournament);
 
-  // ----- Store d'historique -----
   const saveTournament = useHistoryStore((s) => s.saveTournament);
   const saveMatch = useHistoryStore((s) => s.saveMatch);
   const saveGame = useHistoryStore((s) => s.saveGame);
 
-  // ----- Refs anti-doublons -----
-  const lastSavedGameRef = useRef<string | null>(null);
-  const matchStartDateRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
+  const lastSavedGameKeyRef = useRef<string | null>(null);
+  const matchStartDateRef = useRef<string | null>(null);
+  const processedMatchEndsRef = useRef<Set<string>>(new Set());
+  const scoredMatchIdsRef = useRef<Set<string>>(new Set());
 
   // ============================================================
-  // 1. DÉMARRAGE DU TOURNOI
+  // 1. DÉMARRAGE DU TOURNOI (UNE FOIS)
   // ============================================================
   useEffect(() => {
     if (initializedRef.current) return;
-    if (currentTournamentId) return; // déjà démarré
-
     initializedRef.current = true;
+
+    if (currentTournamentId) {
+      if (!matchStartDateRef.current) {
+        matchStartDateRef.current = new Date().toISOString();
+      }
+      return;
+    }
 
     const config = readLolomathsConfig();
     const now = new Date().toISOString();
     matchStartDateRef.current = now;
 
-    // Démarre le tournoi + le premier match
     startTournament({
       nomjoueur: config.nomjoueur ?? 'Joueur',
       numtournoi: config.numtournoi ?? config.numeromatch ?? '123456789',
@@ -138,7 +128,6 @@ export function useGamePersistence() {
       tpsglobal: config.tpsglobal ?? 0,
     });
 
-    // Enregistre immédiatement un Tournoi vide dans l'historique
     const tournamentId = useGameStore.getState().currentTournamentId;
     if (tournamentId) {
       const emptyTournament: TournamentRecord = {
@@ -162,17 +151,34 @@ export function useGamePersistence() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Met à jour la date de début quand un nouveau match démarre
+  useEffect(() => {
+    if (!currentMatchId) return;
+    if (!matchStartDateRef.current) {
+      matchStartDateRef.current = new Date().toISOString();
+    }
+  }, [currentMatchId]);
+
   // ============================================================
-  // 2. ENREGISTREMENT D'UN JEU
+  // 2. ENREGISTREMENT D'UN JEU CONFIRMÉ
   // ============================================================
   useEffect(() => {
-    if (!lastConfirmedResult) return;
-    if (!currentTournamentId || !currentMatchId) return;
-    if (lastSavedGameRef.current === lastConfirmedResult.combine) return;
+    if (!lastConfirmedResult || !currentTournamentId || !currentMatchId) {
+      return;
+    }
 
-    lastSavedGameRef.current = lastConfirmedResult.combine;
+    const gameKey = [
+      currentMatchId,
+      cnbjeu,
+      lastConfirmedResult.combine,
+      lastConfirmedResult.result,
+      lastConfirmedResult.notedjeu,
+    ].join('::');
 
-    const game = gameResultToRecord(
+    if (lastSavedGameKeyRef.current === gameKey) return;
+    lastSavedGameKeyRef.current = gameKey;
+
+    const record = gameResultToRecord(
       lastConfirmedResult,
       currentMatchId,
       currentTournamentId,
@@ -180,7 +186,7 @@ export function useGamePersistence() {
       niveau
     );
 
-    saveGame(currentTournamentId, currentMatchId, game);
+    saveGame(currentTournamentId, currentMatchId, record);
   }, [
     lastConfirmedResult,
     currentTournamentId,
@@ -191,19 +197,25 @@ export function useGamePersistence() {
   ]);
 
   // ============================================================
-  // 3. FIN DE MATCH → enregistre le match + prépare le suivant
+  // 3. FIN DE MATCH → SAUVEGARDE ET ENCHAÎNEMENT
   // ============================================================
   useEffect(() => {
-    if (!isMatchOver) return;
-    if (!currentTournamentId || !currentMatchId) return;
+    if (!isMatchOver || !currentTournamentId || !currentMatchId) {
+      return;
+    }
+
+    const matchEndKey = `${currentTournamentId}:${currentMatchId}:${matchIndex}`;
+    if (processedMatchEndsRef.current.has(matchEndKey)) {
+      return;
+    }
+    processedMatchEndsRef.current.add(matchEndKey);
 
     const config = readLolomathsConfig();
     const nbmatch = config.nbmatch ?? 1;
-
     const now = new Date().toISOString();
     const startedAt = matchStartDateRef.current ?? now;
 
-    const match: MatchRecord = {
+    const matchRecord: MatchRecord = {
       id: currentMatchId,
       tournamentId: currentTournamentId,
       numordrep: matchIndex,
@@ -215,30 +227,33 @@ export function useGamePersistence() {
       jeux: [],
     };
 
-    saveMatch(currentTournamentId, match);
+    saveMatch(currentTournamentId, matchRecord);
     endMatch();
 
     const isLastMatch = matchIndex + 1 >= nbmatch;
+    const tournament = useHistoryStore
+      .getState()
+      .getTournament(currentTournamentId);
 
-    if (isLastMatch) {
-      const tournament = useHistoryStore
-        .getState()
-        .getTournament(currentTournamentId);
-
-      if (tournament) {
-        saveTournament({
-          ...tournament,
-          isgameover: true,
-          score: tournament.score + scoreTotal,
-          datefin: now,
-        });
+    if (tournament) {
+      const shouldAddScore = !scoredMatchIdsRef.current.has(currentMatchId);
+      if (shouldAddScore) {
+        scoredMatchIdsRef.current.add(currentMatchId);
       }
 
+      saveTournament({
+        ...tournament,
+        isgameover: isLastMatch ? true : tournament.isgameover,
+        score: shouldAddScore ? tournament.score + scoreTotal : tournament.score,
+        datefin: isLastMatch ? now : tournament.datefin,
+      });
+    }
+
+    if (isLastMatch) {
       endTournament();
     } else {
-      const nextNumeroMatch = String(matchIndex + 2);
       matchStartDateRef.current = now;
-      startMatch(nextNumeroMatch);
+      startMatch(String(matchIndex + 2));
     }
   }, [
     isMatchOver,

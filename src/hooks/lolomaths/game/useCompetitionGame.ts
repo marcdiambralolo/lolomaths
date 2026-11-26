@@ -36,7 +36,6 @@ const DEFAULT_CONFIG: GameConfig = {
 const NO_TIME_LIMIT_SECONDS = 86_400;
 const DEFAULT_DURATION_SECONDS = 300;
 const NAVIGATION_DELAY_MS = 300;
-const STRICT_MODE_PAUSE_DELAY_MS = 100;
 const CONFIG_STORAGE_KEY = 'lolomaths_config';
 const RESULT_ROUTE = '/star/resultat';
 
@@ -111,13 +110,14 @@ export const useCompetitionGame = () => {
   const initGame = useGameStore((s) => s.initGame);
   const resetPions = useGameStore((s) => s.resetPions);
   const confirmCalculation = useGameStore((s) => s.confirmCalculation);
+  const endMatch = useGameStore((s) => s.endMatch);
 
   // -------- Dérivés --------
   const flatGrid = useMemo(() => grid.flat(), [grid]);
 
-  // Source unique : "reste-t-il des pions jouables dans le rack ?"
+  // Pions encore disponibles dans le rack (Pla ou Choi)
   const hasPionsInRack = useMemo(
-    () => pions.some((p) => p.etat === StateCase.Pla),
+    () => pions.some((p) => p.etat === StateCase.Pla || p.etat === StateCase.Choi),
     [pions]
   );
 
@@ -129,8 +129,8 @@ export const useCompetitionGame = () => {
 
   // -------- Chrono --------
   const handleTimeUp = useCallback(() => {
-    useGameStore.getState().endMatch();
-  }, []);
+    endMatch();
+  }, [endMatch]);
 
   const { resetAndStart: resetAndStartChrono, pause: pauseChrono } = useChrono({
     autoStart: true,
@@ -139,8 +139,7 @@ export const useCompetitionGame = () => {
 
   // -------- Refs d'orchestration --------
   const hasInitializedMatch = useRef(false);
-  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasNavigatedRef = useRef(false);
+  const hasScheduledNavigationRef = useRef(false);
 
   const initializeGameSession = useCallback((): number => {
     const config = loadGameConfig();
@@ -159,52 +158,42 @@ export const useCompetitionGame = () => {
         config.nombredejeu ?? DEFAULT_CONFIG.nombredejeu ?? 20
       );
     } catch (e) {
-      console.error('Erreur lors de l\'initialisation de la partie:', e);
+      console.error("Erreur lors de l'initialisation de la partie:", e);
     }
 
     return duration;
   }, [initGame, gameConfig?.numeromatch]);
 
-  // -------- Initialisation (une seule fois) --------
+  // -------- Initialisation (une seule fois au montage) --------
   useEffect(() => {
-    if (pauseTimeoutRef.current !== null) {
-      clearTimeout(pauseTimeoutRef.current);
-      pauseTimeoutRef.current = null;
-    }
+    if (hasInitializedMatch.current) return;
+    hasInitializedMatch.current = true;
 
-    if (!hasInitializedMatch.current) {
-      const duration = initializeGameSession();
-      hasInitializedMatch.current = true; // après succès
-      resetAndStartChrono(duration);
-    }
+    const duration = initializeGameSession();
+    resetAndStartChrono(duration);
+  }, [initializeGameSession, resetAndStartChrono]);
 
-    return () => {
-      pauseTimeoutRef.current = setTimeout(() => {
-        pauseChrono();
-        hasInitializedMatch.current = false;
-        pauseTimeoutRef.current = null;
-      }, STRICT_MODE_PAUSE_DELAY_MS);
-    };
-    // Volontairement [] : init unique au montage
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // -------- Fin de match si plus de pions dans le rack --------
+  // -------- Fin de match si plus de pions jouables ni posés --------
   useEffect(() => {
-    if (isMatchOver) return;
-    if (cnbjeu === 0) return;
+    if (isMatchOver || cnbjeu === 0) return;
     if (hasPionsInRack) return;
 
+    const placedNow = getPlacedPions(flatGrid);
+    if (placedNow.length > 0) return;
+
     pauseChrono();
-    useGameStore.getState().endMatch();
-  }, [hasPionsInRack, cnbjeu, isMatchOver, pauseChrono]);
+    endMatch();
+  }, [hasPionsInRack, flatGrid, cnbjeu, isMatchOver, pauseChrono, endMatch]);
 
   // -------- Redirection vers la page résultat --------
   useEffect(() => {
-    if (!isMatchOver) return;
-    if (hasNavigatedRef.current) return;
+    if (!isMatchOver) {
+      hasScheduledNavigationRef.current = false;
+      return;
+    }
 
-    hasNavigatedRef.current = true;
+    if (hasScheduledNavigationRef.current) return;
+    hasScheduledNavigationRef.current = true;
     pauseChrono();
 
     const timeout = setTimeout(() => {
@@ -213,7 +202,6 @@ export const useCompetitionGame = () => {
 
     return () => {
       clearTimeout(timeout);
-      hasNavigatedRef.current = false; // reset pour Strict Mode
     };
   }, [isMatchOver, pauseChrono, router]);
 
@@ -252,7 +240,7 @@ export const useCompetitionGame = () => {
     placedPions: gameState.placedPions,
     hasLockedPion: gameState.hasLockedPion,
     isFirstGame: gameState.isFirstGame,
-    hasAvailablePions: hasPionsInRack, // ← source unique
+    hasAvailablePions: hasPionsInRack,
     isMatchOver,
     directionsValid,
   });
@@ -275,7 +263,6 @@ export const useCompetitionGame = () => {
     directionsValid.down;
 
   return {
-    // état dérivé
     gameState,
     helpMessages,
     hasPlacedPions,
@@ -285,10 +272,8 @@ export const useCompetitionGame = () => {
     hasAnyValidDirection,
     isDialogOpen,
     directionsValid,
-    // état local
     selectedDirectionIndex,
     showHelp,
-    // actions
     handleCloseDialog,
     setSelectedDirectionIndex,
     setShowHelp,

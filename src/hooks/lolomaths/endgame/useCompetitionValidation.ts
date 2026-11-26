@@ -1,19 +1,19 @@
 'use client';
 
 import { api } from '@/lib/api/client';
-import { CompetitionInfo, Consultation } from '@/lib/interfaces';
+import { CompetitionInfo, GameResult } from '@/lib/interfaces';
 import {
   calculateDuration,
   calculateDurationInSeconds,
   formatCompetitionDate,
 } from '@/lib/learning/functions';
 import { LearningStatsPayload } from '@/lib/learning/interface';
- import { useQueryClient } from '@tanstack/react-query';
+import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useCompetitionStorage from './useCompetitionStorage';
 import { useMessage } from './useMessage';
-import {   useCompetitionStore } from '@/lib/store/useCompetitionStore';
 
 // ============================================================
 // CONSTANTES
@@ -178,7 +178,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
           return false;
         }
 
-        const { data: consultation } = await api.get<Consultation>(
+        const { data: consultation } = await api.get<GameResult>(
           `/consultations/${targetConsultationId}`
         );
 

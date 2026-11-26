@@ -1,12 +1,12 @@
 'use client';
-import { Consultation } from '@/lib/interfaces';
+import { GameResult } from '@/lib/interfaces';
+import { formatToHMS } from '@/lib/learning/functions';
 import { Winner } from '@/lib/learning/interface';
 import { memo, useMemo } from 'react';
 import EmptyState from './EmptyState';
 import Podium from './Podium';
 import WinnersList from './WinnersList';
 import WinningInfoCard from './WinningInfoCard';
-import { formatToHMS } from '@/lib/learning/functions';
 
 interface Ranking {
     winners: Winner[];
@@ -31,7 +31,7 @@ const formatTimeFromSeconds = (seconds: number): string => {
     return restSeconds === 0 ? `${minutes} min` : `${minutes} min ${restSeconds} sec`;
 };
 
-const computeRankingFromConsultations = (consultations: Consultation[]): Ranking | null => {
+const computeRankingFromConsultations = (consultations: GameResult[]): Ranking | null => {
     if (!consultations?.length) return null;
 
     const bestTimesByUser = new Map<string, Winner>();
@@ -85,7 +85,7 @@ const computeRankingFromConsultations = (consultations: Consultation[]): Ranking
 const WinnersSection = memo(function WinnersSection({
     consultations,
 }: {
-    consultations: Consultation[];
+    consultations: GameResult[];
 }) {
     const ranking = useMemo(() => computeRankingFromConsultations(consultations), [consultations]);
 

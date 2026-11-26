@@ -1,7 +1,7 @@
-import { Consultation } from "@/lib/interfaces";
-import { formatRelativeDate, formatTimeFromSeconds, formatToHMS, parseTimeToSeconds } from "@/lib/learning/functions";
+import { GameResult } from "@/lib/interfaces";
+import { formatRelativeDate, formatToHMS, parseTimeToSeconds } from "@/lib/learning/functions";
 
-export function useConsultationCard(consultation: Consultation, rank?: number) {
+export function useConsultationCard(consultation: GameResult, rank?: number) {
     const client = consultation.clientId;
     const nomJoueur = client?.username || 'Anonyme';
     const country = client?.country || "Côte d'Ivoire";

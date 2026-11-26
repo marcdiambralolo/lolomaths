@@ -3,7 +3,7 @@ import Loader from "@/app/loading";
 import { staggerContainer } from "@/lib/animations";
 import { api } from "@/lib/api/client";
 import { formatEditionDate } from "@/lib/functions";
-import type { Consultation } from "@/lib/interfaces";
+import type { GameResult } from "@/lib/interfaces";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Calendar, CheckCircle, History, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -45,7 +45,7 @@ const StatsCard = memo(({ icon, label, value, color, delay = 0 }: StatsCardProps
 function HistoriquePageClientImpl() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
-  const [sortedConsultations, setSortedConsultations] = useState<Consultation[]>([]);
+  const [sortedConsultations, setSortedConsultations] = useState<GameResult[]>([]);
   const [duplicateMap, setDuplicateMap] = useState<Map<string, { count: number; isDuplicate: boolean }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ function HistoriquePageClientImpl() {
       const response = await api.get("/admin/last-ended-game/stats");
       setData(response.data);
 
-      const consultations = (response.data as any)?.consultations as Consultation[] ?? [];
+      const consultations = (response.data as any)?.consultations as GameResult[] ?? [];
       const sorted = [...consultations].sort((a, b) => {
         const valueA = parseInt(a.timeSpent || '0', 10);
         const valueB = parseInt(b.timeSpent || '0', 10);

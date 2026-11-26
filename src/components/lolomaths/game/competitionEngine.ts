@@ -516,6 +516,10 @@ export function calculateGameResult(
     idjeu: '',
     createdAt: now,
     updatedAt: now,
+    timeSpent: '0',
+    score: 0,
+    nombredevues: 0,
+
   };
 
   if (!Array.isArray(sequence) || sequence.length === 0) return game;

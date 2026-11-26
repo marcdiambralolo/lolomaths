@@ -199,22 +199,25 @@ function clearTargets(grid: UneCase[][]): UneCase[][] {
   );
 }
 
-function resetSelections(
-  grid: UneCase[][],
-  pions: UneCase[]
-): { grid: UneCase[][]; pions: UneCase[] } {
-  const nextGrid = grid.map((row) =>
+function clearGridChoiAndTargets(grid: UneCase[][]): UneCase[][] {
+  return grid.map((row) =>
     row.map((cell) => {
-      const clearedTarget = cell.isTarget ? { ...cell, isTarget: false } : cell;
-      return clearedTarget.etat === StateCase.Choi
-        ? { ...clearedTarget, etat: StateCase.Pla }
-        : clearedTarget;
+      const needsTargetClear = Boolean(cell.isTarget);
+      const needsChoiClear = cell.etat === StateCase.Choi;
+      if (!needsTargetClear && !needsChoiClear) return cell;
+      return {
+        ...cell,
+        isTarget: false,
+        etat: needsChoiClear ? StateCase.Pla : cell.etat,
+      };
     })
   );
-  const nextPions = pions.map((p) =>
+}
+
+function clearRackChoi(pions: UneCase[]): UneCase[] {
+  return pions.map((p) =>
     p.etat === StateCase.Choi ? { ...p, etat: StateCase.Pla } : p
   );
-  return { grid: nextGrid, pions: nextPions };
 }
 
 function selectPionInRack(pions: UneCase[], placep: number): UneCase[] {
@@ -359,7 +362,7 @@ export const useGameStore = create<GameState>()(
         numbersTxt,
         operatorsTxt,
         niveau = Dtfil.Sen,
-        numeromat = '123456789',
+        numeromat = '0123456789',
         listecaseRef,
         nombredejeu = 20
       ) => {
@@ -483,7 +486,7 @@ export const useGameStore = create<GameState>()(
           targetCase.tca === TypeCase.PionChiffre ||
           targetCase.tca === TypeCase.PionOperateur;
 
-        // Cas prioritaire : un pion est sélectionné sur le plateau et on clique vers le rack
+        // Pion sélectionné sur le plateau puis clic vers le rack : retire le pion du plateau
         if (selectedCaseOnGrid && isRackTarget) {
           const pionPlacep = selectedCaseOnGrid.placep;
           if (pionPlacep === undefined) return;
@@ -507,14 +510,17 @@ export const useGameStore = create<GameState>()(
 
         // Clic sur un pion ou emplacement du rack
         if (isRackTarget) {
-          if (targetCase.etat === StateCase.Pla) {
-            const pionExists = pions.some(
-              (p) => p.placep === targetCase.placep
-            );
-            if (!pionExists || targetCase.placep === undefined) return;
+          if (
+            targetCase.etat === StateCase.Pla ||
+            targetCase.etat === StateCase.Choi
+          ) {
+            if (targetCase.placep === undefined) return;
+            const pionExists = pions.some((p) => p.placep === targetCase.placep);
+            if (!pionExists) return;
 
             const nextPions = selectPionInRack(pions, targetCase.placep);
-            const { grid: nextGrid } = resetSelections(grid, pions);
+            const nextGrid = clearGridChoiAndTargets(grid);
+
             set({
               grid: nextGrid,
               flatGrid: nextGrid.flat(),
@@ -568,7 +574,7 @@ export const useGameStore = create<GameState>()(
             targetCase.etat === StateCase.Pla ||
             targetCase.etat === StateCase.Choi
           ) {
-            const { pions: clearedPions } = resetSelections(grid, pions);
+            const clearedPions = clearRackChoi(pions);
             const nextGrid = selectCaseOnGrid(grid, targetCase.ncase);
             set({
               grid: nextGrid,
@@ -622,7 +628,7 @@ export const useGameStore = create<GameState>()(
       },
 
       calculateScores: () => {
-        const { grid, flatGrid, niveau, cnbjeu, isMatchOver } = get();
+        const { grid, niveau, cnbjeu, isMatchOver } = get();
 
         const baseGrid = clearTargets(grid);
         const baseFlatGrid = baseGrid.flat();
@@ -864,6 +870,11 @@ export const useGameStore = create<GameState>()(
         matchIndex: state.matchIndex,
         numeromatch: state.numeromatch,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state && Array.isArray(state.grid)) {
+          state.flatGrid = state.grid.flat();
+        }
+      },
     }
   )
 );

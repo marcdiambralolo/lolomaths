@@ -1,4 +1,4 @@
-import { Consultation } from "@/lib/interfaces";
+import { GameResult } from "@/lib/interfaces";
 import { extractSecondsFromTimeSpent } from "@/lib/learning/functions";
 import { DuplicateInfo } from "@/lib/learning/interface";
 import { useMemo } from "react";
@@ -17,7 +17,7 @@ export const getCachedTime = (timeSpent: string | undefined): number => {
   return seconds;
 };
 
-export function useConsultationDuplicates(rawConsultations: Consultation[] = []) {
+export function useConsultationDuplicates(rawConsultations: GameResult[] = []) {
   return useMemo(() => {
     if (rawConsultations.length === 0) {
       return {

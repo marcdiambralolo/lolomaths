@@ -1,6 +1,6 @@
 'use client';
 import { api } from '@/lib/api/client';
-import { ActiveEdition, Consultation } from '@/lib/interfaces';
+import { ActiveEdition, GameResult } from '@/lib/interfaces';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const ITEMS_PER_PAGE = 10000;
@@ -10,7 +10,7 @@ export function useAdminConsultationsPageFinished() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [consultations, setConsultations] = useState<GameResult[]>([]);
   const [activeEdition, setActiveEdition] = useState<ActiveEdition | null>(null);
 
   const fetchData = useCallback(async () => {

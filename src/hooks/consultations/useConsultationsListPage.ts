@@ -1,7 +1,7 @@
 import { api } from '@/lib/api/client';
 import { coerceIsoDate, formatDateFR, processUserData, safeTrim } from '@/lib/functions';
 import { useAuth } from '@/lib/hooks';
-import { Consultation, GameResult } from '@/lib/interfaces';
+import { GameResult } from '@/lib/interfaces';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface EditionInfo {

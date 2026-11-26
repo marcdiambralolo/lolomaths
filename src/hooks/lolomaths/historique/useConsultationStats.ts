@@ -1,4 +1,4 @@
-import { Consultation } from "@/lib/interfaces";
+import { GameResult } from "@/lib/interfaces";
 import { extractSecondsFromTimeSpent, formatSecondsToTime } from "@/lib/learning/functions";
 import { GameStats } from "@/lib/learning/interface";
 import { useMemo } from "react";
@@ -48,7 +48,7 @@ export const getCachedTime = (timeSpent: string | undefined): number => {
 };
 
 export function useConsultationStats(
-  consultations: Consultation[],
+  consultations: GameResult[],
   apiStats?: GameStats
 ) {
   const timeSpentStats = useMemo((): TimeSpentStats => {

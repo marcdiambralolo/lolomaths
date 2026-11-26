@@ -1,12 +1,12 @@
 "use client";
 import { useConsultationCard } from "@/hooks/lolomaths/historique/useConsultationCard";
 import { cx } from "@/lib/functions";
-import type { Consultation } from "@/lib/interfaces";
+import type { GameResult } from "@/lib/interfaces";
 import { Calendar, CheckCircle, Eye, Globe, Timer, UserRound, } from "lucide-react";
 import { memo } from "react";
 
 interface ConsultationCardProps {
-    consultation: Consultation;
+    consultation: GameResult;
     index: number;
     isDuplicate?: boolean;
     duplicateCount?: number;

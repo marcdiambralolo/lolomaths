@@ -16,6 +16,12 @@ const DIRECTION_CONFIG = [
   { key: 'right' as const, index: 3, label: '→ Droite' },
 ];
 
+function formatTwoDecimals(value: unknown): string {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value.toFixed(2)
+    : '0.00';
+}
+
 export const DirectionActions: React.FC<DirectionActionsProps> = ({
   onSelectDirection,
 }) => {
@@ -31,13 +37,14 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
         const result = gameResults[dir.index];
         if (!result) return null;
 
-        // 🔥 L'écart = nombre à atteindre - résultat du calcul
-        // (Fidèle au Kotlin : `nbreatind - result`)
-        const ecart = result.nbreatind - result.result;
+        // Résultat du calcul (rc) et différence / écart (df = nombre à atteindre - résultat)
+        const rc = typeof result.result === 'number' ? result.result : 0;
+        const df = result.nbreatind - rc;
 
         return {
           ...dir,
-          ecart,
+          rc,
+          df,
         };
       }).filter((x): x is NonNullable<typeof x> => x !== null),
     [directionsValid, gameResults]
@@ -52,26 +59,18 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
       aria-label="Directions valides"
     >
       {activeDirections.map((item) => {
-        // Formate l'écart avec 2 décimales
-        const formattedEcart = typeof item.ecart === 'number' 
-          ? item.ecart.toFixed(2) 
-          : '0.00';
-
-        // Affiche un signe + si positif (ex: +1.50) ou - si négatif (ex: -2.00)
-        const ecartLabel =
-          item.ecart > 0
-            ? `+${formattedEcart}`
-            : formattedEcart;
+        const formattedRc = formatTwoDecimals(item.rc);
+        const formattedDf = formatTwoDecimals(item.df);
 
         return (
           <button
             key={item.key}
             type="button"
             onClick={() => onSelectDirection(item.index)}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-md hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-300"
-            aria-label={`${item.label} — écart de ${ecartLabel} points`}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs sm:text-sm transition shadow-md hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-300"
+            aria-label={`${item.label} (rc = ${formattedRc} , df = ${formattedDf})`}
           >
-            {item.label} ({ecartLabel})
+            {item.label} (rc = {formattedRc} , df = {formattedDf})
           </button>
         );
       })}

@@ -193,42 +193,23 @@ export interface FormData {
 }
 
 // ============================================================
-// CONSULTATIONS / GAME CONFIG / LEARNING CONFIG
+//  GAME CONFIG / LEARNING CONFIG
 // ============================================================
-
-export interface Consultation {
-  _id: string;
-  userId: string;
-  clientId?: {
-    nom: string;
-    prenoms: string;
-    _id: string;
-    phone?: string;
-    email?: string;
-    username: string;
-    country: string;
-  };
-  paymentId?: string;
-  price: number;
-  createdAt: string;
-  updatedAt: string;
-  timeSpent: string;
-  idjeu: string | GameConfiguration;
-  edition: unknown;
-  id?: string;
-  nombredevues: number;
-  [key: string]: unknown;
-}
+ 
 
 export interface GameResult {
   _id: string;
   userId: string;
   clientId?: {
+      phone: string;
     nom: string;
     prenoms: string;
     _id: string;
     username: string;
+     country: string;
   };
+    timeSpent: string;
+    nombredevues: number;
   scoreTotal: number;       // ex: 45.50
   nombreDeJeux: number;     // ex: 20
   niveau: 'Min' | 'Cad' | 'Jun' | 'Sen';
@@ -370,7 +351,7 @@ export interface StatisticsData {
 }
 
 export interface EndedGameResponse {
-  consultations: Consultation[];
+  consultations: GameResult[];
   activeEdition: ActiveEdition;
   winners: WinnersData | null;
   statistics: StatisticsData | null;

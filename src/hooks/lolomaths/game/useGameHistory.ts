@@ -1,7 +1,7 @@
 'use client';
 
-import { useGameStore } from '@/lib/store/useGameStore';
 import { useEffect, useRef, useState } from 'react';
+import { useGameStore } from '@/lib/store/useGameStore';
 
 export interface GameHistoryItem {
   score: number;
@@ -18,16 +18,25 @@ export const useGameHistory = () => {
   const processedGamesRef = useRef(0);
 
   useEffect(() => {
-    if (!lastConfirmedResult) return;
+    if (cnbjeu === 0 && !lastConfirmedResult) {
+      processedGamesRef.current = 0;
+      setGameHistory([]);
+      return;
+    }
 
-    // On enregistre le résultat seulement quand cnbjeu a été incrémenté
-    // (c.-à-d. après que `confirmCalculation` a poussé le résultat)
+    if (!lastConfirmedResult) return;
     if (cnbjeu <= processedGamesRef.current) return;
+
+    const numericScore =
+      typeof lastConfirmedResult.notedjeu === 'number' &&
+      Number.isFinite(lastConfirmedResult.notedjeu)
+        ? lastConfirmedResult.notedjeu
+        : 0;
 
     setGameHistory((prev) => [
       ...prev,
       {
-        score: lastConfirmedResult.notedjeu,
+        score: numericScore,
         combination: lastConfirmedResult.combine || 'N/A',
       },
     ]);

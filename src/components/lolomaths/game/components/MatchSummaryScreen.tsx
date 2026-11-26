@@ -1,21 +1,19 @@
 'use client';
 
-import {
-  GameRecord,
-  MatchRecord
-} from '@/lib/interfaces';
+import { GameRecord, MatchRecord } from '@/lib/interfaces';
 import { useHistoryStore } from '@/lib/store/useHistoryStore';
 import { useRouter } from 'next/navigation';
-import React, { memo, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 
 // ============================================================
 // HELPERS
 // ============================================================
 
 function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
+  const safe = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
+  const s = safe % 60;
   return `${h}h${m.toString().padStart(2, '0')}m${s.toString().padStart(2, '0')}s`;
 }
 
@@ -27,6 +25,20 @@ function computeDuration(start: string | null, end: string | null): number {
   return Math.max(0, Math.floor((e - s) / 1000));
 }
 
+function computeTournamentDuration(
+  datedebut: string | null,
+  datefin: string | null,
+  matchs: MatchRecord[]
+): number {
+  const direct = computeDuration(datedebut, datefin);
+  if (direct > 0) return direct;
+
+  return matchs.reduce(
+    (sum, m) => sum + computeDuration(m.datedebut, m.datefin),
+    0
+  );
+}
+
 // ============================================================
 // COMPOSANT
 // ============================================================
@@ -34,10 +46,17 @@ function computeDuration(start: string | null, end: string | null): number {
 export const MatchSummaryScreen: React.FC = memo(() => {
   const router = useRouter();
 
-  // ✅ Lecture depuis l'historique local
-  const lastTournament = useHistoryStore((s) => s.getLastTournament());
+  const tournaments = useHistoryStore((s) => s.tournaments);
+  const lastTournamentId = useHistoryStore((s) => s.lastTournamentId);
 
-  // ----- Calculs mémoïsés -----
+  const lastTournament = useMemo(() => {
+    if (lastTournamentId) {
+      const found = tournaments.find((t) => t.id === lastTournamentId);
+      if (found) return found;
+    }
+    return tournaments[tournaments.length - 1];
+  }, [tournaments, lastTournamentId]);
+
   const stats = useMemo(() => {
     if (!lastTournament) {
       return {
@@ -56,11 +75,11 @@ export const MatchSummaryScreen: React.FC = memo(() => {
       (acc, m) => acc + m.jeux.length,
       0
     );
-    const averageScore =
-      totalGames > 0 ? totalScore / totalGames : 0;
-    const duration = computeDuration(
+    const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
+    const duration = computeTournamentDuration(
       lastTournament.datedebut,
-      lastTournament.datefin
+      lastTournament.datefin,
+      lastTournament.matchs
     );
 
     return {
@@ -73,7 +92,24 @@ export const MatchSummaryScreen: React.FC = memo(() => {
     };
   }, [lastTournament]);
 
-  // ----- Si aucun tournoi -----
+  const allGames: GameRecord[] = useMemo(() => {
+    if (!lastTournament) return [];
+    return lastTournament.matchs.flatMap((m: MatchRecord) => m.jeux);
+  }, [lastTournament]);
+
+  const handleNextAction = useCallback(() => {
+    if (!lastTournament) return;
+    if (stats.isTournamentOver) {
+      router.push(`/star/tournoi/${lastTournament.id}`);
+    } else {
+      router.push('/star/competition');
+    }
+  }, [lastTournament, stats.isTournamentOver, router]);
+
+  const handleMenu = useCallback(() => {
+    router.push('/');
+  }, [router]);
+
   if (!lastTournament) {
     return (
       <div className="p-4 text-center text-slate-500 italic">
@@ -81,22 +117,6 @@ export const MatchSummaryScreen: React.FC = memo(() => {
       </div>
     );
   }
-
-  // ----- Liste de tous les jeux (tous matchs confondus) -----
-  const allGames: GameRecord[] = lastTournament.matchs.flatMap(
-    (m: MatchRecord) => m.jeux
-  );
-
-  // ----- Navigation -----
-  const handleNextAction = () => {
-    if (stats.isTournamentOver) {
-      router.push(`/star/tournoi/${lastTournament.id}`);
-    } else {
-      router.push('/star/competition');
-    }
-  };
-
-  const handleMenu = () => router.push('/');
 
   return (
     <div className="p-4 flex flex-col gap-4 text-center shadow-2xl max-w-lg mx-auto my-auto">

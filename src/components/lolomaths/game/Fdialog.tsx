@@ -16,13 +16,91 @@ interface ScoreRowProps {
   valueClassName?: string;
 }
 
+interface BonusBreakdown {
+  levelBonus: number;
+  levelThreshold: number;
+  placedCountBonus: number;
+  mulDivBonus: number;
+  totalBonus: number;
+}
+
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const MUL_DIV_CHARS = new Set(['*', '/', '×', '÷']);
 
 function formatNumber(value: unknown, decimals = 2): string {
   return typeof value === 'number' && Number.isFinite(value)
     ? value.toFixed(decimals)
     : (0).toFixed(decimals);
+}
+
+function formatSignedNumber(value: number, decimals = 2): string {
+  const formatted = formatNumber(value, decimals);
+  return value > 0 ? `+${formatted}` : formatted;
+}
+
+function getLevelThreshold(niveau: GameResult['niveau']): number {
+  switch (niveau) {
+    case 'Min':
+      return 30;
+    case 'Cad':
+      return 100;
+    case 'Jun':
+      return 200;
+    case 'Sen':
+    default:
+      return 300;
+  }
+}
+
+function computeBonusBreakdown(
+  gameResult: GameResult,
+  isPerfect: boolean
+): BonusBreakdown {
+  const levelThreshold = getLevelThreshold(gameResult.niveau);
+
+  if (!isPerfect) {
+    return {
+      levelBonus: 0,
+      levelThreshold,
+      placedCountBonus: 0,
+      mulDivBonus: 0,
+      totalBonus: 0,
+    };
+  }
+
+  const targetValue = Number(gameResult.nbreatind) || 0;
+  const levelBonus = targetValue >= levelThreshold ? 1 : 0;
+
+  const sequenceCount = Array.isArray(gameResult.sequenceNcases)
+    ? gameResult.sequenceNcases.length
+    : 0;
+  const placedCountBonus = sequenceCount > 6 ? sequenceCount - 6 : 0;
+
+  const combineStr = String(gameResult.combine ?? '');
+  let mulDivBonus = 0;
+  for (const ch of combineStr) {
+    if (MUL_DIV_CHARS.has(ch)) {
+      mulDivBonus += 1;
+    }
+  }
+
+  const explicitBonus =
+    typeof gameResult.bonus === 'number' && Number.isFinite(gameResult.bonus)
+      ? Math.max(0, gameResult.bonus)
+      : null;
+
+  const computedSum = levelBonus + placedCountBonus + mulDivBonus;
+  const totalBonus = explicitBonus ?? computedSum;
+
+  return {
+    levelBonus,
+    levelThreshold,
+    placedCountBonus,
+    mulDivBonus,
+    totalBonus,
+  };
 }
 
 const ScoreRow: React.FC<ScoreRowProps> = ({
@@ -109,14 +187,19 @@ export const Fdialog: React.FC<FdialogProps> = ({
 
   if (!isOpen || !gameResult) return null;
 
-  const ecartAbsolu = Math.abs(gameResult.nbreatind - gameResult.result);
+  const targetValue = Number(gameResult.nbreatind) || 0;
+  const computedResult = Number(gameResult.result) || 0;
+  const ecartAbsolu = Math.abs(targetValue - computedResult);
   const isPerfect = ecartAbsolu === 0;
 
-  const formattedScore = formatNumber(gameResult.notedjeu);
-  const formattedResult = formatNumber(gameResult.result);
+  const baseNote = isPerfect ? 5 : -ecartAbsolu;
+  const breakdown = computeBonusBreakdown(gameResult, isPerfect);
+  const totalGameNote = baseNote + breakdown.totalBonus;
+
+  const formattedScore = formatSignedNumber(totalGameNote);
+  const formattedResult = formatNumber(computedResult);
   const formattedEcart = formatNumber(ecartAbsolu);
-  const formattedBaseNote = formatNumber(gameResult.notedbase);
-  const formattedBonus = formatNumber(gameResult.bonus);
+  const formattedBaseNote = formatSignedNumber(baseNote);
 
   return (
     <div
@@ -163,7 +246,7 @@ export const Fdialog: React.FC<FdialogProps> = ({
         <div className="p-6 flex flex-col gap-1 font-mono text-sm">
           <ScoreRow
             label="Nombre à atteindre :"
-            value={gameResult.nbreatind}
+            value={targetValue}
             valueClassName="text-sky-400 font-bold"
           />
 
@@ -185,21 +268,53 @@ export const Fdialog: React.FC<FdialogProps> = ({
 
           <ScoreRow
             label="Note de base :"
-            value={`${gameResult.notedbase > 0 ? '+' : ''}${formattedBaseNote} pt${
-              Math.abs(gameResult.notedbase) > 1 ? 's' : ''
-            }`}
+            value={`${formattedBaseNote} pt${Math.abs(baseNote) > 1 ? 's' : ''}`}
             valueClassName={
-              gameResult.notedbase >= 0
+              baseNote >= 0
                 ? 'text-emerald-400 font-bold'
                 : 'text-rose-400 font-bold'
             }
           />
 
+          <div className="mt-2 pt-2 border-t border-slate-800 flex flex-col gap-1">
+            <span className="text-xs uppercase tracking-wider text-slate-400 font-sans font-semibold">
+              Détail des bonus
+            </span>
+
+            <ScoreRow
+              label={`Seuil niveau (${gameResult.niveau ?? 'Sen'} ≥ ${breakdown.levelThreshold}) :`}
+              value={`+${formatNumber(breakdown.levelBonus)}`}
+              valueClassName={
+                breakdown.levelBonus > 0 ? 'text-amber-400' : 'text-slate-500'
+              }
+            />
+
+            <ScoreRow
+              label="Plus de 6 pions :"
+              value={`+${formatNumber(breakdown.placedCountBonus)}`}
+              valueClassName={
+                breakdown.placedCountBonus > 0
+                  ? 'text-amber-400'
+                  : 'text-slate-500'
+              }
+            />
+
+            <ScoreRow
+              label="Multiplication / Division :"
+              value={`+${formatNumber(breakdown.mulDivBonus)}`}
+              valueClassName={
+                breakdown.mulDivBonus > 0 ? 'text-amber-400' : 'text-slate-500'
+              }
+            />
+          </div>
+
           <ScoreRow
             label="Total Bonus :"
-            value={`+${formattedBonus}`}
+            value={`+${formatNumber(breakdown.totalBonus)}`}
             valueClassName={
-              gameResult.bonus > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'
+              breakdown.totalBonus > 0
+                ? 'text-amber-400 font-bold'
+                : 'text-slate-500'
             }
           />
 
@@ -209,10 +324,10 @@ export const Fdialog: React.FC<FdialogProps> = ({
             </span>
             <span
               className={`text-2xl font-black font-sans tracking-tight ${
-                gameResult.notedjeu >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                totalGameNote >= 0 ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
-              {gameResult.notedjeu > 0 ? `+${formattedScore}` : formattedScore} pts
+              {formattedScore} pts
             </span>
           </div>
         </div>

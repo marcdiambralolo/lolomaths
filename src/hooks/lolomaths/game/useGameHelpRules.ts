@@ -3,6 +3,13 @@
 import { useMemo } from 'react';
 import { UneCase } from '@/lib/interfaces';
 
+interface DirectionsValid {
+  left: boolean;
+  right: boolean;
+  up: boolean;
+  down: boolean;
+}
+
 interface HelpContext {
   isStartCovered: boolean;
   placedPions: UneCase[];
@@ -10,12 +17,7 @@ interface HelpContext {
   hasLockedPion: boolean;
   hasAvailablePions: boolean;
   isMatchOver: boolean;
-  directionsValid: {
-    left: boolean;
-    right: boolean;
-    up: boolean;
-    down: boolean;
-  };
+  directionsValid: DirectionsValid;
 }
 
 export const useGameHelpRules = ({
@@ -27,62 +29,53 @@ export const useGameHelpRules = ({
   isMatchOver,
   directionsValid,
 }: HelpContext): string[] => {
+  const placedCount = placedPions.length;
+
   return useMemo(() => {
     const messages: string[] = [];
-    const placedCount = placedPions.length;
 
-    // ============================================================
-    // 1. Match terminé → message prioritaire unique
-    // ============================================================
+    // 1. Match terminé → message unique prioritaire
     if (isMatchOver) {
-      messages.push(
-        '🏁 Match terminé ! Consultez le résumé ou recommencez un nouveau match.'
-      );
-      return messages;
+      return [
+        '🏁 Match terminé ! Consultez le résumé ou recommencez un nouveau match.',
+      ];
     }
 
-    
-
-    // ============================================================
-    // 3. Case de départ non couverte
-    // ============================================================
-    if (!isStartCovered) {
-      messages.push(
-        '🎯 Placez un pion sur la case de départ (★) pour commencer'
-      );
+    // 2. Plus aucun pion disponible et aucun pion posé
+    if (!hasAvailablePions && placedCount === 0) {
+      return ['📦 Plus de pions disponibles dans le porte-pions.'];
     }
 
-    // ============================================================
-    // 4. Case de départ couverte mais aucun pion posé
-    // ============================================================
-    if (isStartCovered && placedCount === 0) {
+    // 3. Premier coup : couverture de la case de départ requise
+    if (isFirstGame && !isStartCovered) {
       messages.push(
-        '🧩 Sélectionnez un pion dans le porte-pions et placez-le sur le plateau'
+        '🎯 Placez un pion sur la case de départ (★) pour commencer.'
       );
     }
 
-    // ============================================================
-    // 5. Combinaison trop courte
-    // ============================================================
+    // 4. Aucun pion posé sur le plateau
+    if (placedCount === 0 && (!isFirstGame || isStartCovered)) {
+      messages.push(
+        '🧩 Sélectionnez un pion dans le porte-pions et placez-le sur le plateau.'
+      );
+    }
+
+    // 5. Combinaison trop courte (< 3 pions)
     if (placedCount > 0 && placedCount < 3) {
       messages.push(
-        '📐 Une combinaison valide doit contenir au moins 3 pions (nombre-opérateur-nombre)'
+        '📐 Une combinaison valide doit contenir au moins 3 pions (nombre - opérateur - nombre).'
       );
     }
 
-    // ============================================================
-    // 6. Pas de pion verrouillé utilisé (hors premier jeu)
-    // ============================================================
+    // 6. Enchaînement requis à partir du 2e coup
     if (placedCount > 0 && !isFirstGame && !hasLockedPion) {
       messages.push(
-        "🔗 Vous devez utiliser au moins un pion verrouillé pour l'enchaînement"
+        "🔗 Vous devez relier votre combinaison à au moins un pion verrouillé."
       );
     }
 
-    // ============================================================
-    // 7. Combinaison posée mais aucune direction valide
-    // ============================================================
-    if (hasAvailablePions && isStartCovered && placedCount >= 3) {
+    // 7. Combinaison >= 3 pions sans aucune direction valide
+    if (placedCount >= 3) {
       const hasValidDirection =
         directionsValid.left ||
         directionsValid.right ||
@@ -98,12 +91,15 @@ export const useGameHelpRules = ({
 
     return messages;
   }, [
-    isStartCovered,
-    placedPions,
-    isFirstGame,
-    hasLockedPion,
-    hasAvailablePions,
     isMatchOver,
-    directionsValid,
+    hasAvailablePions,
+    placedCount,
+    isFirstGame,
+    isStartCovered,
+    hasLockedPion,
+    directionsValid.left,
+    directionsValid.right,
+    directionsValid.up,
+    directionsValid.down,
   ]);
 };

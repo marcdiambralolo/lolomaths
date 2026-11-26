@@ -1,12 +1,12 @@
 import { api } from "@/lib/api/client";
-import { Consultation } from "@/lib/interfaces";
+import { GameResult } from "@/lib/interfaces";
 import { Edition, GameStats } from "@/lib/learning/interface";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ApiResponse {
     latestEdition?: Edition;
     stats?: GameStats;
-    consultations?: Consultation[];
+    consultations?: GameResult[];
 }
 
 export function useConsultationsApi() {

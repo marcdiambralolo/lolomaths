@@ -1,10 +1,10 @@
 import { api } from '@/lib/api/client';
-import { Consultation, EditionInfo } from '@/lib/interfaces';
+import { EditionInfo, GameResult } from '@/lib/interfaces';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface ConsultationsState {
-  data: Consultation[];
+  data: GameResult[];
   loading: boolean;
   error: string | null;
   edition: EditionInfo | null;
@@ -32,7 +32,7 @@ export function useConsultationsListPageWithId() {
     try {
       const response = await api.get<{
         success: boolean;
-        consultations: Consultation[];
+        consultations: GameResult[];
         edition: EditionInfo;
       }>(`/consultations/me/by-idjeu/${gameId}`);
 

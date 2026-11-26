@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo, useCallback } from "react";
 import { useCompetitionGame } from "@/hooks/lolomaths/game/useCompetitionGame";
 import HorlogeMise from "../choix/components/HorlogeMise";
 import FooterSection from "../commons/FooterSection";
@@ -17,7 +17,7 @@ import { TileRack } from "./portepions/TileRack";
 const MATCH_OVER_BANNER =
   "bg-amber-500 text-slate-950 text-center text-sm font-bold py-2 px-3 rounded-xl shadow-lg mx-2 sm:mx-0 mt-2";
 
-export const CompetitionScreen: React.FC = () => {
+export const CompetitionScreen: React.FC = memo(() => {
   const {
     helpMessages,
     showHelp,
@@ -34,10 +34,17 @@ export const CompetitionScreen: React.FC = () => {
     setSelectedDirectionIndex,
   } = useCompetitionGame();
 
-  // Conditions dérivées (lisibilité)
+  const handleToggleHelp = useCallback(
+    (checked: boolean) => {
+      setShowHelp(checked);
+    },
+    [setShowHelp]
+  );
+
   const showMatchOverBanner = isMatchOver;
   const showDirectionActions =
     !isMatchOver && gameState.isStartCovered && hasAnyValidDirection;
+  const showHelpPanel = showHelp && helpMessages.length > 0;
 
   return (
     <main
@@ -49,7 +56,7 @@ export const CompetitionScreen: React.FC = () => {
         <TileRack />
 
         {showMatchOverBanner && (
-          <div className={MATCH_OVER_BANNER}>
+          <div role="status" aria-live="polite" className={MATCH_OVER_BANNER}>
             🏁 Match terminé — redirection en cours…
           </div>
         )}
@@ -63,12 +70,12 @@ export const CompetitionScreen: React.FC = () => {
           onResetRound={handleResetRound}
         />
 
-        {showHelp && <HelpMessagesView messages={helpMessages} />}
+        {showHelpPanel && <HelpMessagesView messages={helpMessages} />}
         <GameScoreBoard />
         <GameHistoryList />
 
         <HorlogeMise />
-        <HelpToggle checked={showHelp} onChange={setShowHelp} />
+        <HelpToggle checked={showHelp} onChange={handleToggleHelp} />
         <FooterSection />
       </section>
 
@@ -80,6 +87,6 @@ export const CompetitionScreen: React.FC = () => {
       />
     </main>
   );
-};
+});
 
 CompetitionScreen.displayName = "CompetitionScreen";

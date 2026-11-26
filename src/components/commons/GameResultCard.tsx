@@ -1,10 +1,10 @@
 "use client";
 
 import { cx, formatEditionDate, getRelativeTime } from "@/lib/functions";
-import type { Consultation, GameResult } from "@/lib/interfaces";
+import type { GameResult } from "@/lib/interfaces";
 import { motion } from "framer-motion";
+import { Award, Calendar, Gamepad2, Star, Trophy, UserRound, Zap } from "lucide-react";
 import { useState } from "react";
-import { Trophy, Target, Gamepad2, Timer, UserRound, Zap, Award, Calendar, Star } from "lucide-react";
 
 // On adapte la logique pour qu'elle colle aux statuts d'un match/édition de Lolomaths
 const getMatchStatus = (status: string, isActive: boolean) => {

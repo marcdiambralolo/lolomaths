@@ -1,10 +1,9 @@
 'use client';
-import CacheLink from "@/components/commons/CacheLink";
-import { Consultation } from "@/lib/interfaces";
+import { GameResult } from "@/lib/interfaces";
 import { Sparkles } from "lucide-react";
 import { memo } from 'react';
 
-const ParticipationsSection = memo(({ consultations, activeEditionId }: { consultations: Consultation[]; activeEditionId?: string }) => (
+const ParticipationsSection = memo(({ consultations, activeEditionId }: { consultations: GameResult[]; activeEditionId?: string }) => (
     <div className="w-full mx-auto mt-6">
         {consultations.length === 0 ? (
             <div className="text-center py-20 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-100 dark:border-gray-700">

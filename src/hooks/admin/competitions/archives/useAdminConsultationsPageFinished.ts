@@ -1,9 +1,8 @@
-// hooks/admin/consultations/archives/useAdminConsultationsPageFinished.ts
-'use client';
+ 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api/client';
-import { Consultation, GameResult } from '@/lib/interfaces';
+import { GameResult } from '@/lib/interfaces';
+import { useCallback, useEffect, useState } from 'react';
 
 export const ITEMS_PER_PAGE = 10000;
 

@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { GameRecord, MatchRecord, TournamentRecord, } from '@/lib/interfaces';
+import {
+  GameRecord,
+  MatchRecord,
+  TournamentRecord,
+} from '@/lib/interfaces';
 
 const MAX_TOURNAMENTS = 20;
 const STORAGE_NAME = 'lolomaths_history';
@@ -20,10 +24,26 @@ interface HistoryState {
 
 const enforceTournamentLimit = (
   tournaments: TournamentRecord[]
-): TournamentRecord[] =>
-  tournaments.length <= MAX_TOURNAMENTS
-    ? tournaments
-    : tournaments.slice(0, MAX_TOURNAMENTS);
+): TournamentRecord[] => {
+  if (tournaments.length <= MAX_TOURNAMENTS) return tournaments;
+  return tournaments.slice(tournaments.length - MAX_TOURNAMENTS);
+};
+
+const createFallbackMatch = (
+  tournamentId: string,
+  matchId: string,
+  game: GameRecord
+): MatchRecord => ({
+  id: matchId,
+  tournamentId,
+  numordrep: 0,
+  numeromatch: '1',
+  score: game.notejeu,
+  isGameOver: false,
+  datedebut: game.dateCreation,
+  datefin: null,
+  jeux: [game],
+});
 
 export const useHistoryStore = create<HistoryState>()(
   persist(
@@ -33,13 +53,20 @@ export const useHistoryStore = create<HistoryState>()(
 
       saveTournament: (tournament) => {
         set((state) => {
-          const exists = state.tournaments.some(
-            (t) => t.id === tournament.id
-          );
+          const exists = state.tournaments.some((t) => t.id === tournament.id);
           const nextTournaments = exists
             ? state.tournaments.map((t) =>
-              t.id === tournament.id ? tournament : t
-            )
+                t.id === tournament.id
+                  ? {
+                      ...t,
+                      ...tournament,
+                      matchs:
+                        tournament.matchs.length > 0
+                          ? tournament.matchs
+                          : t.matchs,
+                    }
+                  : t
+              )
             : [...state.tournaments, tournament];
 
           return {
@@ -53,11 +80,25 @@ export const useHistoryStore = create<HistoryState>()(
         set((state) => ({
           tournaments: state.tournaments.map((t) => {
             if (t.id !== tournamentId) return t;
-            const exists = t.matchs.some((m) => m.id === match.id);
-            const matchs = exists
-              ? t.matchs.map((m) => (m.id === match.id ? match : m))
-              : [...t.matchs, match];
-            return { ...t, matchs };
+
+            const existing = t.matchs.find((m) => m.id === match.id);
+            if (!existing) {
+              return {
+                ...t,
+                matchs: [...t.matchs, match],
+              };
+            }
+
+            const mergedMatch: MatchRecord = {
+              ...existing,
+              ...match,
+              jeux: match.jeux.length > 0 ? match.jeux : existing.jeux,
+            };
+
+            return {
+              ...t,
+              matchs: t.matchs.map((m) => (m.id === match.id ? mergedMatch : m)),
+            };
           }),
         }));
       },
@@ -66,28 +107,43 @@ export const useHistoryStore = create<HistoryState>()(
         set((state) => ({
           tournaments: state.tournaments.map((t) => {
             if (t.id !== tournamentId) return t;
+
+            const matchExists = t.matchs.some((m) => m.id === matchId);
+            if (!matchExists) {
+              return {
+                ...t,
+                matchs: [...t.matchs, createFallbackMatch(tournamentId, matchId, game)],
+              };
+            }
+
             return {
               ...t,
               matchs: t.matchs.map((m) => {
                 if (m.id !== matchId) return m;
-                const exists = m.jeux.some((j) => j.id === game.id);
-                const jeux = exists
+                const gameExists = m.jeux.some((j) => j.id === game.id);
+                const jeux = gameExists
                   ? m.jeux.map((j) => (j.id === game.id ? game : j))
                   : [...m.jeux, game];
-                return { ...m, jeux };
+
+                return {
+                  ...m,
+                  jeux,
+                };
               }),
             };
           }),
         }));
       },
 
-      getTournament: (id) =>
-        get().tournaments.find((t) => t.id === id),
+      getTournament: (id) => get().tournaments.find((t) => t.id === id),
 
       getLastTournament: () => {
         const { tournaments, lastTournamentId } = get();
-        if (!lastTournamentId) return tournaments[tournaments.length - 1];
-        return tournaments.find((t) => t.id === lastTournamentId);
+        if (lastTournamentId) {
+          const found = tournaments.find((t) => t.id === lastTournamentId);
+          if (found) return found;
+        }
+        return tournaments[tournaments.length - 1];
       },
 
       clearHistory: () => {
@@ -95,13 +151,18 @@ export const useHistoryStore = create<HistoryState>()(
       },
 
       removeTournament: (id) => {
-        set((state) => ({
-          tournaments: state.tournaments.filter((t) => t.id !== id),
-          lastTournamentId:
+        set((state) => {
+          const remaining = state.tournaments.filter((t) => t.id !== id);
+          const nextLastId =
             state.lastTournamentId === id
-              ? null
-              : state.lastTournamentId,
-        }));
+              ? remaining[remaining.length - 1]?.id ?? null
+              : state.lastTournamentId;
+
+          return {
+            tournaments: remaining,
+            lastTournamentId: nextLastId,
+          };
+        });
       },
     }),
     {

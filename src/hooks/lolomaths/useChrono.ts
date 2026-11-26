@@ -27,12 +27,17 @@ interface UseChronoReturn {
   addSeconds: (seconds: number) => void;
 }
 
+function normalizeSeconds(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.floor(value));
+}
+
 export function useChrono({
   initialSeconds = 300,
   autoStart = false,
   onTimeUp,
 }: UseChronoOptions = {}): UseChronoReturn {
-  const normalizedInitial = Math.max(0, Math.floor(initialSeconds));
+  const normalizedInitial = normalizeSeconds(initialSeconds);
 
   const [totalDuration, setTotalDuration] = useState(normalizedInitial);
   const [timeLeft, setTimeLeft] = useState(normalizedInitial);
@@ -43,20 +48,20 @@ export function useChrono({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
   const hasTriggeredTimeUpRef = useRef(false);
-
   const targetTimeRef = useRef<number | null>(null);
 
   const timeLeftRef = useRef(timeLeft);
+  const totalDurationRef = useRef(totalDuration);
+  const isRunningRef = useRef(isRunning);
+
   useEffect(() => {
     timeLeftRef.current = timeLeft;
   }, [timeLeft]);
 
-  const totalDurationRef = useRef(totalDuration);
   useEffect(() => {
     totalDurationRef.current = totalDuration;
   }, [totalDuration]);
 
-  const isRunningRef = useRef(isRunning);
   useEffect(() => {
     isRunningRef.current = isRunning;
   }, [isRunning]);
@@ -78,13 +83,14 @@ export function useChrono({
     const remainingMs = targetTimeRef.current - Date.now();
     const nextTimeLeft = Math.max(0, Math.ceil(remainingMs / 1000));
 
-    // Évite les re-renders inutiles si la valeur n'a pas changé
+    timeLeftRef.current = nextTimeLeft;
     setTimeLeft((prev) => (prev === nextTimeLeft ? prev : nextTimeLeft));
 
     if (nextTimeLeft <= 0) {
       clearTimer();
-      setIsRunning(false);
       targetTimeRef.current = null;
+      isRunningRef.current = false;
+      setIsRunning(false);
 
       if (!hasTriggeredTimeUpRef.current) {
         hasTriggeredTimeUpRef.current = true;
@@ -93,7 +99,6 @@ export function useChrono({
     }
   }, [clearTimer]);
 
-  // Effet principal : démarre / arrête le timer selon isRunning
   useEffect(() => {
     if (!isRunning) {
       clearTimer();
@@ -110,7 +115,6 @@ export function useChrono({
     return clearTimer;
   }, [isRunning, clearTimer, tick]);
 
-  // Resynchronisation au retour de l'onglet
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible" && isRunningRef.current) {
@@ -127,10 +131,12 @@ export function useChrono({
     const current = timeLeftRef.current;
     if (current <= 0) return;
 
+    hasTriggeredTimeUpRef.current = false;
     if (targetTimeRef.current === null) {
       targetTimeRef.current = Date.now() + current * 1000;
     }
 
+    isRunningRef.current = true;
     setIsRunning(true);
   }, []);
 
@@ -141,8 +147,10 @@ export function useChrono({
       timeLeftRef.current = remaining;
       setTimeLeft(remaining);
     }
+
     clearTimer();
     targetTimeRef.current = null;
+    isRunningRef.current = false;
     setIsRunning(false);
   }, [clearTimer]);
 
@@ -151,14 +159,14 @@ export function useChrono({
       clearTimer();
       targetTimeRef.current = null;
       hasTriggeredTimeUpRef.current = false;
+      isRunningRef.current = false;
       setIsRunning(false);
 
       const nextDuration =
         newSeconds !== undefined
-          ? Math.max(0, Math.floor(newSeconds))
+          ? normalizeSeconds(newSeconds)
           : totalDurationRef.current;
 
-      // Mise à jour SYNCHRONE des refs
       timeLeftRef.current = nextDuration;
       totalDurationRef.current = nextDuration;
 
@@ -168,23 +176,27 @@ export function useChrono({
     [clearTimer]
   );
 
-  /**
-   * Reset + démarrage atomique : évite le piège reset() puis start() dans
-   * le même tick React (où timeLeftRef n'est pas encore à jour).
-   */
   const resetAndStart = useCallback(
     (newSeconds: number) => {
       clearTimer();
       hasTriggeredTimeUpRef.current = false;
 
-      const duration = Math.max(0, Math.floor(newSeconds));
+      const duration = normalizeSeconds(newSeconds);
       timeLeftRef.current = duration;
       totalDurationRef.current = duration;
-      targetTimeRef.current = Date.now() + duration * 1000;
 
       setTotalDuration(duration);
       setTimeLeft(duration);
-      setIsRunning(true);
+
+      if (duration > 0) {
+        targetTimeRef.current = Date.now() + duration * 1000;
+        isRunningRef.current = true;
+        setIsRunning(true);
+      } else {
+        targetTimeRef.current = null;
+        isRunningRef.current = false;
+        setIsRunning(false);
+      }
     },
     [clearTimer]
   );
@@ -192,26 +204,25 @@ export function useChrono({
   const addSeconds = useCallback((secondsToAdd: number) => {
     if (!Number.isFinite(secondsToAdd)) return;
 
-    const addedMs = Math.floor(secondsToAdd) * 1000;
+    const delta = Math.floor(secondsToAdd);
+    const next = Math.max(0, timeLeftRef.current + delta);
+    timeLeftRef.current = next;
 
-    if (targetTimeRef.current !== null) {
-      targetTimeRef.current += addedMs;
-    }
-
-    setTimeLeft((prev) => {
-      const next = Math.max(0, prev + Math.floor(secondsToAdd));
-      timeLeftRef.current = next;
-
-      if (next > 0) {
-        hasTriggeredTimeUpRef.current = false;
-      }
-
-      if (targetTimeRef.current === null && isRunningRef.current === false) {
+    if (next > 0) {
+      hasTriggeredTimeUpRef.current = false;
+      if (targetTimeRef.current !== null) {
+        targetTimeRef.current = Math.max(
+          Date.now(),
+          targetTimeRef.current + delta * 1000
+        );
+      } else if (isRunningRef.current) {
         targetTimeRef.current = Date.now() + next * 1000;
       }
+    } else {
+      targetTimeRef.current = null;
+    }
 
-      return next;
-    });
+    setTimeLeft(next);
   }, []);
 
   const formattedTime = useMemo(() => {

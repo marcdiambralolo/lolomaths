@@ -1,8 +1,8 @@
-import type { Consultation } from '@/lib/interfaces';
+import type { GameResult } from '@/lib/interfaces';
 import { api } from '../client';
 
 export interface PaginatedConsultationsResult {
-  consultations: Consultation[];
+  consultations: GameResult[];
   total: number;
   page: number;
   limit: number;
@@ -11,14 +11,14 @@ export interface PaginatedConsultationsResult {
 
 export interface ConsultationFrontDataResult {
   success: boolean;
-  consultation: Consultation | null;
+  consultation: GameResult | null;
 }
 
-type PaginatedConsultationsPayload = PaginatedConsultationsResult | Consultation[];
+type PaginatedConsultationsPayload = PaginatedConsultationsResult | GameResult[];
 
 type ConsultationFrontDataPayload = {
   success?: boolean;
-  consultation?: Consultation | null;
+  consultation?: GameResult | null;
   messaging?: unknown;
 };
 
