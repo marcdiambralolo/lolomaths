@@ -3,6 +3,7 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { BoardTheme, StateCase, UneCase } from '@/lib/interfaces';
 import { useCellStyle } from './useCellStyle';
+import { formatOperatorDisplay } from '@/components/lolomaths/game/portepions/rackStyles';
 
 export interface GridCellProps {
   cell: UneCase;
@@ -28,6 +29,9 @@ export const GridCellBase: React.FC<GridCellProps> = ({
 }) => {
   const { content, isStart, isTarget, style } = useCellStyle(cell, theme);
 
+  // 🔥 On formate le contenu pour l'affichage (× et ÷)
+  const displayContent = useMemo(() => formatOperatorDisplay(content), [content]);
+
   const handleClick = useCallback(() => {
     onClick(cell);
   }, [onClick, cell]);
@@ -43,10 +47,9 @@ export const GridCellBase: React.FC<GridCellProps> = ({
   );
 
   const isDisabled = cell.etat === StateCase.Lo;
-  // Détecte si un pion est posé sur la cellule
   const hasPlacedPion = cell.etat === StateCase.Choi || Boolean(cell.placep);
 
-  const mobileFontSize = useMemo(() => getMobileFontSize(content), [content]);
+  const mobileFontSize = useMemo(() => getMobileFontSize(displayContent), [displayContent]);
 
   const mergedStyle = useMemo<React.CSSProperties>(() => {
     if (!hasPlacedPion) {
@@ -56,7 +59,6 @@ export const GridCellBase: React.FC<GridCellProps> = ({
       } as React.CSSProperties;
     }
 
-    // Effet 3D biseauté/bombé quand un pion est posé dans la cellule
     const existingShadow = style.boxShadow ? `${style.boxShadow}, ` : '';
     const existingBgImage = style.backgroundImage ? `${style.backgroundImage}, ` : '';
 
@@ -74,26 +76,26 @@ export const GridCellBase: React.FC<GridCellProps> = ({
       [
         `Case (${colIndex}, ${rowIndex})`,
         `ID: ${cell.ncase}`,
-        `Valeur: ${content || 'vide'}`,
+        `Valeur: ${displayContent || 'vide'}`,
         isStart ? 'Départ' : null,
         isTarget ? 'Cible' : null,
       ]
         .filter(Boolean)
         .join(' — '),
-    [colIndex, rowIndex, cell.ncase, content, isStart, isTarget]
+    [colIndex, rowIndex, cell.ncase, displayContent, isStart, isTarget]
   );
 
   const ariaLabel = useMemo(
     () =>
       [
         `Case ${cell.ncase}`,
-        `valeur ${content || 'vide'}`,
+        `valeur ${displayContent || 'vide'}`,
         `état ${cell.etat}`,
         isTarget ? 'cible' : null,
       ]
         .filter(Boolean)
         .join(', '),
-    [cell.ncase, content, cell.etat, isTarget]
+    [cell.ncase, displayContent, cell.etat, isTarget]
   );
 
   return (
@@ -129,7 +131,7 @@ export const GridCellBase: React.FC<GridCellProps> = ({
             : undefined
         }
       >
-        {content}
+        {displayContent}
       </span>
     </div>
   );

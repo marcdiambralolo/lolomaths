@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { useGameStore } from '@/lib/store/useGameStore';
 
 interface DirectionActionsProps {
@@ -23,9 +22,6 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
   const directionsValid = useGameStore((state) => state.directionsValid);
   const gameResults = useGameStore((state) => state.gameResults);
 
-  // `gameResults` est un tableau de 4 éléments indexé par direction :
-  //   [0] = Up, [1] = Down, [2] = Left, [3] = Right.
-  // On utilise directement `dir.index` pour lire le bon résultat.
   const activeDirections = useMemo(
     () =>
       DIRECTION_CONFIG.map((dir) => {
@@ -35,9 +31,13 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
         const result = gameResults[dir.index];
         if (!result) return null;
 
+        // 🔥 L'écart = nombre à atteindre - résultat du calcul
+        // (Fidèle au Kotlin : `nbreatind - result`)
+        const ecart = result.nbreatind - result.result;
+
         return {
           ...dir,
-          score: result.notedjeu,
+          ecart,
         };
       }).filter((x): x is NonNullable<typeof x> => x !== null),
     [directionsValid, gameResults]
@@ -52,11 +52,16 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
       aria-label="Directions valides"
     >
       {activeDirections.map((item) => {
-        const formattedScore = typeof item.score === 'number' ? item.score.toFixed(2) : '0.00';
-        const scoreLabel =
-          item.score >= 0
-            ? `+${formattedScore}`
-            : formattedScore;
+        // Formate l'écart avec 2 décimales
+        const formattedEcart = typeof item.ecart === 'number' 
+          ? item.ecart.toFixed(2) 
+          : '0.00';
+
+        // Affiche un signe + si positif (ex: +1.50) ou - si négatif (ex: -2.00)
+        const ecartLabel =
+          item.ecart > 0
+            ? `+${formattedEcart}`
+            : formattedEcart;
 
         return (
           <button
@@ -64,9 +69,9 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
             type="button"
             onClick={() => onSelectDirection(item.index)}
             className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-md hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-300"
-            aria-label={`${item.label} — ${scoreLabel} points`}
+            aria-label={`${item.label} — écart de ${ecartLabel} points`}
           >
-            {item.label} ({scoreLabel} pts)
+            {item.label} ({ecartLabel})
           </button>
         );
       })}

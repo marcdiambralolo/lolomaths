@@ -3,6 +3,7 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { BoardTheme, UneCase } from '@/lib/interfaces';
 import {
+  formatOperatorDisplay,
   getRackPionAriaLabel,
   getRackPionTitle,
 } from './rackStyles';
@@ -105,7 +106,7 @@ export const RackPionBase: React.FC<RackPionProps> = ({
               '0 1px 0 rgba(255, 255, 255, 0.25), 0 -1px 1px rgba(0, 0, 0, 0.55)',
           }}
         >
-          {pion.txt}
+          {formatOperatorDisplay(pion.txt)}
         </span>
       )}
     </button>

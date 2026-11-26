@@ -25,16 +25,8 @@ import {
   UneCase,
 } from '@/lib/interfaces';
 
-// ============================================================
-// CONSTANTES
-// ============================================================
-
 const STORAGE_NAME = 'lolomaths-game';
 const CURRENT_VERSION = 1;
-
-// ============================================================
-// TYPES
-// ============================================================
 
 interface DirectionsValid {
   left: boolean;
@@ -318,10 +310,6 @@ function movePionOnGrid(
   );
 }
 
-// ============================================================
-// ÉTAT INITIAL
-// ============================================================
-
 const INITIAL_STATE = {
   numeromat: '',
   grid: [] as UneCase[][],
@@ -346,10 +334,6 @@ const INITIAL_STATE = {
   matchIndex: 0,
   numeromatch: '',
 };
-
-// ============================================================
-// STORE
-// ============================================================
 
 export const useGameStore = create<GameState>()(
   persist(
@@ -496,46 +480,50 @@ export const useGameStore = create<GameState>()(
           (c) => c.etat === StateCase.Choi && c.tca === TypeCase.Plateau
         );
 
-        // 🔥 NOUVEAU CAS : Un pion est sélectionné sur le plateau et on clique sur une zone du rack
+        // ============================================================
+        // 🔥 CAS PRIORITAIRE : Un pion est sélectionné sur le plateau
+        //    et on clique sur une zone du rack
+        // ============================================================
         if (
           selectedCaseOnGrid &&
           (targetCase.tca === TypeCase.PionChiffre ||
             targetCase.tca === TypeCase.PionOperateur)
         ) {
-          const pionInArray = pions.find((p) => p.placep === targetCase.placep);
+          // Récupérer le pion qui est sur le plateau (via son placep)
+          const pionOfCase = pions.find(
+            (p) => p.placep === selectedCaseOnGrid.placep
+          );
+          if (!pionOfCase) return;
 
-          // Si l'emplacement cliqué est vide (le pion n'est plus dans le tableau)
-          if (!pionInArray) {
-            const pionOfCase = pions.find(
-              (p) => p.placep === selectedCaseOnGrid.placep
-            );
-            if (!pionOfCase) return;
+          // On retire le pion de la grille (nettoyage de la case)
+          const nextGrid = removePionFromGrid(grid, selectedCaseOnGrid.ncase);
 
-            const nextGrid = removePionFromGrid(
-              grid,
-              selectedCaseOnGrid.ncase
-            );
+          // On remet le pion dans le rack à l'emplacement cliqué
+          // (que l'emplacement soit vide ou occupé par un autre pion, on le remplace)
+          const nextPions = pions.map((p) => {
+            // Le pion du plateau revient dans le rack avec le nouveau placep
+            if (p.placep === pionOfCase.placep) {
+              return { ...p, etat: StateCase.Pla, placep: targetCase.placep! };
+            }
+            // Les autres pions qui étaient sélectionnés sont désélectionnés
+            if (p.etat === StateCase.Choi) {
+              return { ...p, etat: StateCase.Pla };
+            }
+            return p;
+          });
 
-            // On remet le pion dans le rack avec le placep de la case cliquée
-            const nextPions = pions.map((p) =>
-              p.placep === pionOfCase.placep
-                ? { ...p, etat: StateCase.Pla, placep: targetCase.placep! }
-                : p.etat === StateCase.Choi
-                  ? { ...p, etat: StateCase.Pla }
-                  : p
-            );
-
-            set({
-              grid: nextGrid,
-              flatGrid: nextGrid.flat(),
-              pions: nextPions,
-            });
-            get().calculateScores();
-            return;
-          }
+          set({
+            grid: nextGrid,
+            flatGrid: nextGrid.flat(),
+            pions: nextPions,
+          });
+          get().calculateScores();
+          return;
         }
 
-        // Gestion des pions dans le rack
+        // ============================================================
+        // Gestion des pions dans le rack (clic sans pion du plateau sélectionné)
+        // ============================================================
         if (
           targetCase.tca === TypeCase.PionChiffre ||
           targetCase.tca === TypeCase.PionOperateur
@@ -566,10 +554,7 @@ export const useGameStore = create<GameState>()(
               );
               if (!pionOfCase) return;
 
-              const nextGrid = removePionFromGrid(
-                grid,
-                selectedCaseOnGrid.ncase
-              );
+              const nextGrid = removePionFromGrid(grid, selectedCaseOnGrid.ncase);
               
               const nextPions = pions.map((p) =>
                 p.placep === pionOfCase.placep
@@ -593,13 +578,13 @@ export const useGameStore = create<GameState>()(
           }
         }
 
+        // ============================================================
         // Gestion des cases du plateau
+        // ============================================================
         if (targetCase.tca === TypeCase.Plateau) {
           if (targetCase.etat === StateCase.Lo) return;
 
-          // Si on clique sur une case vide du plateau
           if (targetCase.etat === StateCase.Cre) {
-            // Si un pion est sélectionné dans le rack, on le place
             if (selectedPionInRack) {
               const nextGrid = placePionOnGrid(
                 grid,
@@ -621,7 +606,6 @@ export const useGameStore = create<GameState>()(
               return;
             }
 
-            // Si un pion est sélectionné sur le plateau, on le déplace
             if (selectedCaseOnGrid) {
               const nextGrid = movePionOnGrid(
                 grid,
@@ -638,7 +622,6 @@ export const useGameStore = create<GameState>()(
             return;
           }
 
-          // Si on clique sur une case du plateau qui contient un pion
           if (
             targetCase.etat === StateCase.Pla ||
             targetCase.etat === StateCase.Choi
