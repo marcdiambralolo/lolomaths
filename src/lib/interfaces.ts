@@ -462,6 +462,10 @@ export interface CompetitionInfo {
   totalScore?: number;             // score total
   isgameover?: boolean;            // isgameover
 
+  score?: number;                  // score du tournoi
+  matchesCount?: number;              // nombre de matchs
+  completedMatches?: number;            // nombre de matchs terminés
+
   // Matchs
   matchInfo: MatchInfo[];
   matches?: MatchResult[];
@@ -830,6 +834,7 @@ export interface MatchRecord {
  * Équivalent Kotlin : une ligne de la table `tournoi`.
  */
 export interface TournamentRecord {
+  idConfig: string;
   id: string;                      // idtournoi
   nomjoueur: string;               // nomjoueur
   numtournoi: string;              // numtournoi

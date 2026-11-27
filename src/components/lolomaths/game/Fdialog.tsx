@@ -28,16 +28,26 @@ const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const MUL_DIV_CHARS = new Set(['*', '/', '×', '÷']);
+const FLOAT_EPSILON = 1e-9;
+
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Object.is(value, -0) ? 0 : value;
+  }
+  return fallback;
+}
 
 function formatNumber(value: unknown, decimals = 2): string {
-  return typeof value === 'number' && Number.isFinite(value)
-    ? value.toFixed(decimals)
-    : (0).toFixed(decimals);
+  const safe = toFiniteNumber(value, 0);
+  const rounded = Number(safe.toFixed(decimals));
+  const normalized = Object.is(rounded, -0) ? 0 : rounded;
+  return normalized.toFixed(decimals);
 }
 
 function formatSignedNumber(value: number, decimals = 2): string {
-  const formatted = formatNumber(value, decimals);
-  return value > 0 ? `+${formatted}` : formatted;
+  const safe = toFiniteNumber(value, 0);
+  const formatted = formatNumber(safe, decimals);
+  return safe > 0 ? `+${formatted}` : formatted;
 }
 
 function getLevelThreshold(niveau: GameResult['niveau']): number {
@@ -54,23 +64,9 @@ function getLevelThreshold(niveau: GameResult['niveau']): number {
   }
 }
 
-function computeBonusBreakdown(
-  gameResult: GameResult,
-  isPerfect: boolean
-): BonusBreakdown {
+function computeBonusBreakdown(gameResult: GameResult): BonusBreakdown {
   const levelThreshold = getLevelThreshold(gameResult.niveau);
-
-  if (!isPerfect) {
-    return {
-      levelBonus: 0,
-      levelThreshold,
-      placedCountBonus: 0,
-      mulDivBonus: 0,
-      totalBonus: 0,
-    };
-  }
-
-  const targetValue = Number(gameResult.nbreatind) || 0;
+  const targetValue = toFiniteNumber(gameResult.nbreatind, 0);
   const levelBonus = targetValue >= levelThreshold ? 1 : 0;
 
   const sequenceCount = Array.isArray(gameResult.sequenceNcases)
@@ -88,7 +84,7 @@ function computeBonusBreakdown(
 
   const explicitBonus =
     typeof gameResult.bonus === 'number' && Number.isFinite(gameResult.bonus)
-      ? Math.max(0, gameResult.bonus)
+      ? gameResult.bonus
       : null;
 
   const computedSum = levelBonus + placedCountBonus + mulDivBonus;
@@ -187,14 +183,24 @@ export const Fdialog: React.FC<FdialogProps> = ({
 
   if (!isOpen || !gameResult) return null;
 
-  const targetValue = Number(gameResult.nbreatind) || 0;
-  const computedResult = Number(gameResult.result) || 0;
-  const ecartAbsolu = Math.abs(targetValue - computedResult);
-  const isPerfect = ecartAbsolu === 0;
+  const targetValue = toFiniteNumber(gameResult.nbreatind, 0);
+  const computedResult = toFiniteNumber(gameResult.result, 0);
+  const rawDiff = Math.abs(targetValue - computedResult);
+  const isPerfect = rawDiff < FLOAT_EPSILON;
+  const ecartAbsolu = isPerfect ? 0 : rawDiff;
 
-  const baseNote = isPerfect ? 5 : -ecartAbsolu;
-  const breakdown = computeBonusBreakdown(gameResult, isPerfect);
-  const totalGameNote = baseNote + breakdown.totalBonus;
+  const baseNote =
+    typeof gameResult.notedbase === 'number' && Number.isFinite(gameResult.notedbase)
+      ? gameResult.notedbase
+      : isPerfect
+        ? 5
+        : -ecartAbsolu;
+
+  const breakdown = computeBonusBreakdown(gameResult);
+  const totalGameNote =
+    typeof gameResult.notedjeu === 'number' && Number.isFinite(gameResult.notedjeu)
+      ? gameResult.notedjeu
+      : baseNote + breakdown.totalBonus;
 
   const formattedScore = formatSignedNumber(totalGameNote);
   const formattedResult = formatNumber(computedResult);
@@ -240,7 +246,7 @@ export const Fdialog: React.FC<FdialogProps> = ({
           <span>
             {isPerfect ? 'Coup Parfait' : "Coup Inexact (Pénalité d'écart)"}
           </span>
-          <span>{isPerfect ? 'Bonus Activés' : 'Bonus = 0'}</span>
+          <span>Bonus : +{formatNumber(breakdown.totalBonus)}</span>
         </div>
 
         <div className="p-6 flex flex-col gap-1 font-mono text-sm">

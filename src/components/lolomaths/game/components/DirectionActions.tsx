@@ -16,10 +16,18 @@ const DIRECTION_CONFIG = [
   { key: 'right' as const, index: 3, label: 'Droite' },
 ];
 
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Object.is(value, -0) ? 0 : value;
+  }
+  return fallback;
+}
+
 function formatTwoDecimals(value: unknown): string {
-  return typeof value === 'number' && Number.isFinite(value)
-    ? value.toFixed(2)
-    : '0.00';
+  const safeValue = toFiniteNumber(value, 0);
+  const rounded = Number(safeValue.toFixed(2));
+  const normalized = Object.is(rounded, -0) ? 0 : rounded;
+  return normalized.toFixed(2);
 }
 
 export const DirectionActions: React.FC<DirectionActionsProps> = ({
@@ -31,15 +39,15 @@ export const DirectionActions: React.FC<DirectionActionsProps> = ({
   const activeDirections = useMemo(
     () =>
       DIRECTION_CONFIG.map((dir) => {
-        const isValid = directionsValid[dir.key];
+        const isValid = Boolean(directionsValid?.[dir.key]);
         if (!isValid) return null;
 
-        const result = gameResults[dir.index];
+        const result = gameResults?.[dir.index];
         if (!result) return null;
 
-        // Résultat du calcul (rc) et différence / écart (df = nombre à atteindre - résultat)
-        const rc = typeof result.result === 'number' ? result.result : 0;
-        const df = result.nbreatind - rc;
+        const rc = toFiniteNumber(result.result, 0);
+        const target = toFiniteNumber(result.nbreatind, 0);
+        const df = toFiniteNumber(target - rc, 0);
 
         return {
           ...dir,

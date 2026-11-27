@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import {
   calculateGameResult,
-  collectSequence,
+  collectLineSequence,
   createInitialGrid,
   getNextCase,
   getPlacedPions,
@@ -486,7 +486,6 @@ export const useGameStore = create<GameState>()(
           targetCase.tca === TypeCase.PionChiffre ||
           targetCase.tca === TypeCase.PionOperateur;
 
-        // Pion sélectionné sur le plateau puis clic vers le rack : retire le pion du plateau
         if (selectedCaseOnGrid && isRackTarget) {
           const pionPlacep = selectedCaseOnGrid.placep;
           if (pionPlacep === undefined) return;
@@ -508,7 +507,6 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        // Clic sur un pion ou emplacement du rack
         if (isRackTarget) {
           if (
             targetCase.etat === StateCase.Pla ||
@@ -530,7 +528,6 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        // Clic sur une case du plateau
         if (targetCase.tca === TypeCase.Plateau) {
           if (targetCase.etat === StateCase.Lo) return;
 
@@ -658,6 +655,11 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
+        const sortedPlaced = [...placedOnGrid].sort((a, b) =>
+          a.indj !== b.indj ? a.indj - b.indj : a.indi - b.indi
+        );
+        const anchorCase = sortedPlaced[0];
+
         const results: (GameResult | null)[] = [...EMPTY_RESULTS];
         const directionsValid: DirectionsValid = { ...EMPTY_DIRECTIONS };
 
@@ -668,29 +670,34 @@ export const useGameStore = create<GameState>()(
           { sens: Sens.Right, index: 3, key: 'right' as const },
         ];
 
-        const firstPlaced = placedOnGrid[0];
-
         const targetGrid: UneCase[][] = baseGrid.map((row) =>
           row.map((cell) => ({ ...cell }))
         );
 
         directions.forEach(({ sens, index, key }) => {
-          const { sequence } = collectSequence(baseGrid, firstPlaced, sens);
+          const orientation =
+            sens === Sens.Left || sens === Sens.Right
+              ? 'horizontal'
+              : 'vertical';
+          const { sequence } = collectLineSequence(
+            baseGrid,
+            anchorCase,
+            orientation
+          );
           if (!isValidSequence(sequence)) return;
 
           const validation = validateCombination(
             sequence,
-            placedOnGrid,
+            sortedPlaced,
             cnbjeu,
             baseGrid
           );
           if (!validation.valid) return;
 
           const sorted = sortSequence(sequence, sens);
-          const edgeCase =
-            sens === Sens.Up || sens === Sens.Left
-              ? sorted[0]
-              : sorted[sorted.length - 1];
+          // Après sortSequence (qui inverse pour Up et Left),
+          // le dernier élément est toujours celui adjacent à la case cible.
+          const edgeCase = sorted[sorted.length - 1];
 
           const targetCase = getNextCase(baseGrid, edgeCase, sens);
           if (
@@ -713,7 +720,7 @@ export const useGameStore = create<GameState>()(
           results[index] = calculateGameResult(
             targetCase,
             sorted,
-            placedOnGrid,
+            sortedPlaced,
             niveau
           );
           directionsValid[key] = true;

@@ -91,9 +91,6 @@ const CompetitionDetails = memo(function CompetitionDetails({
           startDate={formattedStartDate}
           finishedDate={formattedFinishedDate ?? ''}
           score={displayScore}
-          matchesCount={displayMatches}
-          completedMatches={stats.completedMatches}
-          timeSpent={competition.timeSpent}
           user={user}
         />
       </div>

@@ -145,6 +145,8 @@ export function useGamePersistence() {
         datedebut: now,
         datefin: null,
         matchs: [],
+        idConfig: '0',
+    
       };
       saveTournament(emptyTournament);
     }

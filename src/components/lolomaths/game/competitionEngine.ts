@@ -348,11 +348,51 @@ export function collectSequence(
   return { sequence, hasLoPion };
 }
 
+export function collectLineSequence(
+  grid: UneCase[][],
+  anchorCase: UneCase,
+  orientation: 'horizontal' | 'vertical'
+): { sequence: UneCase[]; hasLoPion: boolean } {
+  const forwardDir = orientation === 'horizontal' ? Sens.Right : Sens.Down;
+  const backwardDir = orientation === 'horizontal' ? Sens.Left : Sens.Up;
+
+  const sequence: UneCase[] = [];
+  let hasLoPion = false;
+
+  let current: UneCase | null = anchorCase;
+  while (current && current.txt !== '' && current.etat !== StateCase.Cre) {
+    sequence.push(current);
+    if (current.etat === StateCase.Lo) hasLoPion = true;
+    const next = getNextCase(grid, current, forwardDir);
+    if (!next || next.etat === StateCase.Cre || next.txt === '') break;
+    current = next;
+  }
+
+  let prev = getNextCase(grid, anchorCase, backwardDir);
+  while (prev && prev.txt !== '' && prev.etat !== StateCase.Cre) {
+    sequence.unshift(prev);
+    if (prev.etat === StateCase.Lo) hasLoPion = true;
+    const next = getNextCase(grid, prev, backwardDir);
+    if (!next || next.etat === StateCase.Cre || next.txt === '') break;
+    prev = next;
+  }
+
+  return { sequence, hasLoPion };
+}
+
 export function sortSequence(sequence: UneCase[], direction: Sens): UneCase[] {
   const isHorizontal = direction === Sens.Left || direction === Sens.Right;
-  return [...sequence].sort((a, b) =>
+  const sorted = [...sequence].sort((a, b) =>
     isHorizontal ? a.indi - b.indi : a.indj - b.indj
   );
+
+  // Fidèle au Kotlin (`f.reverse()` pour Sens.Up et Sens.Left) :
+  // Lecture du bout opposé vers la case cible.
+  if (direction === Sens.Up || direction === Sens.Left) {
+    sorted.reverse();
+  }
+
+  return sorted;
 }
 
 // ============================================================
@@ -522,26 +562,25 @@ export function calculateGameResult(
   game.result = isExactMatch ? targetValue : rawResult;
   game.notedbase = isExactMatch ? 5 : -diffFromTarget;
 
-  if (isExactMatch) {
-    let bonus = 0;
+  // Fidèle au Kotlin : le bonus est toujours calculé.
+  let bonus = 0;
 
-    if (game.nbreatind >= getLevelTargetThreshold(niveau)) {
-      bonus += 1;
-    }
-
-    if (placedPions.length > 6) {
-      bonus += placedPions.length - 6;
-    }
-
-    for (const p of placedPions) {
-      if (MULTIPLY_DIVIDE_SET.has(p.txt)) {
-        bonus += 1;
-      }
-    }
-
-    game.bonus = bonus;
+  if (game.nbreatind >= getLevelTargetThreshold(niveau)) {
+    bonus += 1;
   }
 
+  if (placedPions.length > 6) {
+    bonus += placedPions.length - 6;
+  }
+
+  for (const p of placedPions) {
+    if (MULTIPLY_DIVIDE_SET.has(p.txt)) {
+      bonus += 1;
+    }
+  }
+
+  game.bonus = bonus;
   game.notedjeu = game.notedbase + game.bonus;
+
   return game;
 }

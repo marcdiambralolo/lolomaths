@@ -1,13 +1,7 @@
 'use client';
-
 import { GameRecord, MatchRecord } from '@/lib/interfaces';
 import { useHistoryStore } from '@/lib/store/useHistoryStore';
-import { useRouter } from 'next/navigation';
-import React, { memo, useCallback, useMemo } from 'react';
-
-// ============================================================
-// HELPERS
-// ============================================================
+import React, { memo, useMemo } from 'react';
 
 function formatDuration(seconds: number): string {
   const safe = Math.max(0, Math.floor(seconds));
@@ -37,14 +31,9 @@ function computeTournamentDuration(
     (sum, m) => sum + computeDuration(m.datedebut, m.datefin),
     0
   );
-}
-
-// ============================================================
-// COMPOSANT
-// ============================================================
+} 
 
 export const MatchSummaryScreen: React.FC = memo(() => {
-  const router = useRouter();
 
   const tournaments = useHistoryStore((s) => s.tournaments);
   const lastTournamentId = useHistoryStore((s) => s.lastTournamentId);
@@ -59,23 +48,12 @@ export const MatchSummaryScreen: React.FC = memo(() => {
 
   const stats = useMemo(() => {
     if (!lastTournament) {
-      return {
-        totalScore: 0,
-        totalMatches: 0,
-        totalGames: 0,
-        averageScore: 0,
+      return {         
         duration: 0,
         isTournamentOver: false,
       };
     }
 
-    const totalScore = lastTournament.score;
-    const totalMatches = lastTournament.matchs.length;
-    const totalGames = lastTournament.matchs.reduce(
-      (acc, m) => acc + m.jeux.length,
-      0
-    );
-    const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
     const duration = computeTournamentDuration(
       lastTournament.datedebut,
       lastTournament.datefin,
@@ -83,10 +61,6 @@ export const MatchSummaryScreen: React.FC = memo(() => {
     );
 
     return {
-      totalScore,
-      totalMatches,
-      totalGames,
-      averageScore,
       duration,
       isTournamentOver: lastTournament.isgameover,
     };
@@ -96,19 +70,6 @@ export const MatchSummaryScreen: React.FC = memo(() => {
     if (!lastTournament) return [];
     return lastTournament.matchs.flatMap((m: MatchRecord) => m.jeux);
   }, [lastTournament]);
-
-  const handleNextAction = useCallback(() => {
-    if (!lastTournament) return;
-    if (stats.isTournamentOver) {
-      router.push(`/star/tournoi/${lastTournament.id}`);
-    } else {
-      router.push('/star/competition');
-    }
-  }, [lastTournament, stats.isTournamentOver, router]);
-
-  const handleMenu = useCallback(() => {
-    router.push('/');
-  }, [router]);
 
   if (!lastTournament) {
     return (
@@ -120,50 +81,6 @@ export const MatchSummaryScreen: React.FC = memo(() => {
 
   return (
     <div className="p-4 flex flex-col gap-4 text-center shadow-2xl max-w-lg mx-auto my-auto">
-      <h3 className="text-2xl font-black text-amber-400">
-        🏆 {stats.isTournamentOver ? 'Tournoi Terminé !' : 'Match Terminé !'}
-      </h3>
-
-      <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-slate-300 text-sm">
-        {stats.isTournamentOver
-          ? '✅ Tous les matchs ont été joués.'
-          : '✅ Match validé avec succès !'}
-      </div>
-
-      {/* Statistiques globales */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <span className="text-xs text-slate-500 block">Score Total</span>
-          <span className="text-2xl font-black text-emerald-400">
-            {stats.totalScore} pts
-          </span>
-        </div>
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <span className="text-xs text-slate-500 block">Jeux Joués</span>
-          <span className="text-2xl font-black text-sky-400">
-            {stats.totalGames}
-          </span>
-        </div>
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <span className="text-xs text-slate-500 block">Matchs</span>
-          <span className="text-2xl font-black text-purple-400">
-            {stats.totalMatches}/{lastTournament.nbmatch}
-          </span>
-        </div>
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <span className="text-xs text-slate-500 block">Moyenne / Jeu</span>
-          <span className="text-2xl font-black text-amber-400">
-            {stats.averageScore.toFixed(1)}
-          </span>
-        </div>
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 col-span-2">
-          <span className="text-xs text-slate-500 block">Durée totale</span>
-          <span className="text-xl font-black text-slate-300">
-            {formatDuration(stats.duration)}
-          </span>
-        </div>
-      </div>
-
       {/* Détail des jeux */}
       {allGames.length > 0 && (
         <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
@@ -178,7 +95,7 @@ export const MatchSummaryScreen: React.FC = memo(() => {
                 <tr>
                   <th className="px-3 py-1.5">#</th>
                   <th className="px-3 py-1.5">Combinaison</th>
-                  <th className="px-3 py-1.5 text-right">Score</th>
+                  <th className="px-3 py-1.5 text-right">note</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,11 +111,10 @@ export const MatchSummaryScreen: React.FC = memo(() => {
                       {g.combinaison || 'N/A'}
                     </td>
                     <td
-                      className={`px-3 py-1.5 text-right font-bold ${
-                        g.notejeu >= 0
+                      className={`px-3 py-1.5 text-right font-bold ${g.notejeu >= 0
                           ? 'text-emerald-400'
                           : 'text-rose-400'
-                      }`}
+                        }`}
                     >
                       {g.notejeu >= 0
                         ? `+${g.notejeu.toFixed(1)}`
@@ -211,25 +127,14 @@ export const MatchSummaryScreen: React.FC = memo(() => {
           </div>
         </div>
       )}
-
-      {/* Boutons */}
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={handleNextAction}
-          className="py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-2xl transition-all shadow-lg hover:scale-105 active:scale-95"
-        >
-          {stats.isTournamentOver
-            ? '📊 Voir le tournoi complet'
-            : '🔄 Match suivant'}
-        </button>
-        <button
-          type="button"
-          onClick={handleMenu}
-          className="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-all text-sm"
-        >
-          🏠 Retour au menu
-        </button>
+      {/* Statistiques globales */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 col-span-2">
+          <span className="text-xs text-slate-500 block">Durée totale</span>
+          <span className="text-xl font-black text-slate-300">
+            {formatDuration(stats.duration)}
+          </span>
+        </div>
       </div>
     </div>
   );

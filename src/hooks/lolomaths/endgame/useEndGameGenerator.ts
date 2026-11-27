@@ -18,7 +18,9 @@ export const useEndGameGenerator = () => {
   const competitions = useCompetitionList();
 
   const refreshData = useCallback(() => {
-    if (refreshCompetitions) refreshCompetitions();
+    if (typeof refreshCompetitions === 'function') {
+      refreshCompetitions();
+    }
   }, [refreshCompetitions]);
 
   useCompetitionPolling(refreshData);

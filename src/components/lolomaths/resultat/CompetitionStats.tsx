@@ -12,10 +12,6 @@ interface CompetitionStatsProps {
   /** Score total de la compétition (Lolomaths). */
   score: number;
   /** Nombre de matchs joués. */
-  matchesCount?: number;
-  /** Nombre de matchs terminés. */
-  completedMatches?: number;
-  timeSpent?: number;
   showUserInfo?: boolean;
   user: User | null;
 }
@@ -24,9 +20,6 @@ const CompetitionStats = memo(function CompetitionStats({
   startDate,
   finishedDate,
   score,
-  matchesCount,
-  completedMatches,
-  timeSpent,
   showUserInfo = true,
   user,
 }: CompetitionStatsProps) {
@@ -52,11 +45,6 @@ const CompetitionStats = memo(function CompetitionStats({
   const phoneNumber = user?.phone || 'Non renseigné';
 
   // ----- Résumé des matchs -----
-  const matchesSummary = useMemo(() => {
-    if (matchesCount === undefined) return null;
-    if (completedMatches === undefined) return `${matchesCount}`;
-    return `${completedMatches} / ${matchesCount}`;
-  }, [matchesCount, completedMatches]);
 
   return (
     <div className="w-full dark:from-gray-800/30 dark:to-gray-900/30 p-3 dark:border-gray-700/50 mt-1">
@@ -103,19 +91,12 @@ const CompetitionStats = memo(function CompetitionStats({
         {/* ✅ Score réel de la compétition (Lolomaths) */}
         <InfoRow
           label="Score total"
-          value={`${score} pt${score > 1 ? 's' : ''}`}
+          value={`${score.toFixed(2)} `}
           highlight
           icon={<BarChart3 className="w-3.5 h-3.5" />}
         />
 
-        {/* ✅ Nombre de matchs (optionnel) */}
-        {matchesSummary && (
-          <InfoRow
-            label="Matchs terminés"
-            value={matchesSummary}
-            icon={<BarChart3 className="w-3.5 h-3.5" />}
-          />
-        )}
+       
       </div>
     </div>
   );

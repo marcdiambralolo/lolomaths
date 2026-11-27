@@ -1,11 +1,13 @@
 'use client';
+
 import { useCompetitionValidation } from '@/hooks/lolomaths/endgame/useCompetitionValidation';
-import { memo } from 'react';
+import { CompetitionInfo, User } from '@/lib/interfaces';
+import { memo, useMemo } from 'react';
 import CompetitionHeader from './CompetitionHeader';
 import CompetitionStats from './CompetitionStats';
 import MessageToast from './MessageToast';
 import PermanentSuccessMessage from './PermanentSuccessMessage';
-import { CompetitionInfo, User } from '@/lib/interfaces';
+import { useHistoryStore } from '@/lib/store/useHistoryStore';
 
 interface CompetitionDetailsProps {
   competition: CompetitionInfo;
@@ -19,48 +21,64 @@ const CompetitionDetails = memo(function CompetitionDetails({
   user,
 }: CompetitionDetailsProps) {
   const {
-    handleCloseMessage, handleClosePermanentMessage, handleValidate,
-    formattedStartDate, isLoading, isValidated, validationMessage,
-    showPermanentMessage, formattedFinishedDate,
+    handleCloseMessage,
+    handleClosePermanentMessage,
+    handleValidate,
+    formattedStartDate,
+    isLoading,
+    isValidated,
+    validationMessage,
+    showPermanentMessage,
+    formattedFinishedDate,
+    stats,
+    totalMatches,
   } = useCompetitionValidation(competition);
 
-  const getBackgroundClasses = () => {
-    if (isValidated) {
-      return 'bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50/50 border-emerald-200';
-    }
-    return 'bg-white border-gray-100 dark:border-gray-800';
-  };
+  const localTournament = useHistoryStore((s) =>
+    s.tournaments.find((t) => t.id === competition.id)
+  );
 
-  const getBorderClasses = () => {
-    if (isValidated) {
-      return 'border-2 border-emerald-300 shadow-lg shadow-emerald-100/50';
-    }
-    return `border ${priority ? 'border-purple-100 ring-2 ring-purple-500/20 shadow-lg' : 'border-gray-100 dark:border-gray-800 shadow-md'}`;
-  };
+  const displayScore = useMemo(() => {
+    if (localTournament) return localTournament.score;
+    return stats.totalScore;
+  }, [localTournament, stats.totalScore]);
 
-  const containerClass = `rounded-2xl overflow-hidden transition-all duration-300 ${getBackgroundClasses()} ${getBorderClasses()}`;
+  const displayMatches = useMemo(() => {
+    if (localTournament) return localTournament.matchs.length;
+    return totalMatches;
+  }, [localTournament, totalMatches]);
+
+  const displayCompletedMatches = useMemo(() => {
+    if (localTournament) {
+      return localTournament.matchs.filter((m) => m.isGameOver).length;
+    }
+    return stats.completedMatches;
+  }, [localTournament, stats.completedMatches]);
+
+  const containerClass = useMemo(
+    () =>
+      `bg-white dark:bg-gray-800/50 rounded-2xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-800 ${
+        priority
+          ? 'ring-2 ring-purple-500/20 shadow-lg border-purple-100'
+          : ''
+      }`,
+    [priority]
+  );
+
+  const displayName = competition.displayName ?? competition.name ?? '';
 
   return (
     <div className={containerClass}>
-
-      {isValidated && (
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-1.5 flex items-center justify-center gap-2">
-          <span className="text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-            </svg>
-            Dernier jeu validé ✓
-          </span>
-        </div>
+      {!isValidated && validationMessage && (
+        <MessageToast
+          message={validationMessage}
+          onClose={handleCloseMessage}
+        />
       )}
 
-      {!isValidated && (
-        <MessageToast message={validationMessage} onClose={handleCloseMessage} />
-      )}
-
-      <div className="p-2 space-y-2">
+      <div className="p-3 space-y-3">
         <CompetitionHeader
-          name={competition.displayName ?? ''}
+          name={displayName}
           onValidate={handleValidate}
           isLoading={isLoading}
           isValidated={Boolean(isValidated)}
@@ -68,7 +86,7 @@ const CompetitionDetails = memo(function CompetitionDetails({
 
         {isValidated && showPermanentMessage && (
           <PermanentSuccessMessage
-            competitionName={competition.name ?? ''}
+            competitionName={displayName}
             onClose={handleClosePermanentMessage}
           />
         )}
@@ -76,13 +94,17 @@ const CompetitionDetails = memo(function CompetitionDetails({
         <CompetitionStats
           startDate={formattedStartDate}
           finishedDate={formattedFinishedDate ?? ''}
+          score={displayScore}
+          matchesCount={displayMatches}
+          completedMatches={displayCompletedMatches}
           timeSpent={competition.timeSpent}
-          punChangeCount={0}
           user={user}
         />
       </div>
     </div>
   );
 });
+
+CompetitionDetails.displayName = 'CompetitionDetails';
 
 export default CompetitionDetails;

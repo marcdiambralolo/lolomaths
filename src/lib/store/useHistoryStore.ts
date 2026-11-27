@@ -8,7 +8,7 @@ import {
 
 const MAX_TOURNAMENTS = 20;
 const STORAGE_NAME = 'lolomaths_history';
-const CURRENT_VERSION = 1;
+const CURRENT_VERSION = 2;
 
 interface HistoryState {
   tournaments: TournamentRecord[];
@@ -21,6 +21,15 @@ interface HistoryState {
   clearHistory: () => void;
   removeTournament: (id: string) => void;
 }
+
+const toFiniteNumber = (value: unknown, fallback = 0): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+
+const computeMatchScore = (jeux: GameRecord[]): number =>
+  jeux.reduce((sum, g) => sum + toFiniteNumber(g.notejeu, 0), 0);
+
+const computeTournamentScore = (matchs: MatchRecord[]): number =>
+  matchs.reduce((sum, m) => sum + toFiniteNumber(m.score, 0), 0);
 
 const enforceTournamentLimit = (
   tournaments: TournamentRecord[]
@@ -38,7 +47,7 @@ const createFallbackMatch = (
   tournamentId,
   numordrep: 0,
   numeromatch: '1',
-  score: game.notejeu,
+  score: toFiniteNumber(game.notejeu, 0),
   isGameOver: false,
   datedebut: game.dateCreation,
   datefin: null,
@@ -53,21 +62,37 @@ export const useHistoryStore = create<HistoryState>()(
 
       saveTournament: (tournament) => {
         set((state) => {
+          const safeMatchs = Array.isArray(tournament.matchs)
+            ? tournament.matchs
+            : [];
           const exists = state.tournaments.some((t) => t.id === tournament.id);
+
           const nextTournaments = exists
-            ? state.tournaments.map((t) =>
-                t.id === tournament.id
-                  ? {
-                      ...t,
-                      ...tournament,
-                      matchs:
-                        tournament.matchs.length > 0
-                          ? tournament.matchs
-                          : t.matchs,
-                    }
-                  : t
-              )
-            : [...state.tournaments, tournament];
+            ? state.tournaments.map((t) => {
+                if (t.id !== tournament.id) return t;
+                const mergedMatchs =
+                  safeMatchs.length > 0 ? safeMatchs : t.matchs ?? [];
+                return {
+                  ...t,
+                  ...tournament,
+                  matchs: mergedMatchs,
+                  score:
+                    mergedMatchs.length > 0
+                      ? computeTournamentScore(mergedMatchs)
+                      : toFiniteNumber(tournament.score, toFiniteNumber(t.score, 0)),
+                };
+              })
+            : [
+                ...state.tournaments,
+                {
+                  ...tournament,
+                  matchs: safeMatchs,
+                  score:
+                    safeMatchs.length > 0
+                      ? computeTournamentScore(safeMatchs)
+                      : toFiniteNumber(tournament.score, 0),
+                },
+              ];
 
           return {
             tournaments: enforceTournamentLimit(nextTournaments),
@@ -81,23 +106,33 @@ export const useHistoryStore = create<HistoryState>()(
           tournaments: state.tournaments.map((t) => {
             if (t.id !== tournamentId) return t;
 
-            const existing = t.matchs.find((m) => m.id === match.id);
-            if (!existing) {
-              return {
-                ...t,
-                matchs: [...t.matchs, match],
-              };
-            }
+            const currentMatchs = Array.isArray(t.matchs) ? t.matchs : [];
+            const existing = currentMatchs.find((m) => m.id === match.id);
 
-            const mergedMatch: MatchRecord = {
-              ...existing,
-              ...match,
-              jeux: match.jeux.length > 0 ? match.jeux : existing.jeux,
-            };
+            const nextMatchs = !existing
+              ? [...currentMatchs, match]
+              : currentMatchs.map((m) => {
+                  if (m.id !== match.id) return m;
+                  const mergedJeux =
+                    Array.isArray(match.jeux) && match.jeux.length > 0
+                      ? match.jeux
+                      : existing.jeux ?? [];
+                  return {
+                    ...existing,
+                    ...match,
+                    jeux: mergedJeux,
+                    score:
+                      typeof match.score === 'number' &&
+                      Number.isFinite(match.score)
+                        ? match.score
+                        : computeMatchScore(mergedJeux),
+                  };
+                });
 
             return {
               ...t,
-              matchs: t.matchs.map((m) => (m.id === match.id ? mergedMatch : m)),
+              matchs: nextMatchs,
+              score: computeTournamentScore(nextMatchs),
             };
           }),
         }));
@@ -108,28 +143,33 @@ export const useHistoryStore = create<HistoryState>()(
           tournaments: state.tournaments.map((t) => {
             if (t.id !== tournamentId) return t;
 
-            const matchExists = t.matchs.some((m) => m.id === matchId);
-            if (!matchExists) {
-              return {
-                ...t,
-                matchs: [...t.matchs, createFallbackMatch(tournamentId, matchId, game)],
-              };
-            }
+            const currentMatchs = Array.isArray(t.matchs) ? t.matchs : [];
+            const matchExists = currentMatchs.some((m) => m.id === matchId);
+
+            const nextMatchs = !matchExists
+              ? [
+                  ...currentMatchs,
+                  createFallbackMatch(tournamentId, matchId, game),
+                ]
+              : currentMatchs.map((m) => {
+                  if (m.id !== matchId) return m;
+                  const currentJeux = Array.isArray(m.jeux) ? m.jeux : [];
+                  const gameExists = currentJeux.some((j) => j.id === game.id);
+                  const jeux = gameExists
+                    ? currentJeux.map((j) => (j.id === game.id ? game : j))
+                    : [...currentJeux, game];
+
+                  return {
+                    ...m,
+                    jeux,
+                    score: computeMatchScore(jeux),
+                  };
+                });
 
             return {
               ...t,
-              matchs: t.matchs.map((m) => {
-                if (m.id !== matchId) return m;
-                const gameExists = m.jeux.some((j) => j.id === game.id);
-                const jeux = gameExists
-                  ? m.jeux.map((j) => (j.id === game.id ? game : j))
-                  : [...m.jeux, game];
-
-                return {
-                  ...m,
-                  jeux,
-                };
-              }),
+              matchs: nextMatchs,
+              score: computeTournamentScore(nextMatchs),
             };
           }),
         }));
@@ -173,6 +213,31 @@ export const useHistoryStore = create<HistoryState>()(
         tournaments: state.tournaments,
         lastTournamentId: state.lastTournamentId,
       }),
+      migrate: (persistedState) => {
+        const state = (persistedState ?? {}) as Partial<HistoryState>;
+        const safeTournaments = Array.isArray(state.tournaments)
+          ? state.tournaments.map((t) => ({
+              ...t,
+              matchs: Array.isArray(t.matchs)
+                ? t.matchs.map((m) => ({
+                    ...m,
+                    jeux: Array.isArray(m.jeux) ? m.jeux : [],
+                  }))
+                : [],
+            }))
+          : [];
+
+        return {
+          tournaments: safeTournaments,
+          lastTournamentId: state.lastTournamentId ?? null,
+        };
+      },
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (!Array.isArray(state.tournaments)) {
+          state.tournaments = [];
+        }
+      },
     }
   )
 );

@@ -17,6 +17,8 @@ export interface MatchDetailPayload {
     timeSpent?: number;
     niveau?: number;
     combinaisons?: string[];
+    matchNumber?: number;
+    numeromatch?: string;
 }
 
 export interface LearningStatsPayload {

@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/lib/api/client';
-import { CompetitionInfo, GameResult } from '@/lib/interfaces';
+import { CompetitionInfo, GameResult, MatchRecord } from '@/lib/interfaces';
 import {
   calculateDuration,
   calculateDurationInSeconds,
@@ -9,6 +9,7 @@ import {
 } from '@/lib/learning/functions';
 import { LearningStatsPayload } from '@/lib/learning/interface';
 import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
+import { useHistoryStore } from '@/lib/store/useHistoryStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -44,14 +45,55 @@ interface CompetitionStats {
   totalTimeSeconds: number;
 }
 
+interface NormalizedMatch {
+  matchNumber: number;
+  numeromatch: string;
+  score: number;
+  timeSpent: number;
+  isgameover: boolean;
+  datedebut: string | null;
+}
+
 // ============================================================
-// CALCUL DES STATS (simplifié Lolomaths)
+// HELPERS
 // ============================================================
 
+function toSafeNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function resolveMatches(
+  competition: CompetitionInfo,
+  localMatchs: MatchRecord[] | undefined
+): NormalizedMatch[] {
+  if (Array.isArray(competition.matchInfo) && competition.matchInfo.length > 0) {
+    return competition.matchInfo.map((m, idx) => ({
+      matchNumber: toSafeNumber(m.matchNumber, idx + 1),
+      numeromatch: m.numeromatch ?? String(idx + 1),
+      score: toSafeNumber(m.score, 0),
+      timeSpent: toSafeNumber(m.timeSpent, 0),
+      isgameover: Boolean(m.isgameover),
+      datedebut: m.datedebut ?? null,
+    }));
+  }
+
+  if (Array.isArray(localMatchs) && localMatchs.length > 0) {
+    return localMatchs.map((m, idx) => ({
+      matchNumber: toSafeNumber(m.numordrep, idx + 1),
+      numeromatch: m.numeromatch ?? String(idx + 1),
+      score: toSafeNumber(m.score, 0),
+      timeSpent: 0,
+      isgameover: Boolean(m.isGameOver),
+      datedebut: m.datedebut ?? null,
+    }));
+  }
+
+  return [];
+}
+
 const calculateCompetitionStats = (
-  competition: CompetitionInfo
+  matches: NormalizedMatch[]
 ): CompetitionStats => {
-  const matches = competition.matchInfo ?? [];
   const totalMatches = matches.length;
 
   if (totalMatches === 0) {
@@ -69,9 +111,9 @@ const calculateCompetitionStats = (
   let totalTimeSeconds = 0;
 
   for (const m of matches) {
-    totalScore += m.score ?? 0;
+    totalScore += m.score;
     if (m.isgameover) completedMatches += 1;
-    if (typeof m.timeSpent === 'number') totalTimeSeconds += m.timeSpent;
+    totalTimeSeconds += m.timeSpent;
   }
 
   return {
@@ -82,10 +124,6 @@ const calculateCompetitionStats = (
     totalTimeSeconds,
   };
 };
-
-// ============================================================
-// LECTURE DU STATUT DE VALIDATION LOCAL
-// ============================================================
 
 const getStoredValidationStatus = (competitionId: string): boolean => {
   if (typeof window === 'undefined') return false;
@@ -109,6 +147,15 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
     (state) => state.setGameIsFinished
   );
 
+  const localTournament = useHistoryStore((state) =>
+    state.tournaments.find((t) => t.id === competition.id)
+  );
+
+  const resolvedMatches = useMemo(
+    () => resolveMatches(competition, localTournament?.matchs),
+    [competition, localTournament?.matchs]
+  );
+
   const [isLocalValidating, setIsLocalValidating] = useState(false);
   const [validationMessage, setValidationMessage] =
     useState<ValidationMessage | null>(null);
@@ -124,7 +171,6 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
   > | null>(null);
   const isMountedRef = useRef(true);
 
-  // ----- Cleanup -----
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -136,7 +182,6 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
     };
   }, []);
 
-  // ----- Synchronisation multi-onglets -----
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (!isMountedRef.current) return;
@@ -151,16 +196,16 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [competition.id]);
 
-  // ============================================================
-  // VALIDATION (envoi au backend)
-  // ============================================================
   const validateCompetition = useCallback(
-    async (comp: CompetitionInfo): Promise<boolean> => {
+    async (
+      comp: CompetitionInfo,
+      matches: NormalizedMatch[]
+    ): Promise<boolean> => {
       try {
-        const stats = calculateCompetitionStats(comp);
+        const stats = calculateCompetitionStats(matches);
 
         const startDate =
-          comp.matchInfo?.[0]?.datedebut ||
+          matches[0]?.datedebut ||
           comp.datedebut ||
           new Date().toISOString();
         const endDate = comp.datefin || new Date().toISOString();
@@ -182,19 +227,29 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
           `/consultations/${targetConsultationId}`
         );
 
-        const existingStats =
-          (consultation?.learningStats || {}) as LearningStatsPayload;
-        const existingMatches = existingStats.matchesDetails || [];
+        const existingStats = (consultation?.learningStats ||
+          {}) as LearningStatsPayload;
+        const existingMatches = Array.isArray(existingStats.matchesDetails)
+          ? existingStats.matchesDetails
+          : [];
 
-        // ✅ On enregistre uniquement les champs disponibles pour Lolomaths
-        const matchesDetails = (comp.matchInfo ?? []).map((m) => ({
+        const matchesDetails = matches.map((m) => ({
           matchNumber: m.matchNumber,
           numeromatch: m.numeromatch,
-          score: m.score ?? 0,
-          timeSpent: m.timeSpent ?? 0,
-          isgameover: m.isgameover ?? false,
+          score: m.score,
+          timeSpent: m.timeSpent,
+          isgameover: m.isgameover,
           niveau: comp.niveau ?? 0,
         }));
+
+        const seenMatchKeys = new Set(
+          existingMatches.map(
+            (em) => `${em.matchNumber ?? ''}-${em.numeromatch ?? ''}`
+          )
+        );
+        const newMatches = matchesDetails.filter(
+          (nm) => !seenMatchKeys.has(`${nm.matchNumber}-${nm.numeromatch}`)
+        );
 
         const totalTimeFormatted = calculateDuration(startDate, endDate);
 
@@ -213,8 +268,8 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
             averageScore: stats.averageScore,
             completedAt: endDate,
             totalMatches:
-              (existingStats.totalMatches || 0) + stats.totalMatches,
-            matchesDetails: [...existingMatches, ...matchesDetails],
+              (existingStats.totalMatches || 0) + newMatches.length,
+            matchesDetails: [...existingMatches, ...newMatches],
           },
         };
 
@@ -223,7 +278,6 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
           updatedPayload
         );
 
-        // ✅ Clé globale : on stocke l'ID de la compétition validée
         localStorage.setItem(ACTIVE_VALIDATED_GAME_KEY, comp.id);
         updateLocalCache(comp.id);
         setGameIsFinished(true);
@@ -274,20 +328,15 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
     ]
   );
 
-  // ============================================================
-  // HANDLER PRINCIPAL
-  // ============================================================
   const handleValidate = useCallback(async () => {
     if (isLocalValidating) return;
 
-    if (!competition.matchInfo?.length) {
+    if (resolvedMatches.length === 0) {
       showMessage('Aucun match à valider', 'error');
       return;
     }
 
-    const allMatchesComplete = competition.matchInfo.every(
-      (m) => m.isgameover === true
-    );
+    const allMatchesComplete = resolvedMatches.every((m) => m.isgameover);
     if (!allMatchesComplete) {
       showMessage(
         'Tous les matches doivent être terminés avant la validation',
@@ -305,10 +354,10 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
     setValidationMessage(null);
 
     try {
-      const success = await validateCompetition(competition);
+      const success = await validateCompetition(competition, resolvedMatches);
 
       if (success && isMountedRef.current) {
-        const stats = calculateCompetitionStats(competition);
+        const stats = calculateCompetitionStats(resolvedMatches);
         setValidationMessage({
           text: `✅ Compétition validée ! Score : ${stats.totalScore} pts`,
           type: 'success',
@@ -342,6 +391,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
     }
   }, [
     competition,
+    resolvedMatches,
     isLocalValidating,
     isValidated,
     validateCompetition,
@@ -349,11 +399,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
     router,
   ]);
 
-  // ============================================================
-  // RESET DU STATUT
-  // ============================================================
   const clearValidationStatus = useCallback(() => {
-    // ✅ On supprime la clé uniquement si elle pointe sur cette compétition
     if (localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) === competition.id) {
       localStorage.removeItem(ACTIVE_VALIDATED_GAME_KEY);
     }
@@ -373,12 +419,9 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
     []
   );
 
-  // ============================================================
-  // MÉMOÏSATION
-  // ============================================================
   const competitionStats = useMemo(
-    () => calculateCompetitionStats(competition),
-    [competition]
+    () => calculateCompetitionStats(resolvedMatches),
+    [resolvedMatches]
   );
   const formattedStartDate = useMemo(
     () => formatCompetitionDate(competition.datedebut),
@@ -386,15 +429,13 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
   );
   const formattedFinishedDate = useMemo(
     () =>
-      competition.datefin
-        ? formatCompetitionDate(competition.datefin)
-        : null,
+      competition.datefin ? formatCompetitionDate(competition.datefin) : null,
     [competition.datefin]
   );
-
   const allMatchesCompleted = useMemo(
-    () => competition.matchInfo?.every((m) => m.isgameover === true) ?? false,
-    [competition.matchInfo]
+    () =>
+      resolvedMatches.length > 0 && resolvedMatches.every((m) => m.isgameover),
+    [resolvedMatches]
   );
 
   return useMemo(
@@ -415,7 +456,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
       stats: competitionStats,
       allMatchesCompleted,
 
-      totalMatches: competition.matchInfo?.length || 0,
+      totalMatches: resolvedMatches.length,
       timeSpent: competition.timeSpent,
       niveau: competition.niveau,
     }),
@@ -432,7 +473,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
       formattedFinishedDate,
       competitionStats,
       allMatchesCompleted,
-      competition.matchInfo?.length,
+      resolvedMatches.length,
       competition.timeSpent,
       competition.niveau,
     ]
