@@ -13,9 +13,16 @@ export const useEndGameGenerator = () => {
     (state) => state.refreshCompetitions
   );
   const { user } = useAuth();
-  const processedData = useMemo(() => processUserData(user), [user]);
+  const processedData = useMemo(
+    () => (user ? processUserData(user) : null),
+    [user]
+  );
 
-  const competitions = useCompetitionList();
+  const rawCompetitions = useCompetitionList();
+  const competitions = useMemo(
+    () => (Array.isArray(rawCompetitions) ? rawCompetitions : []),
+    [rawCompetitions]
+  );
 
   const refreshData = useCallback(() => {
     if (typeof refreshCompetitions === 'function') {
@@ -33,18 +40,26 @@ export const useEndGameGenerator = () => {
     isLoadingMore,
   } = usePaginationWithLoadMore(competitions);
 
+  const safeDisplayList = useMemo(
+    () => (Array.isArray(displayList) ? displayList : []),
+    [displayList]
+  );
+
   return useMemo(
     () => ({
       handleLoadMoreClick,
-      competitionList: displayList,
-      hasMore,
-      remainingCount,
-      isLoadingMore,
+      competitionList: safeDisplayList,
+      hasMore: Boolean(hasMore),
+      remainingCount:
+        typeof remainingCount === 'number' && Number.isFinite(remainingCount)
+          ? Math.max(0, remainingCount)
+          : 0,
+      isLoadingMore: Boolean(isLoadingMore),
       user: processedData,
     }),
     [
       handleLoadMoreClick,
-      displayList,
+      safeDisplayList,
       hasMore,
       remainingCount,
       isLoadingMore,

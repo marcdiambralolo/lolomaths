@@ -15,30 +15,36 @@ const FeuilleDeMatch = memo(() => {
     user,
   } = useEndGameGenerator();
 
-  const isEmpty = !competitionList || competitionList.length === 0;
+  const safeList = Array.isArray(competitionList) ? competitionList : [];
+  const isEmpty = safeList.length === 0;
+  const safeRemaining =
+    typeof remainingCount === 'number' && Number.isFinite(remainingCount)
+      ? Math.max(0, remainingCount)
+      : 0;
+  const shouldShowLoadMore = Boolean(hasMore) && (safeRemaining > 0 || isLoadingMore);
 
   return (
     <div className="w-full mx-auto max-w-md px-4 sm:px-0">
       <div className="space-y-4">
         {isEmpty && (
-          <div className="text-center text-sm text-gray-500 italic py-6">
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400 italic py-6">
             Aucune compétition à afficher.
           </div>
         )}
 
-        {competitionList?.map((competition, idx) => (
+        {safeList.map((competition, idx) => (
           <CompetitionDetails
-            key={competition.id}
+            key={`${competition.id || 'competition'}-${idx}`}
             competition={competition}
             priority={idx === 0}
             user={user}
           />
         ))}
 
-        {hasMore && (
+        {shouldShowLoadMore && (
           <LoadMoreButton
             onClick={handleLoadMoreClick}
-            remainingCount={remainingCount}
+            remainingCount={safeRemaining}
             isLoading={isLoadingMore}
           />
         )}

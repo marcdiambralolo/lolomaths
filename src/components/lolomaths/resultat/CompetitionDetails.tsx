@@ -7,13 +7,16 @@ import CompetitionHeader from './CompetitionHeader';
 import CompetitionStats from './CompetitionStats';
 import MessageToast from './MessageToast';
 import PermanentSuccessMessage from './PermanentSuccessMessage';
-import { useCompetitionStore } from '@/lib/store/useCompetitionStore';
 import { useHistoryStore } from '@/lib/store/useHistoryStore';
 
 interface CompetitionDetailsProps {
   competition: CompetitionInfo;
   priority?: boolean;
   user: User | null;
+}
+
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
 const CompetitionDetails = memo(function CompetitionDetails({
@@ -35,21 +38,32 @@ const CompetitionDetails = memo(function CompetitionDetails({
     totalMatches,
   } = useCompetitionValidation(competition);
 
-  // ✅ Lecture depuis l'historique local (si présent)
   const localTournament = useHistoryStore((s) =>
-    s.tournaments.find((t) => t.id === competition.id)
+    Array.isArray(s.tournaments)
+      ? s.tournaments.find((t) => t.id === competition.id)
+      : undefined
   );
 
-  // Score : on privilégie le local (plus riche)
   const displayScore = useMemo(() => {
-    if (localTournament) return localTournament.score;
-    return stats.totalScore;
-  }, [localTournament, stats.totalScore]);
+    if (localTournament && typeof localTournament.score === 'number') {
+      return toFiniteNumber(localTournament.score, 0);
+    }
+    return toFiniteNumber(stats?.totalScore, 0);
+  }, [localTournament, stats?.totalScore]);
 
   const displayMatches = useMemo(() => {
-    if (localTournament) return localTournament.matchs.length;
-    return totalMatches;
+    if (localTournament && Array.isArray(localTournament.matchs)) {
+      return localTournament.matchs.length;
+    }
+    return toFiniteNumber(totalMatches, 0);
   }, [localTournament, totalMatches]);
+
+  const displayCompletedMatches = useMemo(() => {
+    if (localTournament && Array.isArray(localTournament.matchs)) {
+      return localTournament.matchs.filter((m) => Boolean(m.isGameOver)).length;
+    }
+    return toFiniteNumber(stats?.completedMatches, 0);
+  }, [localTournament, stats?.completedMatches]);
 
   const containerClass = useMemo(
     () =>

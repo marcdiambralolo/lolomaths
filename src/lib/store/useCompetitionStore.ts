@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { CompetitionInfo, LearningConfiguration, MatchInfo, } from '@/lib/interfaces';
+import {
+  CompetitionInfo,
+  LearningConfiguration,
+  MatchInfo,
+} from '@/lib/interfaces';
 
 const MAX_COMPETITIONS = 10;
 const STORAGE_NAME = 'lolomaths-store';
@@ -61,70 +65,86 @@ interface CompetitionState {
 // HELPERS
 // ============================================================
 
-const sortByDateDesc = (a: CompetitionInfo, b: CompetitionInfo): number =>
-  new Date(b.datedebut).getTime() - new Date(a.datedebut).getTime();
+const sortByDateDesc = (a: CompetitionInfo, b: CompetitionInfo): number => {
+  const timeA = new Date(a.datedebut).getTime();
+  const timeB = new Date(b.datedebut).getTime();
+  const safeA = Number.isFinite(timeA) ? timeA : 0;
+  const safeB = Number.isFinite(timeB) ? timeB : 0;
+  return safeB - safeA;
+};
 
 const enforceMaxLimit = (
   competitions: CompetitionInfo[]
 ): CompetitionInfo[] => {
+  if (!Array.isArray(competitions)) return [];
   if (competitions.length <= MAX_COMPETITIONS) return competitions;
   const sorted = [...competitions].sort(sortByDateDesc);
   return sorted.slice(0, MAX_COMPETITIONS);
 };
 
-const compressCompetition = (c: CompetitionInfo): StoredCompetition => ({
-  id: c.id,
-  datedebut: c.datedebut,
-  datefin: c.datefin,
-  idConfig: c.idConfig ?? '',
-  consultationId: c.consultationId ?? '',
-  timeSpent: c.timeSpent ?? 0,
-  displayName: c.displayName,
-  isValidated: c.isValidated,
-  niveau: c.niveau,
-  matchInfo: c.matchInfo.map((m) => ({
-    id: m.id,
-    isgameover: m.isgameover,
-    timeSpent: m.timeSpent,
-    matchNumber: m.matchNumber,
-    niveau: m.niveau,
-    numeromatch: m.numeromatch,
-    datedebut: m.datedebut,
-    datefin: m.datefin,
-    score: m.score,
-  })),
-});
+const compressCompetition = (c: CompetitionInfo): StoredCompetition => {
+  const safeMatches = Array.isArray(c.matchInfo) ? c.matchInfo : [];
+  return {
+    id: c.id,
+    datedebut: c.datedebut,
+    datefin: c.datefin,
+    idConfig: c.idConfig ?? '',
+    consultationId: c.consultationId ?? '',
+    timeSpent: typeof c.timeSpent === 'number' ? c.timeSpent : 0,
+    displayName: c.displayName,
+    isValidated: c.isValidated,
+    niveau: c.niveau,
+    matchInfo: safeMatches.map((m) => ({
+      id: m.id,
+      isgameover: m.isgameover,
+      timeSpent: m.timeSpent,
+      matchNumber: m.matchNumber,
+      niveau: m.niveau,
+      numeromatch: m.numeromatch,
+      datedebut: m.datedebut,
+      datefin: m.datefin,
+      score: m.score,
+    })),
+  };
+};
 
-const decompressCompetition = (s: StoredCompetition): CompetitionInfo => ({
-  id: s.id,
-  datedebut: s.datedebut,
-  datefin: s.datefin,
-  idConfig: s.idConfig,
-  consultationId: s.consultationId,
-  timeSpent: s.timeSpent,
-  displayName: s.displayName || `N°: ${s.id.slice(-12)}`,
-  isValidated: s.isValidated || false,
-  niveau: s.niveau ?? 0,
-  matchInfo: s.matchInfo.map((m) => ({
-    id: m.id,
-    isgameover: m.isgameover || false,
-    timeSpent: m.timeSpent,
-    matchNumber: m.matchNumber || 0,
-    niveau: m.niveau || 0,
-    numeromatch: m.numeromatch || '',
-    datedebut: m.datedebut || null,
-    datefin: m.datefin || null,
-    score: m.score || 0,
-  })),
-});
+const decompressCompetition = (
+  s: StoredCompetition | CompetitionInfo
+): CompetitionInfo => {
+  const safeMatches = Array.isArray(s.matchInfo) ? s.matchInfo : [];
+  return {
+    ...(s as CompetitionInfo),
+    id: s.id,
+    datedebut: s.datedebut,
+    datefin: s.datefin,
+    idConfig: s.idConfig ?? '',
+    consultationId: s.consultationId ?? '',
+    timeSpent: typeof s.timeSpent === 'number' ? s.timeSpent : 0,
+    displayName: s.displayName || `N°: ${String(s.id ?? '').slice(-12)}`,
+    isValidated: Boolean(s.isValidated),
+    niveau: typeof s.niveau === 'number' ? s.niveau : 0,
+    matchInfo: safeMatches.map((m) => ({
+      ...(m as MatchInfo),
+      id: m.id ?? '',
+      isgameover: Boolean(m.isgameover),
+      timeSpent: typeof m.timeSpent === 'number' ? m.timeSpent : 0,
+      matchNumber: typeof m.matchNumber === 'number' ? m.matchNumber : 0,
+      niveau: typeof m.niveau === 'number' ? m.niveau : 0,
+      numeromatch: m.numeromatch || '',
+      datedebut: m.datedebut || null,
+      datefin: m.datefin || null,
+      score: typeof m.score === 'number' ? m.score : 0,
+    })),
+  };
+};
 
 const isStorageNearLimit = (): boolean => {
   if (typeof window === 'undefined') return false;
   try {
-    const testKey = '__size_test__';
-    const testData = 'x'.repeat(1024 * 1024);
-    localStorage.setItem(testKey, testData);
-    localStorage.removeItem(testKey);
+    const testKey = '__lolomaths_quota_test__';
+    const testData = 'x'.repeat(256 * 1024);
+    window.localStorage.setItem(testKey, testData);
+    window.localStorage.removeItem(testKey);
     return false;
   } catch {
     return true;
@@ -158,7 +178,8 @@ export const useCompetitionStore = create<CompetitionState>()(
       resetGameConfig: () => set({ gameConfig: null }),
 
       // ----- Match en cours -----
-      setCurrentMatchInfo: (matches) => set({ currentMatchInfo: matches }),
+      setCurrentMatchInfo: (matches) =>
+        set({ currentMatchInfo: Array.isArray(matches) ? matches : [] }),
 
       appendMatchInfo: (match) =>
         set((state) => ({
@@ -190,7 +211,7 @@ export const useCompetitionStore = create<CompetitionState>()(
           if (isStorageNearLimit()) {
             newCompetitions = newCompetitions.slice(
               0,
-              MAX_COMPETITIONS - 2
+              Math.max(1, MAX_COMPETITIONS - 2)
             );
           }
 
@@ -272,7 +293,9 @@ export const useCompetitionStore = create<CompetitionState>()(
       version: CURRENT_VERSION,
       partialize: (state) => ({
         gameConfig: state.gameConfig,
-        competitions: state.competitions.map(compressCompetition),
+        competitions: Array.isArray(state.competitions)
+          ? state.competitions.map(compressCompetition)
+          : [],
         competitionsVersion: state.competitionsVersion,
         currentConsultationId: state.currentConsultationId,
         gameIsFinished: state.gameIsFinished,
@@ -281,19 +304,23 @@ export const useCompetitionStore = create<CompetitionState>()(
         if (!state) return;
 
         try {
-          if (state.competitions) {
+          if (Array.isArray(state.competitions)) {
             state.competitions = (
-              state.competitions as unknown as StoredCompetition[]
+              state.competitions as unknown as (StoredCompetition | CompetitionInfo)[]
             ).map(decompressCompetition);
             state.competitions = enforceMaxLimit(state.competitions);
             state.competitionsVersion = Date.now();
+          } else {
+            state.competitions = [];
           }
         } catch (error) {
           console.error('Error decompressing competitions:', error);
           state.competitions = [];
         }
 
-        state.currentMatchInfo = state.currentMatchInfo || [];
+        state.currentMatchInfo = Array.isArray(state.currentMatchInfo)
+          ? state.currentMatchInfo
+          : [];
       },
     }
   )

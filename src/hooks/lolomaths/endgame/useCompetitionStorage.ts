@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 
 // Clé unique globale alignée avec les autres hooks
 const ACTIVE_VALIDATED_GAME_KEY = 'active_validated_competition_id';
+const VALIDATION_SYNC_EVENT = 'lolomaths:active-validated-competition-change';
 
 const readValidatedCompetitionId = (): string | null => {
   if (typeof window === 'undefined') return null;
   try {
-    return localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY);
+    return window.localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY);
   } catch {
     return null;
   }
@@ -19,6 +20,15 @@ const isCompetitionValidated = (competitionId: string): boolean => {
   return readValidatedCompetitionId() === competitionId;
 };
 
+const notifySameTabValidationChange = (): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new Event(VALIDATION_SYNC_EVENT));
+  } catch {
+    // Ignore si CustomEvent/Event est indisponible
+  }
+};
+
 const useCompetitionStorage = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -26,36 +36,52 @@ const useCompetitionStorage = () => {
     if (typeof window === 'undefined') return;
 
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === ACTIVE_VALIDATED_GAME_KEY) {
+      if (event.key === ACTIVE_VALIDATED_GAME_KEY || event.key === null) {
         setRefreshKey((prev) => prev + 1);
       }
     };
 
+    const handleSameTabChange = () => {
+      setRefreshKey((prev) => prev + 1);
+    };
+
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener(VALIDATION_SYNC_EVENT, handleSameTabChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener(VALIDATION_SYNC_EVENT, handleSameTabChange);
+    };
   }, []);
 
   const updateLocalCache = useCallback((competitionId: string) => {
     if (typeof window === 'undefined' || !competitionId) return;
     try {
-      localStorage.setItem(ACTIVE_VALIDATED_GAME_KEY, competitionId);
+      window.localStorage.setItem(ACTIVE_VALIDATED_GAME_KEY, competitionId);
     } catch {
       // Ignore les erreurs d'accès localStorage (ex. quota dépassé)
     }
     setRefreshKey((prev) => prev + 1);
+    notifySameTabValidationChange();
   }, []);
 
   const clearLocalCache = useCallback((competitionId?: string) => {
     if (typeof window === 'undefined') return;
+    let shouldNotify = false;
     try {
-      const current = localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY);
+      const current = window.localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY);
       if (!competitionId || current === competitionId) {
-        localStorage.removeItem(ACTIVE_VALIDATED_GAME_KEY);
+        window.localStorage.removeItem(ACTIVE_VALIDATED_GAME_KEY);
+        shouldNotify = true;
       }
     } catch {
-      // Ignore les erreurs d'accès localStorage
+      shouldNotify = true;
     }
-    setRefreshKey((prev) => prev + 1);
+
+    if (shouldNotify) {
+      setRefreshKey((prev) => prev + 1);
+      notifySameTabValidationChange();
+    }
   }, []);
 
   const isCompetitionValidatedMemo = useCallback(

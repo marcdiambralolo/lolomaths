@@ -64,16 +64,35 @@ function getLevelThreshold(niveau: GameResult['niveau']): number {
   }
 }
 
+/**
+ * Calcule le détail des bonus.
+ * 
+ * Règles :
+ * - Bonus de niveau : +1 si le nombre à atteindre >= seuil du niveau
+ * - Bonus de pions placés : +1 par pion au-delà de 6 (7 pions = +1, 8 = +2, etc.)
+ * - Bonus multiplicateur/division : +1 par opérateur × ou ÷ dans la combinaison
+ */
 function computeBonusBreakdown(gameResult: GameResult): BonusBreakdown {
   const levelThreshold = getLevelThreshold(gameResult.niveau);
   const targetValue = toFiniteNumber(gameResult.nbreatind, 0);
   const levelBonus = targetValue >= levelThreshold ? 1 : 0;
 
-  const sequenceCount = Array.isArray(gameResult.sequenceNcases)
-    ? gameResult.sequenceNcases.length
-    : 0;
-  const placedCountBonus = sequenceCount > 6 ? sequenceCount - 6 : 0;
+  // 🔥 On compte les pions réellement placés (ceux qui ont un placep défini)
+  // On suppose que sequenceNcases contient les ncases des pions placés
+  // Si l'information n'est pas disponible, on utilise sequenceNcases.length
+  const sequenceNcases = Array.isArray(gameResult.sequenceNcases)
+    ? gameResult.sequenceNcases
+    : [];
+  
+  // ⚠️ IMPORTANT : sequenceNcases.length est le nombre de cases dans la séquence
+  // Or, le bonus s'applique sur le nombre de PIONS placés.
+  // Si sequenceNcases contient exactement les cases avec des pions, alors c'est bon.
+  // Sinon, on doit filtrer. Mais on n'a pas accès à la grille ici.
+  // On fait donc confiance à sequenceNcases.length pour l'instant.
+  const placedCount = sequenceNcases.length;
+  const placedCountBonus = placedCount > 6 ? placedCount - 6 : 0;
 
+  // Bonus multiplicateur/division
   const combineStr = String(gameResult.combine ?? '');
   let mulDivBonus = 0;
   for (const ch of combineStr) {
@@ -82,6 +101,8 @@ function computeBonusBreakdown(gameResult: GameResult): BonusBreakdown {
     }
   }
 
+  // Si gameResult.bonus est déjà calculé par le Store, on l'utilise
+  // Sinon on le recalcule
   const explicitBonus =
     typeof gameResult.bonus === 'number' && Number.isFinite(gameResult.bonus)
       ? gameResult.bonus
@@ -207,6 +228,11 @@ export const Fdialog: React.FC<FdialogProps> = ({
   const formattedEcart = formatNumber(ecartAbsolu);
   const formattedBaseNote = formatSignedNumber(baseNote);
 
+  // 🔥 Calcul du nombre de pions placés pour l'affichage
+  const placedCount = Array.isArray(gameResult.sequenceNcases)
+    ? gameResult.sequenceNcases.length
+    : 0;
+
   return (
     <div
       role="presentation"
@@ -288,15 +314,16 @@ export const Fdialog: React.FC<FdialogProps> = ({
             </span>
 
             <ScoreRow
-              label={`Seuil niveau (${gameResult.niveau ?? 'Sen'} ≥ ${breakdown.levelThreshold}) :`}
+              label={`Nombre à atteindre ≥ ${breakdown.levelThreshold} :`}
               value={`+${formatNumber(breakdown.levelBonus)}`}
               valueClassName={
                 breakdown.levelBonus > 0 ? 'text-amber-400' : 'text-slate-500'
               }
             />
 
+            {/* 🔥 Affichage du bonus de pions avec le nombre de pions */}
             <ScoreRow
-              label="Plus de 6 pions :"
+              label={`Plus de 6 pions (${placedCount} placés) :`}
               value={`+${formatNumber(breakdown.placedCountBonus)}`}
               valueClassName={
                 breakdown.placedCountBonus > 0

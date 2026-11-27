@@ -15,39 +15,58 @@ const usePaginationWithLoadMore = <T,>(
   initialCount: number = INITIAL_VISIBLE_COUNT,
   increment: number = LOAD_MORE_INCREMENT
 ) => {
-  const [visibleCount, setVisibleCount] = useState(initialCount);
+  const safeInitialCount =
+    typeof initialCount === 'number' && Number.isFinite(initialCount)
+      ? Math.max(1, Math.floor(initialCount))
+      : 5;
+  const safeIncrement =
+    typeof increment === 'number' && Number.isFinite(increment)
+      ? Math.max(1, Math.floor(increment))
+      : 5;
+
+  const safeItems = useMemo(
+    () => (Array.isArray(items) ? items : []),
+    [items]
+  );
+
+  const [visibleCount, setVisibleCount] = useState(safeInitialCount);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  const effectiveVisibleCount = useMemo(
+    () => Math.min(visibleCount, safeItems.length),
+    [visibleCount, safeItems.length]
+  );
+
   const displayList = useMemo(
-    () => items.slice(0, visibleCount),
-    [items, visibleCount]
+    () => safeItems.slice(0, effectiveVisibleCount),
+    [safeItems, effectiveVisibleCount]
   );
 
   const hasMore = useMemo(
-    () => visibleCount < items.length,
-    [visibleCount, items.length]
+    () => effectiveVisibleCount < safeItems.length,
+    [effectiveVisibleCount, safeItems.length]
   );
 
   const remainingCount = useMemo(
-    () => Math.max(0, items.length - visibleCount),
-    [items.length, visibleCount]
+    () => Math.max(0, safeItems.length - effectiveVisibleCount),
+    [safeItems.length, effectiveVisibleCount]
   );
 
   const resetPagination = useCallback(() => {
-    setVisibleCount(initialCount);
-  }, [initialCount]);
+    setVisibleCount(safeInitialCount);
+  }, [safeInitialCount]);
 
   const handleLoadMore = useCallback(() => {
     startTransition(() => {
       setVisibleCount((prev) =>
-        Math.min(prev + increment, items.length)
+        Math.min(Math.max(prev, safeInitialCount) + safeIncrement, safeItems.length)
       );
     });
-  }, [items.length, increment]);
+  }, [safeItems.length, safeIncrement, safeInitialCount]);
 
   const handleLoadMoreClick = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return;
+    if (isLoadingMore || isPending || !hasMore) return;
     setIsLoadingMore(true);
 
     try {
@@ -55,7 +74,7 @@ const usePaginationWithLoadMore = <T,>(
     } finally {
       setIsLoadingMore(false);
     }
-  }, [handleLoadMore, isLoadingMore, hasMore]);
+  }, [handleLoadMore, isLoadingMore, isPending, hasMore]);
 
   return {
     displayList,

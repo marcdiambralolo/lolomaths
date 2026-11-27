@@ -67,14 +67,17 @@ function resolveMatches(
   localMatchs: MatchRecord[] | undefined
 ): NormalizedMatch[] {
   if (Array.isArray(competition.matchInfo) && competition.matchInfo.length > 0) {
-    return competition.matchInfo.map((m, idx) => ({
-      matchNumber: toSafeNumber(m.matchNumber, idx + 1),
-      numeromatch: m.numeromatch ?? String(idx + 1),
-      score: toSafeNumber(m.score, 0),
-      timeSpent: toSafeNumber(m.timeSpent, 0),
-      isgameover: Boolean(m.isgameover),
-      datedebut: m.datedebut ?? null,
-    }));
+    return competition.matchInfo.map((m, idx) => {
+      const legacyFlag = (m as { isGameOver?: boolean }).isGameOver;
+      return {
+        matchNumber: toSafeNumber(m.matchNumber, idx + 1),
+        numeromatch: m.numeromatch ?? String(idx + 1),
+        score: toSafeNumber(m.score, 0),
+        timeSpent: toSafeNumber(m.timeSpent, 0),
+        isgameover: Boolean(m.isgameover ?? legacyFlag),
+        datedebut: m.datedebut ?? null,
+      };
+    });
   }
 
   if (Array.isArray(localMatchs) && localMatchs.length > 0) {
@@ -126,8 +129,8 @@ const calculateCompetitionStats = (
 };
 
 const getStoredValidationStatus = (competitionId: string): boolean => {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) === competitionId;
+  if (typeof window === 'undefined' || !competitionId) return false;
+  return window.localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) === competitionId;
 };
 
 // ============================================================
@@ -146,9 +149,14 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
   const setGameIsFinished = useCompetitionStore(
     (state) => state.setGameIsFinished
   );
+  const updateCompetitionValidation = useCompetitionStore(
+    (state) => state.updateCompetitionValidation
+  );
 
   const localTournament = useHistoryStore((state) =>
-    state.tournaments.find((t) => t.id === competition.id)
+    Array.isArray(state.tournaments)
+      ? state.tournaments.find((t) => t.id === competition.id)
+      : undefined
   );
 
   const resolvedMatches = useMemo(
@@ -181,6 +189,12 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const stored = getStoredValidationStatus(competition.id);
+    setIsValidated(stored);
+    setShowPermanentMessage(stored);
+  }, [competition.id]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -278,8 +292,13 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
           updatedPayload
         );
 
-        localStorage.setItem(ACTIVE_VALIDATED_GAME_KEY, comp.id);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(ACTIVE_VALIDATED_GAME_KEY, comp.id);
+        }
         updateLocalCache(comp.id);
+        if (typeof updateCompetitionValidation === 'function') {
+          updateCompetitionValidation(comp.id, true);
+        }
         setGameIsFinished(true);
 
         await Promise.all([
@@ -323,6 +342,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
       currentConsultationId,
       showMessage,
       updateLocalCache,
+      updateCompetitionValidation,
       queryClient,
       setGameIsFinished,
     ]
@@ -371,14 +391,14 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
         permanentMessageTimeoutRef.current = setTimeout(() => {
           if (isMountedRef.current) setShowPermanentMessage(false);
         }, PERMANENT_MESSAGE_DURATION);
+
+        router.refresh();
       } else if (isMountedRef.current) {
         setValidationMessage({
           text: '❌ Erreur lors de la validation. Veuillez réessayer.',
           type: 'error',
         });
       }
-
-      router.refresh();
     } catch {
       if (isMountedRef.current) {
         setValidationMessage({
@@ -400,8 +420,11 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
   ]);
 
   const clearValidationStatus = useCallback(() => {
-    if (localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) === competition.id) {
-      localStorage.removeItem(ACTIVE_VALIDATED_GAME_KEY);
+    if (
+      typeof window !== 'undefined' &&
+      window.localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) === competition.id
+    ) {
+      window.localStorage.removeItem(ACTIVE_VALIDATED_GAME_KEY);
     }
     setIsValidated(false);
     setShowPermanentMessage(false);
