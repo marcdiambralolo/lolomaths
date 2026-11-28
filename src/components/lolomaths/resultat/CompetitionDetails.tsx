@@ -3,6 +3,7 @@
 import { useCompetitionValidation } from '@/hooks/lolomaths/endgame/useCompetitionValidation';
 import { CompetitionInfo, User } from '@/lib/interfaces';
 import { memo, useMemo } from 'react';
+import Link from 'next/link';
 import CompetitionHeader from './CompetitionHeader';
 import CompetitionStats from './CompetitionStats';
 import MessageToast from './MessageToast';
@@ -45,9 +46,20 @@ const CompetitionDetails = memo(function CompetitionDetails({
   );
 
   const displayScore = useMemo(() => {
-    if (localTournament && typeof localTournament.score === 'number') {
-      return toFiniteNumber(localTournament.score, 0);
+    const hasLocalMatchs =
+      localTournament &&
+      Array.isArray(localTournament.matchs) &&
+      localTournament.matchs.length > 0;
+
+    if (
+      localTournament &&
+      typeof localTournament.score === 'number' &&
+      Number.isFinite(localTournament.score) &&
+      (hasLocalMatchs || localTournament.score > 0 || stats?.totalScore === undefined)
+    ) {
+      return localTournament.score;
     }
+
     return toFiniteNumber(stats?.totalScore, 0);
   }, [localTournament, stats?.totalScore]);
 
@@ -107,6 +119,20 @@ const CompetitionDetails = memo(function CompetitionDetails({
           score={displayScore}
           user={user}
         />
+
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
+          <span>
+            Matchs terminés : {displayCompletedMatches} / {displayMatches}
+          </span>
+          {competition.id && (
+            <Link
+              href={`/star/tournoi/${competition.id}`}
+              className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              Voir détail →
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -11,9 +11,18 @@ interface CompetitionStatsProps {
   finishedDate: string;
   /** Score total de la compétition (Lolomaths). */
   score: number;
-  /** Nombre de matchs joués. */
+  /** Affichage des informations joueur. */
   showUserInfo?: boolean;
   user: User | null;
+}
+
+function formatScoreValue(rawScore: unknown): string {
+  if (typeof rawScore !== 'number' || !Number.isFinite(rawScore)) {
+    return '0.00';
+  }
+  const rounded = Number(rawScore.toFixed(2));
+  const normalized = Object.is(rounded, -0) ? 0 : rounded;
+  return normalized.toFixed(2);
 }
 
 const CompetitionStats = memo(function CompetitionStats({
@@ -23,7 +32,6 @@ const CompetitionStats = memo(function CompetitionStats({
   showUserInfo = true,
   user,
 }: CompetitionStatsProps) {
-  // ----- Temps écoulé (calculé depuis les dates) -----
   const elapsedTime = useMemo(() => {
     if (!startDate || !finishedDate) return null;
 
@@ -38,13 +46,11 @@ const CompetitionStats = memo(function CompetitionStats({
     return formatToHMS(diffSeconds);
   }, [startDate, finishedDate]);
 
-  // ----- Infos utilisateur -----
   const fullName = user
     ? `${user.nom || ''} ${user.prenoms || ''}`.trim() || 'Utilisateur'
     : 'Utilisateur';
   const phoneNumber = user?.phone || 'Non renseigné';
-
-  // ----- Résumé des matchs -----
+  const formattedScore = useMemo(() => formatScoreValue(score), [score]);
 
   return (
     <div className="w-full dark:from-gray-800/30 dark:to-gray-900/30 p-3 dark:border-gray-700/50 mt-1">
@@ -70,12 +76,12 @@ const CompetitionStats = memo(function CompetitionStats({
       <div className="space-y-1">
         <InfoRow
           label="Date de début"
-          value={startDate}
+          value={startDate || 'Non renseignée'}
           icon={<Calendar className="w-3.5 h-3.5" />}
         />
         <InfoRow
           label="Date de fin"
-          value={finishedDate}
+          value={finishedDate || 'En cours'}
           icon={<Calendar className="w-3.5 h-3.5" />}
         />
 
@@ -88,15 +94,12 @@ const CompetitionStats = memo(function CompetitionStats({
           />
         )}
 
-        {/* ✅ Score réel de la compétition (Lolomaths) */}
         <InfoRow
           label="Score total"
-          value={`${score.toFixed(2)} `}
+          value={formattedScore}
           highlight
           icon={<BarChart3 className="w-3.5 h-3.5" />}
         />
-
-       
       </div>
     </div>
   );

@@ -12,6 +12,10 @@ function toTimestamp(value: string | null | undefined): number {
   return Number.isNaN(ts) ? 0 : ts;
 }
 
+function toFiniteScore(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
 function computeElapsedSeconds(
   startIso: string | null | undefined,
   endIso: string | null | undefined
@@ -30,27 +34,41 @@ function mapTournamentToCompetitionInfo(
   const datedebut = tournament.datedebut ?? new Date().toISOString();
   const datefin = tournament.datefin ?? datedebut;
   const safeId = String(tournament.id ?? '');
+  const score = toFiniteScore(tournament.score, 0);
 
   return {
     id: safeId,
     idConfig: tournament.idConfig ?? '',
     displayName: `N°: ${safeId.slice(-12)}`,
     name: tournament.nomjoueur ?? '',
+    nomjoueur: tournament.nomjoueur ?? '',
+    numtournoi: tournament.numtournoi ?? '',
+    niveau: tournament.niveau,
+    couleurs: tournament.couleurs,
+    nombredejeu: tournament.nombredejeu,
+    nbmatch: tournament.nbmatch,
+    tempsmatch: tournament.tempsmatch,
+    tpsglobal: tournament.tpsglobal,
     datedebut,
     datefin,
-    score: typeof tournament.score === 'number' ? tournament.score : 0,
+    score,
+    totalScore: score,
+    isgameover: Boolean(tournament.isGameOver ?? tournament.isgameover),
     matchesCount: safeMatchs.length,
     completedMatches: safeMatchs.filter((m) => Boolean(m.isGameOver)).length,
     isValidated,
     timeSpent: computeElapsedSeconds(datedebut, datefin),
-    matchInfo: safeMatchs.map((m) => ({
+    matchInfo: safeMatchs.map((m, idx) => ({
       id: m.id,
+      tournamentId: safeId,
+      matchNumber: toFiniteScore(m.numordrep, idx + 1),
       isGameOver: Boolean(m.isGameOver),
       isgameover: Boolean(m.isGameOver),
-      score: typeof m.score === 'number' ? m.score : 0,
+      score: toFiniteScore(m.score, 0),
       numeromatch: m.numeromatch ?? '',
       datedebut: m.datedebut ?? null,
       datefin: m.datefin ?? null,
+      jeux: Array.isArray(m.jeux) ? m.jeux : [],
     })),
   };
 }
@@ -71,12 +89,58 @@ const useCompetitionList = (): CompetitionInfo[] => {
     const safeRemote = Array.isArray(competitions) ? competitions : [];
     const safeLocal = Array.isArray(localTournaments) ? localTournaments : [];
 
+    const localById = new Map<string, TournamentRecord>();
+    for (const t of safeLocal) {
+      if (t?.id) localById.set(t.id, t);
+    }
+
     const filteredRemote = safeRemote.filter((comp) => {
       if (!gameConfigId) return true;
       return !comp.idConfig || comp.idConfig === gameConfigId;
     });
 
     const remoteIds = new Set(filteredRemote.map((c) => c.id));
+
+    const enrichedRemote: CompetitionInfo[] = filteredRemote.map((comp) => {
+      const localMatch = localById.get(comp.id);
+      const localScore = localMatch
+        ? toFiniteScore(localMatch.score, 0)
+        : undefined;
+      const remoteScore = toFiniteScore(comp.score ?? comp.totalScore, 0);
+      const mergedScore =
+        localScore !== undefined && (localScore > 0 || remoteScore === 0)
+          ? localScore
+          : remoteScore;
+
+      const hasRemoteMatchInfo =
+        Array.isArray(comp.matchInfo) && comp.matchInfo.length > 0;
+      const mergedMatchInfo = hasRemoteMatchInfo
+        ? comp.matchInfo
+        : localMatch && Array.isArray(localMatch.matchs)
+          ? localMatch.matchs.map((m, idx) => ({
+              id: m.id,
+              tournamentId: comp.id,
+              matchNumber: toFiniteScore(m.numordrep, idx + 1),
+              isGameOver: Boolean(m.isGameOver),
+              isgameover: Boolean(m.isGameOver),
+              score: toFiniteScore(m.score, 0),
+              numeromatch: m.numeromatch ?? '',
+              datedebut: m.datedebut ?? null,
+              datefin: m.datefin ?? null,
+              jeux: Array.isArray(m.jeux) ? m.jeux : [],
+            }))
+          : [];
+
+      return {
+        ...comp,
+        displayName:
+          comp.displayName ?? `N°: ${String(comp.id ?? '').slice(-12)}`,
+        score: mergedScore,
+        totalScore: mergedScore,
+        matchInfo: mergedMatchInfo,
+        isValidated: isCompetitionValidated(comp.id),
+      };
+    });
 
     const extraLocal = safeLocal
       .filter((t) => {
@@ -88,15 +152,7 @@ const useCompetitionList = (): CompetitionInfo[] => {
         mapTournamentToCompetitionInfo(t, isCompetitionValidated(t.id))
       );
 
-    const combined: CompetitionInfo[] = [
-      ...filteredRemote.map((comp) => ({
-        ...comp,
-        displayName:
-          comp.displayName ?? `N°: ${String(comp.id ?? '').slice(-12)}`,
-        isValidated: isCompetitionValidated(comp.id),
-      })),
-      ...extraLocal,
-    ];
+    const combined: CompetitionInfo[] = [...enrichedRemote, ...extraLocal];
 
     return combined.sort((a, b) => {
       if (a.isValidated !== b.isValidated) {

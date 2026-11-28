@@ -232,6 +232,7 @@ export interface GameResult {
   placedCount?: number;
   placedNcases?: number[];
   score?: number;
+  editionId?: string;
 
   [key: string]: unknown;
 }
@@ -246,6 +247,8 @@ export interface GameConfiguration {
 }
 
 export interface LearningConfiguration {
+  participants: number;
+  partiesJouees: number;
   id?: string;
   _id?: string;
   startgameDate: Date;
@@ -480,11 +483,11 @@ export interface GameCompletionState {
 
 export interface GameState {
   status:
-    | 'no_competition'
-    | 'not_started'
-    | 'active'
-    | 'results_available'
-    | 'ended_no_proclamation';
+  | 'no_competition'
+  | 'not_started'
+  | 'active'
+  | 'results_available'
+  | 'ended_no_proclamation';
   canUserPlay: boolean;
   showGameFinishedBanner: boolean;
   countdown: number | null;

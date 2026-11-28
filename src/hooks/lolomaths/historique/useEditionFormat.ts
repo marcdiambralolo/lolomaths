@@ -1,8 +1,8 @@
 import { formatEditionDate } from "@/lib/functions";
-import { Edition } from "@/lib/learning/interface";
+import { ActiveEdition } from "@/lib/interfaces";
 import { useMemo } from "react";
 
-export function useEditionFormat(edition?: Edition) {
+export function useEditionFormat(edition?: ActiveEdition ) {
 
   return useMemo(() => {
     const editionStartDate = edition?.startDate ? new Date(edition.startDate) : null;

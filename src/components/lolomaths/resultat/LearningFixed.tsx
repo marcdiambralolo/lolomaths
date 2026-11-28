@@ -10,14 +10,25 @@ import { ResultActions } from './ResultActions';
 
 const ResultatPage = memo(() => {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-slate-950 dark:via-purple-950/20 dark:to-indigo-950">
+    <main
+      aria-label="Résultats du match"
+      className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-slate-950 dark:via-purple-950/20 dark:to-indigo-950"
+    >
       <div className="w-full max-w-md mx-auto px-3 py-4 space-y-4">
         <ResultHero />
-        <MatchSummaryScreen />
-       
+
+        <nav aria-label="Actions rapides">
+          <ResultActions />
+        </nav>
+
         <FeuilleDeMatch />
-        <ResultActions />
-         <StatsSection />
+        <MatchSummaryScreen />
+        <StatsSection />
+
+        <nav aria-label="Actions de fin de page">
+          <ResultActions />
+        </nav>
+
         <FooterSection />
       </div>
     </main>

@@ -11,7 +11,7 @@ interface FdialogProps {
 }
 
 interface ScoreRowProps {
-  label: string;
+  label: string | React.ReactNode;
   value: React.ReactNode;
   valueClassName?: string;
 }
@@ -105,9 +105,9 @@ function computeBonusBreakdown(gameResult: GameResult): BonusBreakdown {
   const hasExplicitPlacedCount =
     typeof (gameResult as { placedCount?: unknown }).placedCount === 'number' ||
     typeof (gameResult as { placedPionsCount?: unknown }).placedPionsCount ===
-      'number' ||
+    'number' ||
     typeof (gameResult as { newlyPlacedCount?: unknown }).newlyPlacedCount ===
-      'number';
+    'number';
 
   const computedSum = levelBonus + placedCountBonus + mulDivBonus;
   const totalBonus = hasExplicitPlacedCount
@@ -261,11 +261,10 @@ export const Fdialog: React.FC<FdialogProps> = ({
 
         <div
           id="dialog-description"
-          className={`px-6 py-2 text-xs font-semibold uppercase tracking-wider flex justify-between items-center ${
-            isPerfect
-              ? 'bg-emerald-500/10 text-emerald-400 border-b border-emerald-500/20'
-              : 'bg-amber-500/10 text-amber-400 border-b border-amber-500/20'
-          }`}
+          className={`px-6 py-2 text-xs font-semibold uppercase tracking-wider flex justify-between items-center ${isPerfect
+            ? 'bg-emerald-500/10 text-emerald-400 border-b border-emerald-500/20'
+            : 'bg-amber-500/10 text-amber-400 border-b border-amber-500/20'
+            }`}
         >
           <span>
             {isPerfect ? 'Coup Parfait' : "Coup Inexact (Pénalité d'écart)"}
@@ -320,7 +319,15 @@ export const Fdialog: React.FC<FdialogProps> = ({
             />
 
             <ScoreRow
-              label={`Plus de 6 pions (${breakdown.placedCount} placés) :`}
+              label={
+                <>
+                  Plus de 6 pions (
+                  <span className="text-red-500 font-bold">
+                    {breakdown.placedCount}
+                  </span>{" "}
+                  placés) :
+                </>
+              }
               value={`+${formatNumber(breakdown.placedCountBonus)}`}
               valueClassName={
                 breakdown.placedCountBonus > 0
@@ -353,9 +360,8 @@ export const Fdialog: React.FC<FdialogProps> = ({
               Note obtenue :
             </span>
             <span
-              className={`text-2xl font-black font-sans tracking-tight ${
-                totalGameNote >= 0 ? 'text-emerald-400' : 'text-rose-400'
-              }`}
+              className={`text-2xl font-black font-sans tracking-tight ${totalGameNote >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                }`}
             >
               {formattedScore} pts
             </span>

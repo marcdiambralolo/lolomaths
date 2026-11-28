@@ -1,122 +1,65 @@
 'use client';
-import { GameResult } from '@/lib/interfaces';
-import { formatToHMS } from '@/lib/learning/functions';
-import { Winner } from '@/lib/learning/interface';
-import { memo, useMemo } from 'react';
-import EmptyState from './EmptyState';
-import Podium from './Podium';
-import WinnersList from './WinnersList';
-import WinningInfoCard from './WinningInfoCard';
 
-interface Ranking {
-    winners: Winner[];
-    totalParticipants: number;
-    fastestTimeFormatted: string;
+import { memo } from 'react';
+import { Trophy, Users, Target } from 'lucide-react';
+
+interface WinningInfoCardProps {
+  bestScore: number;
+  totalParticipants: number;
+  perfectCount?: number;
 }
 
-const TIME_REGEX = /(\d+(?:\.\d+)?)/;
-
-const parseTimeToSeconds = (timeStr: string | number | undefined): number => {
-    if (!timeStr) return 0;
-    if (typeof timeStr === 'number') return timeStr;
-
-    const match = timeStr.match(TIME_REGEX);
-    return match ? parseFloat(match[1]) : 0;
-};
-
-const formatTimeFromSeconds = (seconds: number): string => {
-    if (seconds < 60) return `${seconds} sec`;
-    const minutes = Math.floor(seconds / 60);
-    const restSeconds = seconds % 60;
-    return restSeconds === 0 ? `${minutes} min` : `${minutes} min ${restSeconds} sec`;
-};
-
-const computeRankingFromConsultations = (consultations: GameResult[]): Ranking | null => {
-    if (!consultations?.length) return null;
-
-    const bestTimesByUser = new Map<string, Winner>();
-
-    for (let i = 0; i < consultations.length; i++) {
-
-        const consultation = consultations[i];
-        const client = consultation.clientId;
-        if (!client?._id) continue;
-
-        const timeSpentSeconds = parseTimeToSeconds(consultation.timeSpent);
-        if (timeSpentSeconds <= 0) continue;
-
-        const existing = bestTimesByUser.get(client._id);
-
-        if (!existing || timeSpentSeconds < existing.timeSpent) {
-            bestTimesByUser.set(client._id, {
-                consultationId: consultation._id,
-                clientId: client._id,
-                username: client.username || 'Anonyme',
-                firstName: client.prenoms || 'Anonyme',
-                lastName: client.nom || '',
-                phone: client.phone || '',
-                nom: client.nom || '',
-                prenoms: client.prenoms || '',
-                country: client.country || "Côte d'Ivoire",
-                timeSpent: timeSpentSeconds,
-                timeSpentFormatted: formatToHMS( timeSpentSeconds),
-                createdAt: consultation.createdAt,
-                rank: 0,
-                nombredevues: consultation.nombredevues || 0,
-            });
-        }
-    }
-
-    if (bestTimesByUser.size === 0) return null;
-
-    const rankedWinners = Array.from(bestTimesByUser.values()).sort((a, b) => a.timeSpent - b.timeSpent);
-
-    for (let i = 0; i < rankedWinners.length; i++) {
-        rankedWinners[i].rank = i + 1;
-    }
-
-    return {
-        winners: rankedWinners,
-        totalParticipants: rankedWinners.length,
-        fastestTimeFormatted: rankedWinners[0].timeSpentFormatted,
-    };
-};
-
-const WinnersSection = memo(function WinnersSection({
-    consultations,
-}: {
-    consultations: GameResult[];
-}) {
-    const ranking = useMemo(() => computeRankingFromConsultations(consultations), [consultations]);
-
-    if (!consultations?.length) {
-        return (
-            <EmptyState
-                title="🎮 Aucun participant"
-                subtitle="Personne n'a participé à cette édition"
-            />
-        );
-    }
-
-    if (!ranking) {
-        return (
-            <EmptyState
-                title="⏳ En attente des résultats"
-                subtitle="Les temps de jeu seront bientôt disponibles"
-            />
-        );
-    }
-
-    return (
-        <div className="space-y-8 mb-8 mt-4">
-            <WinningInfoCard
-                fastestTimeFormatted={ranking.fastestTimeFormatted}
-                totalParticipants={ranking.totalParticipants}
-            />
-            <Podium winners={ranking.winners.slice(0, 3)} />
-            <WinnersList winners={ranking.winners.slice(0, 3)} />
+const WinningInfoCard = memo(function WinningInfoCard({
+  bestScore,
+  totalParticipants,
+  perfectCount = 0,
+}: WinningInfoCardProps) {
+  return (
+    <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/20 dark:via-yellow-900/20 dark:to-orange-900/20 rounded-2xl border-2 border-amber-200 dark:border-amber-800 p-5 shadow-lg">
+      <div className="grid grid-cols-3 gap-4 text-center">
+        {/* Meilleur score */}
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center mb-2">
+            <Trophy className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="text-2xl font-black text-amber-700 dark:text-amber-400">
+            {bestScore.toFixed(2)}
+          </div>
+          <div className="text-[10px] font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wide">
+            Meilleur score
+          </div>
         </div>
-    );
+
+        {/* Participants */}
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mb-2">
+            <Users className="w-5 h-5 text-purple-600" />
+          </div>
+          <div className="text-2xl font-black text-purple-700 dark:text-purple-400">
+            {totalParticipants}
+          </div>
+          <div className="text-[10px] font-semibold text-purple-600 dark:text-purple-500 uppercase tracking-wide">
+            Participants
+          </div>
+        </div>
+
+        {/* Calculs parfaits */}
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
+            <Target className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
+            {perfectCount}
+          </div>
+          <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-500 uppercase tracking-wide">
+            Calculs parfaits
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 });
 
-export default WinnersSection;
+WinningInfoCard.displayName = 'WinningInfoCard';
+
+export default WinningInfoCard;

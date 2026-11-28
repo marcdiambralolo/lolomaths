@@ -60,6 +60,7 @@ export interface Winner {
 }
 
 export interface Edition {
+  [x: string]: string | undefined;
   startDate?: string;
   endDate?: string;
 }

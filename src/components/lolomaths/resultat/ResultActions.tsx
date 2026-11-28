@@ -4,7 +4,16 @@ import { motion } from 'framer-motion';
 import { RotateCcw, Share2, Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useHistoryStore } from '@/lib/store/useHistoryStore';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+
+function formatScoreForShare(rawScore: unknown): string {
+  if (typeof rawScore !== 'number' || !Number.isFinite(rawScore)) {
+    return '0.00';
+  }
+  const rounded = Number(rawScore.toFixed(2));
+  const normalized = Object.is(rounded, -0) ? 0 : rounded;
+  return normalized.toFixed(2);
+}
 
 export function ResultActions() {
   const router = useRouter();
@@ -12,40 +21,62 @@ export function ResultActions() {
   const lastTournamentId = useHistoryStore((s) => s.lastTournamentId);
 
   const lastTournament = useMemo(() => {
+    const safeList = Array.isArray(tournaments) ? tournaments : [];
     if (lastTournamentId) {
-      const found = tournaments.find((t) => t.id === lastTournamentId);
+      const found = safeList.find((t) => t.id === lastTournamentId);
       if (found) return found;
     }
-    return tournaments[tournaments.length - 1];
+    return safeList[safeList.length - 1];
   }, [tournaments, lastTournamentId]);
 
-  const scoreTotal = lastTournament?.score ?? 0;
+  const formattedScore = useMemo(
+    () => formatScoreForShare(lastTournament?.score),
+    [lastTournament?.score]
+  );
 
-  const handleReplay = () => router.push('/star/profil');
-  const handleHome = () => router.push('/');
+  const handleReplay = useCallback(() => {
+    router.push('/star/profil');
+  }, [router]);
 
-  const handleShare = async () => {
-    const text = `J'ai marqué ${scoreTotal.toFixed(2)} points à Lolomaths ! 🎯`;
+  const handleHome = useCallback(() => {
+    router.push('/');
+  }, [router]);
 
-    if (typeof navigator !== 'undefined' && navigator.share) {
+  const handleShare = useCallback(async () => {
+    const text = `J'ai marqué ${formattedScore} points à Lolomaths ! 🎯`;
+    const shareUrl =
+      typeof window !== 'undefined' ? window.location.href : undefined;
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title: 'Mon score Lolomaths',
           text,
-          url: window.location.href,
+          url: shareUrl,
         });
+        return;
       } catch {
-        // Annulé
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(`${text} ${window.location.href}`);
-        alert('Score copié dans le presse-papier !');
-      } catch {
-        alert('Impossible de copier le lien.');
+        // Annulé par l'utilisateur ou non supporté dans ce contexte
       }
     }
-  };
+
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === 'function'
+    ) {
+      try {
+        const payload = shareUrl ? `${text} ${shareUrl}` : text;
+        await navigator.clipboard.writeText(payload);
+        alert('Score copié dans le presse-papier !');
+        return;
+      } catch {
+        // Repli si l'accès presse-papier est refusé
+      }
+    }
+
+    alert(text);
+  }, [formattedScore]);
 
   return (
     <motion.section
@@ -56,6 +87,7 @@ export function ResultActions() {
     >
       {/* Bouton principal : Rejouer */}
       <motion.button
+        type="button"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleReplay}
@@ -68,6 +100,7 @@ export function ResultActions() {
       {/* Boutons secondaires */}
       <div className="grid grid-cols-2 gap-3">
         <motion.button
+          type="button"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleShare}
@@ -77,6 +110,7 @@ export function ResultActions() {
           Partager
         </motion.button>
         <motion.button
+          type="button"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleHome}
@@ -85,7 +119,7 @@ export function ResultActions() {
           <Home className="w-4 h-4" />
           Accueil
         </motion.button>
-      </div> 
+      </div>
     </motion.section>
   );
 }

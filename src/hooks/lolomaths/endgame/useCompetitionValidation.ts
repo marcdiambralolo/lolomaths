@@ -66,22 +66,39 @@ function resolveMatches(
   competition: CompetitionInfo,
   localMatchs: MatchRecord[] | undefined
 ): NormalizedMatch[] {
+  const safeLocal = Array.isArray(localMatchs) ? localMatchs : [];
+
   if (Array.isArray(competition.matchInfo) && competition.matchInfo.length > 0) {
     return competition.matchInfo.map((m, idx) => {
       const legacyFlag = (m as { isGameOver?: boolean }).isGameOver;
+      const matchedLocal = safeLocal.find(
+        (lm) =>
+          (m.id && lm.id === m.id) ||
+          (m.numeromatch && lm.numeromatch === m.numeromatch) ||
+          lm.numordrep === toSafeNumber(m.matchNumber, idx + 1)
+      );
+
+      const remoteScore = toSafeNumber(m.score, 0);
+      const localScore = matchedLocal ? toSafeNumber(matchedLocal.score, 0) : 0;
+
       return {
-        matchNumber: toSafeNumber(m.matchNumber, idx + 1),
-        numeromatch: m.numeromatch ?? String(idx + 1),
-        score: toSafeNumber(m.score, 0),
+        matchNumber: toSafeNumber(
+          m.matchNumber ?? matchedLocal?.numordrep,
+          idx + 1
+        ),
+        numeromatch: m.numeromatch ?? matchedLocal?.numeromatch ?? String(idx + 1),
+        score: remoteScore !== 0 ? remoteScore : localScore,
         timeSpent: toSafeNumber(m.timeSpent, 0),
-        isgameover: Boolean(m.isgameover ?? legacyFlag),
-        datedebut: m.datedebut ?? null,
+        isgameover: Boolean(
+          m.isgameover ?? legacyFlag ?? matchedLocal?.isGameOver
+        ),
+        datedebut: m.datedebut ?? matchedLocal?.datedebut ?? null,
       };
     });
   }
 
-  if (Array.isArray(localMatchs) && localMatchs.length > 0) {
-    return localMatchs.map((m, idx) => ({
+  if (safeLocal.length > 0) {
+    return safeLocal.map((m, idx) => ({
       matchNumber: toSafeNumber(m.numordrep, idx + 1),
       numeromatch: m.numeromatch ?? String(idx + 1),
       score: toSafeNumber(m.score, 0),
@@ -130,7 +147,13 @@ const calculateCompetitionStats = (
 
 const getStoredValidationStatus = (competitionId: string): boolean => {
   if (typeof window === 'undefined' || !competitionId) return false;
-  return window.localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) === competitionId;
+  try {
+    return (
+      window.localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) === competitionId
+    );
+  } catch {
+    return false;
+  }
 };
 
 // ============================================================
@@ -141,7 +164,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { showMessage } = useMessage();
-  const { updateLocalCache } = useCompetitionStorage();
+  const { updateLocalCache, clearLocalCache } = useCompetitionStorage();
 
   const currentConsultationId = useCompetitionStore(
     (state) => state.currentConsultationId
@@ -199,9 +222,11 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (!isMountedRef.current) return;
-      if (e.key !== ACTIVE_VALIDATED_GAME_KEY) return;
+      if (e.key !== ACTIVE_VALIDATED_GAME_KEY && e.key !== null) return;
 
-      const isCurrentValidated = e.newValue === competition.id;
+      const isCurrentValidated =
+        window.localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) ===
+        competition.id;
       setIsValidated(isCurrentValidated);
       setShowPermanentMessage(isCurrentValidated);
     };
@@ -292,9 +317,6 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
           updatedPayload
         );
 
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(ACTIVE_VALIDATED_GAME_KEY, comp.id);
-        }
         updateLocalCache(comp.id);
         if (typeof updateCompetitionValidation === 'function') {
           updateCompetitionValidation(comp.id, true);
@@ -420,12 +442,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
   ]);
 
   const clearValidationStatus = useCallback(() => {
-    if (
-      typeof window !== 'undefined' &&
-      window.localStorage.getItem(ACTIVE_VALIDATED_GAME_KEY) === competition.id
-    ) {
-      window.localStorage.removeItem(ACTIVE_VALIDATED_GAME_KEY);
-    }
+    clearLocalCache(competition.id);
     setIsValidated(false);
     setShowPermanentMessage(false);
     setValidationMessage(null);
@@ -434,7 +451,7 @@ export const useCompetitionValidation = (competition: CompetitionInfo) => {
       clearTimeout(permanentMessageTimeoutRef.current);
       permanentMessageTimeoutRef.current = null;
     }
-  }, [competition.id]);
+  }, [clearLocalCache, competition.id]);
 
   const handleCloseMessage = useCallback(() => setValidationMessage(null), []);
   const handleClosePermanentMessage = useCallback(

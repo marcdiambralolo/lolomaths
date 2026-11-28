@@ -45,15 +45,19 @@ export const useEndGameGenerator = () => {
     [displayList]
   );
 
+  const safeRemainingCount = useMemo(() => {
+    if (typeof remainingCount !== 'number' || !Number.isFinite(remainingCount)) {
+      return 0;
+    }
+    return Math.max(0, Math.floor(remainingCount));
+  }, [remainingCount]);
+
   return useMemo(
     () => ({
       handleLoadMoreClick,
       competitionList: safeDisplayList,
       hasMore: Boolean(hasMore),
-      remainingCount:
-        typeof remainingCount === 'number' && Number.isFinite(remainingCount)
-          ? Math.max(0, remainingCount)
-          : 0,
+      remainingCount: safeRemainingCount,
       isLoadingMore: Boolean(isLoadingMore),
       user: processedData,
     }),
@@ -61,7 +65,7 @@ export const useEndGameGenerator = () => {
       handleLoadMoreClick,
       safeDisplayList,
       hasMore,
-      remainingCount,
+      safeRemainingCount,
       isLoadingMore,
       processedData,
     ]
