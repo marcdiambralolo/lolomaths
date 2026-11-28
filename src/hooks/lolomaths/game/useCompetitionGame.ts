@@ -54,14 +54,16 @@ function convertTempsmatchToSeconds(
 }
 
 export const loadGameConfig = (): GameConfig => {
+  if (typeof window === 'undefined') return DEFAULT_CONFIG;
+
   try {
-    const savedConfig = localStorage.getItem(CONFIG_STORAGE_KEY);
+    const savedConfig = window.localStorage.getItem(CONFIG_STORAGE_KEY);
     if (!savedConfig) return DEFAULT_CONFIG;
 
     const config = JSON.parse(savedConfig);
 
     let duration: number;
-    if (typeof config.matchDuration === 'number') {
+    if (typeof config.matchDuration === 'number' && Number.isFinite(config.matchDuration)) {
       duration = config.matchDuration;
     } else if (typeof config.tempsmatch === 'string') {
       duration = convertTempsmatchToSeconds(config.tempsmatch);
@@ -70,11 +72,21 @@ export const loadGameConfig = (): GameConfig => {
     }
 
     return {
-      niveau: config.niveau ?? DEFAULT_CONFIG.niveau,
-      matrixIndex: config.matrixIndex ?? DEFAULT_CONFIG.matrixIndex,
-      numeromatch: config.numeromatch ?? DEFAULT_CONFIG.numeromatch,
+      niveau:
+        typeof config.niveau === 'number' ? config.niveau : DEFAULT_CONFIG.niveau,
+      matrixIndex:
+        typeof config.matrixIndex === 'number'
+          ? config.matrixIndex
+          : DEFAULT_CONFIG.matrixIndex,
+      numeromatch:
+        typeof config.numeromatch === 'string' && config.numeromatch
+          ? config.numeromatch
+          : DEFAULT_CONFIG.numeromatch,
       matchDuration: duration,
-      nombredejeu: config.nombredejeu ?? DEFAULT_CONFIG.nombredejeu,
+      nombredejeu:
+        typeof config.nombredejeu === 'number'
+          ? config.nombredejeu
+          : DEFAULT_CONFIG.nombredejeu,
     };
   } catch (e) {
     console.error('Erreur lors du chargement de la configuration:', e);
@@ -93,7 +105,7 @@ export interface GameHistoryItem {
 
 export const useCompetitionGame = () => {
   const router = useRouter();
-  const { gameConfig } = useCompetitionStore();
+  const gameConfig = useCompetitionStore((s) => s.gameConfig);
 
   // Persistance automatique
   useGamePersistence();
@@ -106,6 +118,8 @@ export const useCompetitionGame = () => {
   const gameResults = useGameStore((s) => s.gameResults);
   const isMatchOver = useGameStore((s) => s.isMatchOver);
   const pions = useGameStore((s) => s.pions);
+  const rackIndex = useGameStore((s) => s.rackIndex);
+  const preGeneratedNumbers = useGameStore((s) => s.preGeneratedNumbers);
 
   const initGame = useGameStore((s) => s.initGame);
   const resetPions = useGameStore((s) => s.resetPions);
@@ -117,7 +131,8 @@ export const useCompetitionGame = () => {
 
   // Pions encore disponibles dans le rack (Pla ou Choi)
   const hasPionsInRack = useMemo(
-    () => pions.some((p) => p.etat === StateCase.Pla || p.etat === StateCase.Choi),
+    () =>
+      pions.some((p) => p.etat === StateCase.Pla || p.etat === StateCase.Choi),
     [pions]
   );
 
@@ -173,7 +188,7 @@ export const useCompetitionGame = () => {
     resetAndStartChrono(duration);
   }, [initializeGameSession, resetAndStartChrono]);
 
-  // -------- Fin de match si plus de pions jouables ni posés --------
+  // -------- Fin de match si plus de pions jouables ni posés en fin de stock --------
   useEffect(() => {
     if (isMatchOver || cnbjeu === 0) return;
     if (hasPionsInRack) return;
@@ -181,9 +196,22 @@ export const useCompetitionGame = () => {
     const placedNow = getPlacedPions(flatGrid);
     if (placedNow.length > 0) return;
 
+    const hasMoreRacks = rackIndex < preGeneratedNumbers.length;
+    if (hasMoreRacks && cnbjeu < nombredejeu) return;
+
     pauseChrono();
     endMatch();
-  }, [hasPionsInRack, flatGrid, cnbjeu, isMatchOver, pauseChrono, endMatch]);
+  }, [
+    hasPionsInRack,
+    flatGrid,
+    cnbjeu,
+    nombredejeu,
+    rackIndex,
+    preGeneratedNumbers.length,
+    isMatchOver,
+    pauseChrono,
+    endMatch,
+  ]);
 
   // -------- Redirection vers la page résultat --------
   useEffect(() => {
@@ -192,12 +220,16 @@ export const useCompetitionGame = () => {
       return;
     }
 
-    if (hasScheduledNavigationRef.current) return;
-    hasScheduledNavigationRef.current = true;
+    setSelectedDirectionIndex(null);
     pauseChrono();
 
+    if (hasScheduledNavigationRef.current) return;
+    hasScheduledNavigationRef.current = true;
+
     const timeout = setTimeout(() => {
-      router.push(RESULT_ROUTE);
+      if (hasScheduledNavigationRef.current) {
+        router.push(RESULT_ROUTE);
+      }
     }, NAVIGATION_DELAY_MS);
 
     return () => {
@@ -225,10 +257,10 @@ export const useCompetitionGame = () => {
   }, [resetPions]);
 
   const handleAcceptCalculation = useCallback(() => {
-    if (selectedDirectionIndex === null) return;
+    if (selectedDirectionIndex === null || isMatchOver) return;
     confirmCalculation(selectedDirectionIndex);
     setSelectedDirectionIndex(null);
-  }, [selectedDirectionIndex, confirmCalculation]);
+  }, [selectedDirectionIndex, isMatchOver, confirmCalculation]);
 
   const handleCloseDialog = useCallback(() => {
     setSelectedDirectionIndex(null);
@@ -249,12 +281,12 @@ export const useCompetitionGame = () => {
   const hasPlacedPions = gameState.placedPions.length > 0;
 
   const { selectedGameResult, isDialogOpen } = useMemo(() => {
-    const result =
-      selectedDirectionIndex !== null
-        ? gameResults[selectedDirectionIndex] ?? null
-        : null;
+    if (isMatchOver || selectedDirectionIndex === null) {
+      return { selectedGameResult: null, isDialogOpen: false };
+    }
+    const result = gameResults[selectedDirectionIndex] ?? null;
     return { selectedGameResult: result, isDialogOpen: result !== null };
-  }, [selectedDirectionIndex, gameResults]);
+  }, [isMatchOver, selectedDirectionIndex, gameResults]);
 
   const hasAnyValidDirection =
     directionsValid.left ||

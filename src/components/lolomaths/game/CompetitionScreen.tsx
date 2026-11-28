@@ -41,10 +41,15 @@ export const CompetitionScreen: React.FC = memo(() => {
     [setShowHelp]
   );
 
-  const showMatchOverBanner = isMatchOver;
+  const matchEnded = Boolean(isMatchOver);
+  const safeMessages = Array.isArray(helpMessages) ? helpMessages : [];
+  const showMatchOverBanner = matchEnded;
   const showDirectionActions =
-    !isMatchOver && gameState.isStartCovered && hasAnyValidDirection;
-  const showHelpPanel = showHelp && helpMessages.length > 0;
+    !matchEnded &&
+    Boolean(gameState?.isStartCovered) &&
+    Boolean(hasAnyValidDirection);
+  const showHelpPanel = Boolean(showHelp) && safeMessages.length > 0;
+  const canOpenDialog = Boolean(isDialogOpen) && !matchEnded;
 
   return (
     <main
@@ -65,22 +70,24 @@ export const CompetitionScreen: React.FC = memo(() => {
           <DirectionActions onSelectDirection={setSelectedDirectionIndex} />
         )}
 
-        <GameHeaderControls
-          hasPlacedPions={hasPlacedPions}
-          onResetRound={handleResetRound}
-        />
+        {!matchEnded && (
+          <GameHeaderControls
+            hasPlacedPions={Boolean(hasPlacedPions)}
+            onResetRound={handleResetRound}
+          />
+        )}
 
-        {showHelpPanel && <HelpMessagesView messages={helpMessages} />}
+        {showHelpPanel && <HelpMessagesView messages={safeMessages} />}
         <GameScoreBoard />
         <GameHistoryList />
 
         <HorlogeMise />
-        <HelpToggle checked={showHelp} onChange={handleToggleHelp} />
+        <HelpToggle checked={Boolean(showHelp)} onChange={handleToggleHelp} />
         <FooterSection />
       </section>
 
       <Fdialog
-        isOpen={isDialogOpen}
+        isOpen={canOpenDialog}
         gameResult={selectedGameResult}
         onAccept={handleAcceptCalculation}
         onCancel={handleCloseDialog}

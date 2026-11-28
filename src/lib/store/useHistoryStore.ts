@@ -34,8 +34,24 @@ const computeTournamentScore = (matchs: MatchRecord[]): number =>
 const enforceTournamentLimit = (
   tournaments: TournamentRecord[]
 ): TournamentRecord[] => {
+  if (!Array.isArray(tournaments)) return [];
   if (tournaments.length <= MAX_TOURNAMENTS) return tournaments;
   return tournaments.slice(tournaments.length - MAX_TOURNAMENTS);
+};
+
+const mergeGamesList = (
+  existingGames: GameRecord[],
+  incomingGames: GameRecord[]
+): GameRecord[] => {
+  if (incomingGames.length === 0) return existingGames;
+  const byId = new Map<string, GameRecord>();
+  for (const g of existingGames) {
+    byId.set(g.id, g);
+  }
+  for (const g of incomingGames) {
+    byId.set(g.id, g);
+  }
+  return Array.from(byId.values());
 };
 
 const createFallbackMatch = (
@@ -66,26 +82,38 @@ export const useHistoryStore = create<HistoryState>()(
             ? tournament.matchs
             : [];
           const exists = state.tournaments.some((t) => t.id === tournament.id);
+          const gameOverFlag = Boolean(
+            tournament.isGameOver ?? tournament.isgameover
+          );
 
           const nextTournaments = exists
             ? state.tournaments.map((t) => {
                 if (t.id !== tournament.id) return t;
                 const mergedMatchs =
                   safeMatchs.length > 0 ? safeMatchs : t.matchs ?? [];
+                const resolvedGameOver =
+                  gameOverFlag || Boolean(t.isGameOver ?? t.isgameover);
                 return {
                   ...t,
                   ...tournament,
+                  isGameOver: resolvedGameOver,
+                  isgameover: resolvedGameOver,
                   matchs: mergedMatchs,
                   score:
                     mergedMatchs.length > 0
                       ? computeTournamentScore(mergedMatchs)
-                      : toFiniteNumber(tournament.score, toFiniteNumber(t.score, 0)),
+                      : toFiniteNumber(
+                          tournament.score,
+                          toFiniteNumber(t.score, 0)
+                        ),
                 };
               })
             : [
                 ...state.tournaments,
                 {
                   ...tournament,
+                  isGameOver: gameOverFlag,
+                  isgameover: gameOverFlag,
                   matchs: safeMatchs,
                   score:
                     safeMatchs.length > 0
@@ -108,18 +136,31 @@ export const useHistoryStore = create<HistoryState>()(
 
             const currentMatchs = Array.isArray(t.matchs) ? t.matchs : [];
             const existing = currentMatchs.find((m) => m.id === match.id);
+            const incomingJeux = Array.isArray(match.jeux) ? match.jeux : [];
 
             const nextMatchs = !existing
-              ? [...currentMatchs, match]
+              ? [
+                  ...currentMatchs,
+                  {
+                    ...match,
+                    jeux: incomingJeux,
+                    score:
+                      typeof match.score === 'number' &&
+                      Number.isFinite(match.score)
+                        ? match.score
+                        : computeMatchScore(incomingJeux),
+                  },
+                ]
               : currentMatchs.map((m) => {
                   if (m.id !== match.id) return m;
-                  const mergedJeux =
-                    Array.isArray(match.jeux) && match.jeux.length > 0
-                      ? match.jeux
-                      : existing.jeux ?? [];
+                  const existingJeux = Array.isArray(m.jeux) ? m.jeux : [];
+                  const mergedJeux = mergeGamesList(existingJeux, incomingJeux);
+                  const isOver = Boolean(match.isGameOver ?? m.isGameOver);
+
                   return {
-                    ...existing,
+                    ...m,
                     ...match,
+                    isGameOver: isOver,
                     jeux: mergedJeux,
                     score:
                       typeof match.score === 'number' &&
@@ -218,6 +259,8 @@ export const useHistoryStore = create<HistoryState>()(
         const safeTournaments = Array.isArray(state.tournaments)
           ? state.tournaments.map((t) => ({
               ...t,
+              isGameOver: Boolean(t.isGameOver ?? t.isgameover),
+              isgameover: Boolean(t.isGameOver ?? t.isgameover),
               matchs: Array.isArray(t.matchs)
                 ? t.matchs.map((m) => ({
                     ...m,

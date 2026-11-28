@@ -193,9 +193,8 @@ export interface FormData {
 }
 
 // ============================================================
-//  GAME CONFIG / LEARNING CONFIG
+// GAME CONFIG / LEARNING CONFIG / RÉSULTATS
 // ============================================================
-
 
 export interface GameResult {
   _id: string;
@@ -210,16 +209,30 @@ export interface GameResult {
   };
   timeSpent: string;
   nombredevues: number;
-  scoreTotal: number;       // ex: 45.50
-  nombreDeJeux: number;     // ex: 20
+  scoreTotal: number;
+  nombreDeJeux: number;
   niveau: 'Min' | 'Cad' | 'Jun' | 'Sen';
-  duree: string;            // ex: "12m30s"
-  date: string;             // ISO date
+  duree: string;
+  date: string;
   idMatch?: string;
   createdAt: string;
   idjeu: string | GameConfiguration;
   updatedAt: string;
   matchStatus?: 'active' | 'ended' | 'upcoming';
+
+  // Champs moteur & calcul de coup
+  nbreatind: number;
+  result: number;
+  notedbase: number;
+  bonus: number;
+  notedjeu: number;
+  combine: string;
+  targetCase?: UneCase;
+  sequenceNcases: number[];
+  placedCount?: number;
+  placedNcases?: number[];
+  score?: number;
+
   [key: string]: unknown;
 }
 
@@ -406,71 +419,56 @@ export interface TimeLeft {
 // MATCHS / COMPÉTITIONS (harmonisé Lolomaths)
 // ============================================================
 
-/**
- * Un match (partie) dans une compétition.
- * Équivalent Kotlin : une ligne de la table `partie`.
- */
 export interface MatchInfo {
-  id?: string;                     // idpartie
-  tournamentId?: string;           // idtournoi
-  matchNumber?: number;            // numordrep
-  numeromatch?: string;            // numeromatch
-  score?: number;                  // score du match
-  isgameover?: boolean;            // isgameover
-  niveau?: number;                 // Dtfil (0..3)
-  timeSpent?: number;              // temps écoulé (secondes)
-  datedebut?: string | null;       // datedebut
-  datefin?: string | null;         // datefin
-  /** Liste des jeux joués dans ce match (rempli côté client). */
+  id?: string;
+  tournamentId?: string;
+  matchNumber?: number;
+  numeromatch?: string;
+  score?: number;
+  isgameover?: boolean;
+  isGameOver?: boolean;
+  niveau?: number;
+  timeSpent?: number;
+  datedebut?: string | null;
+  datefin?: string | null;
   jeux?: GameRecord[];
 }
 
-/**
- * Résultat simplifié d'un match (utilisé pour l'affichage).
- */
 export interface MatchResult {
   matchNumber: number;
   score: number;
   timeSpent?: number;
 }
 
-/**
- * Une compétition complète.
- * Équivalent Kotlin : une ligne de la table `tournoi`.
- */
 export interface CompetitionInfo {
-  id: string;                      // idtournoi
-  displayName: string;             // nom affiché
-  name?: string;                   // nom optionnel (fallback)
-  consultationId?: string;         // id de la consultation associée
-  idConfig?: string;               // id de la configuration
+  id: string;
+  displayName: string;
+  name?: string;
+  consultationId?: string;
+  idConfig?: string;
 
-  // Métadonnées du tournoi
-  nomjoueur?: string;              // nomjoueur
-  numtournoi?: string;             // numtournoi
-  niveau?: number;                 // Dtfil (0..3)
-  couleurs?: number;               // themeId
-  nombredejeu?: number;            // nombredejeu (jeux par match)
-  nbmatch?: number;                // nbmatch (nb total de matchs)
-  tempsmatch?: string;             // "-1", "5", "10"...
-  tpsglobal?: number;              // 0 ou 1
+  nomjoueur?: string;
+  numtournoi?: string;
+  niveau?: number;
+  couleurs?: number;
+  nombredejeu?: number;
+  nbmatch?: number;
+  tempsmatch?: string;
+  tpsglobal?: number;
 
-  // Dates et score
-  datedebut: string;               // datedebut
-  datefin: string;                 // datefin
-  timeSpent?: number;              // temps total (secondes)
-  totalScore?: number;             // score total
-  isgameover?: boolean;            // isgameover
+  datedebut: string;
+  datefin: string;
+  timeSpent?: number;
+  totalScore?: number;
+  isgameover?: boolean;
 
-  score?: number;                  // score du tournoi
-  matchesCount?: number;              // nombre de matchs
-  completedMatches?: number;            // nombre de matchs terminés
+  score?: number;
+  matchesCount?: number;
+  completedMatches?: number;
 
-  // Matchs
   matchInfo: MatchInfo[];
   matches?: MatchResult[];
 
-  // État de validation
   isValidated?: boolean;
 }
 
@@ -482,11 +480,11 @@ export interface GameCompletionState {
 
 export interface GameState {
   status:
-  | 'no_competition'
-  | 'not_started'
-  | 'active'
-  | 'results_available'
-  | 'ended_no_proclamation';
+    | 'no_competition'
+    | 'not_started'
+    | 'active'
+    | 'results_available'
+    | 'ended_no_proclamation';
   canUserPlay: boolean;
   showGameFinishedBanner: boolean;
   countdown: number | null;
@@ -565,12 +563,6 @@ export enum Dtfil {
   Sen = 3,
 }
 
-/**
- * Type de case :
- *  - Plateau = case du plateau (tca = 1 en Kotlin)
- *  - PionChiffre = pion nombre dans le rack (tca = 2 en Kotlin)
- *  - PionOperateur = pion opérateur dans le rack (tca = 3 en Kotlin)
- */
 export enum TypeCase {
   Plateau = 1,
   PionChiffre = 2,
@@ -579,8 +571,8 @@ export enum TypeCase {
 
 export interface UneCase {
   ncase: number;
-  indi: number; // Colonne (0..12)
-  indj: number; // Ligne (0..16)
+  indi: number;
+  indj: number;
   txt: string;
   itxt: string;
   etat: StateCase;
@@ -588,18 +580,6 @@ export interface UneCase {
   placep?: number;
   isbou?: boolean;
   isTarget?: boolean;
-}
-
-export interface GameResult {
-  nbreatind: number;
-  result: number;
-  notedbase: number;
-  bonus: number;
-  notedjeu: number;
-  combine: string;
-  targetCase: UneCase;
-  /** Ncase de chaque case de la séquence validée (pour verrouillage sélectif). */
-  sequenceNcases: number[];
 }
 
 export interface GameScore {
@@ -793,60 +773,51 @@ export type CityItem = {
 // HISTORIQUE LOCAL (Lolomaths)
 // ============================================================
 
-/**
- * Un jeu joué (un coup validé).
- * Équivalent Kotlin : une ligne de la table `jeu`.
- */
 export interface GameRecord {
-  id: string;                      // identifiant unique
-  matchId: string;                 // idpartie
-  tournamentId: string;            // idtournoi
-  numjeu: number;                  // cnbjeu (1, 2, 3...)
-  combinaison: string;             // "3+4*2"
-  sequencePions: string;           // "ncase1,ncase2,..." ou "ncase,txt,..."
-  cible: number;                   // nbreatind
-  resultat: number;                // result
-  notedebase: number;              // notedebase
-  bonus: number;                   // bonus
-  notejeu: number;                 // notedjeu
-  niveau: number;                  // Dtfil (0..3)
-  dateCreation: string;            // ISO
+  id: string;
+  matchId: string;
+  tournamentId: string;
+  numjeu: number;
+  combinaison: string;
+  sequencePions?: string;
+  cible?: number;
+  resultat?: number;
+  nombreaatteindre: number;
+  resultatcalcul: number;
+  notedebase: number;
+  bonus: number;
+  notejeu: number;
+  niveau?: number;
+  dateCreation: string;
 }
 
-/**
- * Un match (partie) dans un tournoi.
- * Équivalent Kotlin : une ligne de la table `partie`.
- */
 export interface MatchRecord {
-  id: string;                      // idpartie
-  tournamentId: string;            // idtournoi
-  numordrep: number;               // numordrep
-  numeromatch: string;             // numeromatch
-  score: number;                   // score total du match
-  isGameOver: boolean;             // isgameover
-  datedebut: string;               // ISO
-  datefin: string | null;          // ISO
+  id: string;
+  tournamentId: string;
+  numordrep: number;
+  numeromatch: string;
+  score: number;
+  isGameOver: boolean;
+  datedebut: string;
+  datefin: string | null;
   jeux: GameRecord[];
 }
 
-/**
- * Un tournoi complet.
- * Équivalent Kotlin : une ligne de la table `tournoi`.
- */
 export interface TournamentRecord {
   idConfig: string;
-  id: string;                      // idtournoi
-  nomjoueur: string;               // nomjoueur
-  numtournoi: string;              // numtournoi
-  niveau: number;                  // Dtfil (0..3)
-  couleurs: number;                // themeId
-  nombredejeu: number;             // jeux par match
-  nbmatch: number;                 // nb total de matchs
-  tempsmatch: string;              // "-1" ou "5", "10"...
-  tpsglobal: number;               // 0 ou 1
-  isgameover: boolean;             // isgameover
-  score: number;                   // score total
-  datedebut: string;               // ISO
-  datefin: string | null;          // ISO
+  id: string;
+  nomjoueur: string;
+  numtournoi: string;
+  niveau: number;
+  couleurs: number;
+  nombredejeu: number;
+  nbmatch: number;
+  tempsmatch: string;
+  tpsglobal: number;
+  isGameOver: boolean;
+  isgameover?: boolean;
+  score: number;
+  datedebut: string;
+  datefin: string | null;
   matchs: MatchRecord[];
 }

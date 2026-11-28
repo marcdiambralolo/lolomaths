@@ -18,12 +18,16 @@ import {
 } from '@/components/lolomaths/game/competitionEngine';
 import {
   Dtfil,
+  GameRecord,
   GameResult,
+  MatchRecord,
   Sens,
   StateCase,
+  TournamentRecord,
   TypeCase,
   UneCase,
 } from '@/lib/interfaces';
+import { useHistoryStore } from '@/lib/store/useHistoryStore';
 
 const STORAGE_NAME = 'lolomaths-game';
 const CURRENT_VERSION = 1;
@@ -36,6 +40,7 @@ interface DirectionsValid {
 }
 
 export interface TournamentMeta {
+  idConfig?: string;
   nomjoueur: string;
   numtournoi: string;
   niveau: Dtfil;
@@ -106,6 +111,63 @@ const EMPTY_RESULTS: (GameResult | null)[] = [null, null, null, null];
 
 function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function mapNiveauToNumber(niveau: Dtfil): number {
+  switch (niveau) {
+    case Dtfil.Min:
+      return 0;
+    case Dtfil.Cad:
+      return 1;
+    case Dtfil.Jun:
+      return 2;
+    case Dtfil.Sen:
+    default:
+      return 3;
+  }
+}
+
+function buildGameRecord(
+  result: GameResult,
+  coupNumber: number,
+  matchId: string,
+  tournamentId: string,
+  niveau: Dtfil
+): GameRecord {
+  const now = new Date().toISOString();
+  const notejeu = toFiniteNumber(
+    result.notedjeu,
+    toFiniteNumber(result.score, 0)
+  );
+  const notedebase = toFiniteNumber(result.notedbase, 0);
+  const bonus = toFiniteNumber(result.bonus, 0);
+  const nombreaatteindre = toFiniteNumber(result.nbreatind, 0);
+  const resultatcalcul = toFiniteNumber(result.result, 0);
+  const seqIds = Array.isArray(result.sequenceNcases)
+    ? result.sequenceNcases.join(',')
+    : '';
+
+  return {
+    id: result._id || (typeof result.idjeu === 'string' ? result.idjeu : '') || generateId('game'),
+    matchId,
+    tournamentId,
+    numjeu: coupNumber,
+    combinaison: result.combine ?? '',
+    sequencePions: seqIds,
+    cible: nombreaatteindre,
+    resultat: resultatcalcul,
+    nombreaatteindre,
+    resultatcalcul,
+    notedebase,
+    bonus,
+    notejeu,
+    niveau: mapNiveauToNumber(niveau),
+    dateCreation: result.date || result.createdAt || now,
+  };
 }
 
 function splitIntoRacks(
@@ -446,6 +508,7 @@ export const useGameStore = create<GameState>()(
             directionsValid: { ...EMPTY_DIRECTIONS },
             isMatchOver: true,
           });
+          get().endMatch();
           return;
         }
 
@@ -735,7 +798,17 @@ export const useGameStore = create<GameState>()(
       },
 
       confirmCalculation: (resultIndex: number) => {
-        const { grid, gameResults, scoreTotal, isMatchOver, pions } = get();
+        const {
+          grid,
+          gameResults,
+          scoreTotal,
+          isMatchOver,
+          pions,
+          currentTournamentId,
+          currentMatchId,
+          cnbjeu,
+          niveau,
+        } = get();
         if (isMatchOver) return;
 
         const selectedResult = gameResults[resultIndex];
@@ -779,15 +852,34 @@ export const useGameStore = create<GameState>()(
           return !validatedPlacep.has(pion.placep);
         });
 
+        const gainedNote = toFiniteNumber(
+          selectedResult.notedjeu,
+          toFiniteNumber(selectedResult.score, 0)
+        );
+        const nextScoreTotal = toFiniteNumber(scoreTotal, 0) + gainedNote;
+
         set({
           grid: nextGrid,
           flatGrid: nextGrid.flat(),
           pions: nextPions,
-          scoreTotal: scoreTotal + selectedResult.notedjeu,
+          scoreTotal: nextScoreTotal,
           lastConfirmedResult: selectedResult,
           gameResults: [...EMPTY_RESULTS],
           directionsValid: { ...EMPTY_DIRECTIONS },
         });
+
+        if (currentTournamentId && currentMatchId) {
+          const gameRecord = buildGameRecord(
+            selectedResult,
+            cnbjeu + 1,
+            currentMatchId,
+            currentTournamentId,
+            niveau
+          );
+          useHistoryStore
+            .getState()
+            .saveGame(currentTournamentId, currentMatchId, gameRecord);
+        }
 
         get().nextJeu();
       },
@@ -809,14 +901,48 @@ export const useGameStore = create<GameState>()(
       },
 
       startTournament: (meta: TournamentMeta) => {
+        const now = new Date().toISOString();
         const tournamentId = generateId('tour');
         const matchId = generateId('match');
+
+        const tournamentRecord: TournamentRecord = {
+          id: tournamentId,
+          idConfig: meta.idConfig ?? '',
+          numtournoi: meta.numtournoi,
+          nomjoueur: meta.nomjoueur,
+          niveau: mapNiveauToNumber(meta.niveau),
+          couleurs: meta.couleurs,
+          nombredejeu: meta.nombredejeu,
+          nbmatch: meta.nbmatch,
+          tempsmatch: meta.tempsmatch,
+          tpsglobal: meta.tpsglobal,
+          score: 0,
+          datedebut: now,
+          datefin: null,
+          isGameOver: false,
+          isgameover: false,
+          matchs: [
+            {
+              id: matchId,
+              tournamentId,
+              numordrep: 1,
+              numeromatch: '1',
+              score: 0,
+              isGameOver: false,
+              datedebut: now,
+              datefin: null,
+              jeux: [],
+            },
+          ],
+        };
+
+        useHistoryStore.getState().saveTournament(tournamentRecord);
 
         set({
           currentTournamentId: tournamentId,
           currentMatchId: matchId,
           tournamentMeta: meta,
-          matchIndex: 0,
+          matchIndex: 1,
           numeromatch: '1',
           scoreTotal: 0,
           isMatchOver: false,
@@ -824,23 +950,97 @@ export const useGameStore = create<GameState>()(
       },
 
       startMatch: (numeromatch: string) => {
-        const { matchIndex } = get();
+        const { matchIndex, currentTournamentId, tournamentMeta } = get();
+        const now = new Date().toISOString();
+        const nextIndex = matchIndex + 1;
         const matchId = generateId('match');
+
+        if (currentTournamentId) {
+          const matchRecord: MatchRecord = {
+            id: matchId,
+            tournamentId: currentTournamentId,
+            numordrep: nextIndex,
+            numeromatch: numeromatch || String(nextIndex),
+            score: 0,
+            isGameOver: false,
+            datedebut: now,
+            datefin: null,
+            jeux: [],
+          };
+          useHistoryStore.getState().saveMatch(currentTournamentId, matchRecord);
+        }
 
         set({
           currentMatchId: matchId,
-          matchIndex: matchIndex + 1,
-          numeromatch,
+          matchIndex: nextIndex,
+          numeromatch: numeromatch || String(nextIndex),
           scoreTotal: 0,
           isMatchOver: false,
+          cnbjeu: 0,
+          rackIndex: 0,
+          nombredejeu: tournamentMeta?.nombredejeu ?? get().nombredejeu,
+          gameResults: [...EMPTY_RESULTS],
+          directionsValid: { ...EMPTY_DIRECTIONS },
         });
       },
 
       endMatch: () => {
+        const {
+          currentTournamentId,
+          currentMatchId,
+          matchIndex,
+          numeromatch,
+          scoreTotal,
+        } = get();
+        const now = new Date().toISOString();
+
         set({ isMatchOver: true });
+
+        if (currentTournamentId && currentMatchId) {
+          const historyStore = useHistoryStore.getState();
+          const existingTournament = historyStore.getTournament(
+            currentTournamentId
+          );
+          const existingMatch = existingTournament?.matchs?.find(
+            (m) => m.id === currentMatchId
+          );
+
+          const finishedMatch: MatchRecord = {
+            id: currentMatchId,
+            tournamentId: currentTournamentId,
+            numordrep: existingMatch?.numordrep ?? matchIndex,
+            numeromatch:
+              existingMatch?.numeromatch ?? (numeromatch || String(matchIndex)),
+            score: toFiniteNumber(scoreTotal, existingMatch?.score ?? 0),
+            isGameOver: true,
+            datedebut: existingMatch?.datedebut ?? now,
+            datefin: existingMatch?.datefin ?? now,
+            jeux: existingMatch?.jeux ?? [],
+          };
+
+          historyStore.saveMatch(currentTournamentId, finishedMatch);
+        }
       },
 
       endTournament: () => {
+        const { currentTournamentId, tournamentMeta } = get();
+        const now = new Date().toISOString();
+
+        if (currentTournamentId) {
+          const historyStore = useHistoryStore.getState();
+          const existing = historyStore.getTournament(currentTournamentId);
+          if (existing) {
+            historyStore.saveTournament({
+              ...existing,
+              isGameOver: true,
+              isgameover: true,
+              datefin: existing.datefin ?? now,
+              nombredejeu: tournamentMeta?.nombredejeu ?? existing.nombredejeu,
+              nbmatch: tournamentMeta?.nbmatch ?? existing.nbmatch,
+            });
+          }
+        }
+
         set({
           currentTournamentId: null,
           currentMatchId: null,

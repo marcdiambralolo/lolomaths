@@ -61,6 +61,8 @@ function gameResultToRecord(
     notejeu: result.notedjeu,
     niveau,
     dateCreation: new Date().toISOString(),
+    nombreaatteindre: result.nbreatind,
+    resultatcalcul: result.resultcalcul as number,
   };
 }
 
@@ -146,6 +148,7 @@ export function useGamePersistence() {
         datefin: null,
         matchs: [],
         idConfig: '0',
+        isGameOver: false,
     
       };
       saveTournament(emptyTournament);

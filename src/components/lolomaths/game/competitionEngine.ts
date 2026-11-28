@@ -524,6 +524,10 @@ export function calculateGameResult(
 ): GameResult {
   const targetValue = parseInt(targetCase.itxt || targetCase.txt, 10) || 0;
   const now = new Date().toISOString();
+  // Uniquement les pions actifs placés par le joueur pour ce coup (jamais les cases verrouillées Lo)
+  const activePlacedPions = Array.isArray(placedPions)
+    ? placedPions.filter((p) => p && p.etat !== StateCase.Lo)
+    : [];
 
   const game: GameResult = {
     nbreatind: targetValue,
@@ -538,6 +542,8 @@ export function calculateGameResult(
     sequenceNcases: Array.isArray(sequence)
       ? sequence.map((c) => c.ncase)
       : [],
+    placedCount: activePlacedPions.length,
+    placedNcases: activePlacedPions.map((p) => p.ncase),
     _id: '',
     userId: '',
     scoreTotal: 0,
@@ -562,18 +568,18 @@ export function calculateGameResult(
   game.result = isExactMatch ? targetValue : rawResult;
   game.notedbase = isExactMatch ? 5 : -diffFromTarget;
 
-  // Fidèle au Kotlin : le bonus est toujours calculé.
+  // Fidèle au Kotlin : le bonus est toujours calculé sur les pions placés par le joueur.
   let bonus = 0;
 
   if (game.nbreatind >= getLevelTargetThreshold(niveau)) {
     bonus += 1;
   }
 
-  if (placedPions.length > 6) {
-    bonus += placedPions.length - 6;
+  if (activePlacedPions.length > 6) {
+    bonus += activePlacedPions.length - 6;
   }
 
-  for (const p of placedPions) {
+  for (const p of activePlacedPions) {
     if (MULTIPLY_DIVIDE_SET.has(p.txt)) {
       bonus += 1;
     }
